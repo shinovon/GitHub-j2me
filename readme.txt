@@ -5,5 +5,4 @@ markdown parsing
 issues
 repositories search
 local follow list
-tags
 branches

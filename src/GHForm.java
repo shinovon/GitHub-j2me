@@ -50,6 +50,7 @@ public abstract class GHForm extends Form {
 	}
 	
 	void cancel() {
+		loaded = false;
 		if (finished || thread == null) return;
 		canceled = true;
 		thread.interrupt();

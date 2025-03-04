@@ -98,6 +98,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	static Command ownerCmd;
 	static Command releasesCmd;
+	static Command tagsCmd;
 	static Command forksCmd;
 	static Command reposCmd;
 	static Command contribsCmd;
@@ -162,9 +163,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		userCmd = new Command("View user", Command.ITEM, 1);
 		spoilerCmd = new Command("Show", Command.ITEM, 1);
 		
-		ownerCmd = new Command("Owner", Command.SCREEN, 4);
+		ownerCmd = new Command("Owner", Command.SCREEN, 5);
 		releasesCmd = new Command("Releases", Command.SCREEN, 3);
-		forksCmd = new Command("Forks", Command.SCREEN, 5);
+		tagsCmd = new Command("Tags", Command.SCREEN, 4);
+		forksCmd = new Command("Forks", Command.SCREEN, 6);
 		reposCmd = new Command("Repositories", Command.SCREEN, 5);
 		contribsCmd = new Command("Contributors", Command.ITEM, 1);
 		stargazersCmd = new Command("Stargazers", Command.ITEM, 1);
@@ -326,7 +328,23 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == releasesCmd) {
-				ReleasesForm f = new ReleasesForm(((RepoForm) d).url);
+				if (d instanceof ReleasesForm) {
+					((ReleasesForm) d).toggleMode();
+					return;
+				}
+				String url = ((RepoForm) d).url;
+				ReleasesForm f = new ReleasesForm(url, false);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == tagsCmd) {
+				if (d instanceof ReleasesForm) {
+					((ReleasesForm) d).toggleMode();
+					return;
+				}
+				String url = ((RepoForm) d).url;
+				ReleasesForm f = new ReleasesForm(url, true);
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -407,7 +425,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == gotoPageOkCmd) {
-				((PagedForm) d).gotoPage(Integer.parseInt(((TextBox) d).getString()));
+				commandAction(backCmd, d);
+				((PagedForm) display.getCurrent()).gotoPage(Integer.parseInt(((TextBox) d).getString()));
 				return;
 			}
 		}

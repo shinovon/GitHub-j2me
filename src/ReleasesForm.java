@@ -32,18 +32,21 @@ import cc.nnproject.json.JSONObject;
 public class ReleasesForm extends PagedForm implements ItemCommandListener {
 
 	String url;
-	Hashtable urls;
+	private Hashtable urls;
+	private boolean tags;
 
-	public ReleasesForm(String url) {
-		super(url + " - Releases");
-		this.perPage = 10;
-		this.url = url;
+	public ReleasesForm(String repo, boolean tags) {
+		super(repo.concat(tags ? " - Tags" : " - Releases"));
+		this.perPage = tags ? 30 : 10;
+		this.url = repo;
+		this.tags = tags;
+		addCommand(tags ? GH.releasesCmd : GH.tagsCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {
 		deleteAll();
 		
-		JSONArray r = pagedApi(thread, "repos/".concat(url).concat("/releases?"));
+		JSONArray r = pagedApi(thread, "repos/".concat(url).concat(tags ? "/tags?" : "/releases?"));
 		int l = r.size();
 		
 		if (urls == null) {
@@ -56,12 +59,19 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		for (int i = 0; i < l && thread == this.thread; ++i) {
 			JSONObject j = r.getObject(i);
 			
-			s = new StringItem(null, j.getString("name", j.getString("tag_name")));
+			s = new StringItem(null, j.getString("name", j.getString("tag_name", "")));
 			s.setFont(GH.largefont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
 			
-			if ((t = j.getString("body")).length() != 0) {
+			if (j.has("commit")) {
+				s = new StringItem(null, j.getObject("commit").getString("sha").substring(0, 7));
+				s.setFont(GH.smallfont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+				safeAppend(thread, s);
+			}
+			
+			if (j.has("body") && (t = j.getString("body")) != null && t.length() != 0) {
 				if (t.length() < 100 || i == 0) {
 					GH.parseMarkdown(thread, this, t, -1);
 				} else {
@@ -76,28 +86,39 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				}
 			}
 			
-			JSONArray assets = j.getArray("assets");
-			int l2 = assets.size();
-					
-			s = new StringItem(null, "Assets (" + (l2 + 1) + "):");
-			s.setFont(GH.smallboldfont);
-			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-			safeAppend(thread, s);
-			
-			if (i == 0) {
-				parseAssets(thread, assets, j.getString("zipball_url"), -1);
+			if (j.has("assets")) {
+				JSONArray assets = j.getArray("assets");
+				int l2 = assets.size();
+						
+				s = new StringItem(null, "Assets (" + (l2 + 1) + "):");
+				s.setFont(GH.smallboldfont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+				safeAppend(thread, s);
+				
+				if (i == 0) {
+					parseAssets(thread, assets, j.getString("zipball_url"), -1);
+				} else {
+					s = new StringItem(null, "Show assets", Item.HYPERLINK);
+					s.setFont(GH.medfont);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+					s.setDefaultCommand(GH.spoilerCmd);
+					s.setItemCommandListener(this);
+	
+					urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url")});
+					safeAppend(thread, s);
+				}
 			} else {
-				s = new StringItem(null, "Show assets", Item.HYPERLINK);
+				s = new StringItem(null, "Source code (zip)");
 				s.setFont(GH.medfont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-				s.setDefaultCommand(GH.spoilerCmd);
+				s.addCommand(GH.downloadCmd);
+				s.setDefaultCommand(GH.downloadCmd);
 				s.setItemCommandListener(this);
-
-				urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url")});
+				urls.put(s, j.getString("zipball_url"));
 				safeAppend(thread, s);
 			}
 			
-			safeAppend(thread, "\n\n");
+			safeAppend(thread, "\n");
 		}
 	}
 
@@ -119,7 +140,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			} else if (size < 1024*1024*1024) {
 				sb.append(((int) ((size / (1024D * 1024D) * 100))) / 100D).append(" MB");
 			} else {
-				sb.append(((int) ((size / (1024D * 1024D * 1024D)) * 100)) / 100D).append(" MB");
+				sb.append(((int) ((size / (1024D * 1024D * 1024D)) * 100)) / 100D).append(" GB");
 			}
 			sb.append(')');
 			
@@ -177,6 +198,16 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			} catch (Exception ignored) {}
 			return;
 		}
+	}
+
+	void toggleMode() {
+		cancel();
+		
+		tags = !tags;
+		perPage = tags ? 30 : 10;
+		setTitle(url.concat(tags ? " - Tags" : " - Releases"));
+
+		GH.midlet.start(GH.RUN_LOAD_FORM, this);
 	}
 
 }
