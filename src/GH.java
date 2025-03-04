@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.util.Calendar;
 import java.util.Vector;
 
@@ -28,16 +29,16 @@ import cc.nnproject.json.JSONObject;
 
 public class GH extends MIDlet implements CommandListener, ItemCommandListener, Runnable {
 	
-	private static final int RUN_LOAD_FORM = 1;
+	static final int RUN_LOAD_FORM = 1;
 	
 	private static final String APIURL = "https://api.github.com/";
 	private static final String API_VERSION = "2022-11-28";
 
 	// fonts
-	private static final Font largefont = Font.getFont(0, 0, Font.SIZE_LARGE);
-	private static final Font medboldfont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
-	private static final Font medfont = Font.getFont(0, 0, Font.SIZE_MEDIUM);
-	private static final Font smallboldfont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_SMALL);
+	static final Font largefont = Font.getFont(0, 0, Font.SIZE_LARGE);
+	static final Font medboldfont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
+	static final Font medfont = Font.getFont(0, 0, Font.SIZE_MEDIUM);
+	static final Font smallboldfont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_SMALL);
 	static final Font smallfont = Font.getFont(0, 0, Font.SIZE_SMALL);
 
 	private static Display display;
@@ -61,6 +62,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Command aboutCmd;
 	
 	private static Command goCmd;
+	
+	static Command ownerCmd;
+	static Command releasesCmd;
+	static Command forksCmd;
+	static Command reposCmd;
 
 	// ui
 	private static Form mainForm;
@@ -85,6 +91,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		aboutCmd = new Command("About", Command.SCREEN, 4);
 		
 		goCmd = new Command("Go", Command.ITEM, 1);
+		
+		ownerCmd = new Command("Owner", Command.SCREEN, 4);
+		releasesCmd = new Command("Releases", Command.SCREEN, 3);
+		forksCmd = new Command("Forks", Command.SCREEN, 5);
+		reposCmd = new Command("Repositories", Command.SCREEN, 5);
 		
 		Form f = new Form("GitHub");
 		f.addCommand(exitCmd);
@@ -115,24 +126,71 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (url.indexOf('/') == -1) {
 					f = new UserForm(url);
 				} else {
-//					f = new RepoForm(url); // TODO
-					f = new ReleasesForm(url);
+					f = new RepoForm(url);
 				}
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
 			}
 		}
+		if (c == ownerCmd) {
+			String url = ((RepoForm) d).url;
+			url = url.substring(0, url.indexOf('/'));
+			
+			UserForm f = null;
+			// search in previous screens
+			synchronized (formHistory) {
+				int l = formHistory.size();
+				for (int i = 0; i < l; ++i) {
+					Object o = formHistory.elementAt(i);
+					if (!(o instanceof UserForm) || !url.equals(((UserForm) o).user)) {
+						break;
+					}
+					f = (UserForm) o;
+				}
+			}
+			if (f == null) {
+				f = new UserForm(url);
+			}
+			display(f);
+			start(RUN_LOAD_FORM, f);
+			return;
+		}
+		if (c == releasesCmd) {
+			ReleasesForm f = new ReleasesForm(((RepoForm) d).url);
+			display(f);
+			start(RUN_LOAD_FORM, f);
+			return;
+		}
+		if (c == reposCmd) {
+			ReposForm f = new ReposForm("users/".concat(((UserForm) d).user).concat("/repos"));
+			display(f);
+			start(RUN_LOAD_FORM, f);
+			return;
+		}
+		if (c == forksCmd) {
+			ReposForm f = new ReposForm("repos/".concat(((RepoForm) d).url).concat("/forks"));
+			display(f);
+			start(RUN_LOAD_FORM, f);
+			return;
+		}
 		if (c == backCmd) {
 			if (formHistory.size() == 0) {
 				display(mainForm, true);
 				return;
 			}
-			Displayable p;
+			Displayable p = null;
 			synchronized (formHistory) {
-				int i = formHistory.size() - 1;
-				p = (Displayable) formHistory.elementAt(i);
-				formHistory.removeElementAt(i);
+				int i = formHistory.size();
+				while (i-- != 0) {
+					if (formHistory.elementAt(i) == d) {
+						break;
+					}
+				}
+				if (i > 0) {
+					p = (Displayable) formHistory.elementAt(i - 1);
+					formHistory.removeElementAt(i);
+				}
 			}
 			display(p, true);
 			return;
@@ -154,18 +212,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			param = GH.runParam;
 			notify();
 		}
-		System.out.println("run ".concat(n(run)));
+//		System.out.println("run ".concat(n(run)));
+		System.out.println("run " + run + " " + param);
 		running++;
 		switch (run) {
 		case RUN_LOAD_FORM: {
-			((Displayable) param).setTicker(new Ticker("Loading"));
 			try {
-				((GHForm) param).load();
+				((GHForm) param).loadInternal();
+			} catch (InterruptedException e) {
+			} catch (InterruptedIOException e) {
 			} catch (Exception e) {
 				display(errorAlert(e.toString()), (Displayable) param);
 				e.printStackTrace();
 			}
-			((Displayable) param).setTicker(null);
 			break;
 		}
 		}
@@ -205,10 +264,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (d == null) {
 			d = mainForm;
 		}
+		if (d == mainForm) {
+			formHistory.removeAllElements();
+		}
 		Displayable p = display.getCurrent();
 		display.setCurrent(d);
 		if (p == null || p == d) return;
 		
+		if (p instanceof GHForm) {
+			((GHForm) p).closed(back);
+		}
 		if (!back && d != mainForm) {
 			formHistory.addElement(d);
 		}

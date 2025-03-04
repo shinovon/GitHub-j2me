@@ -1,11 +1,21 @@
+import cc.nnproject.json.JSONObject;
+
 public class RepoForm extends GHForm {
 
-	public RepoForm(String title) {
-		super(title);
+	String url;
+
+	public RepoForm(String url) {
+		super(url);
+		this.url = url;
+		addCommand(GH.releasesCmd);
+		addCommand(GH.ownerCmd);
+		addCommand(GH.forksCmd);
 	}
 
-	void load() {
-		// TODO Auto-generated method stub
+	void loadInternal() throws Exception {
+		// TODO
+		JSONObject r = (JSONObject) GH.api("repos/".concat(url));
+		append(r.toString());
 		
 	}
 

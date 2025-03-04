@@ -1,17 +1,17 @@
-import java.io.IOException;
-
 import cc.nnproject.json.JSONObject;
 
 public class UserForm extends GHForm {
 
-	private String user;
+	String user;
 
 	public UserForm(String user) {
 		super(user);
 		this.user = user;
+		addCommand(GH.reposCmd);
 	}
 
-	void load() throws IOException {
+	void loadInternal() throws Exception {
+		// TODO
 		JSONObject r = (JSONObject) GH.api("users/".concat(user));
 		append(r.toString());
 	}
