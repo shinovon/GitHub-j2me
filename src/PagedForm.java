@@ -29,13 +29,11 @@ public abstract class PagedForm extends GHForm {
 	int page = 1;
 	private boolean more;
 	private String title;
-	private String pageText;
+	private String pageText = "";
 
 	public PagedForm(String title) {
 		super(title);
 		this.title = title;
-		pageText = "";
-		addCommand(GH.gotoPageCmd);
 	}
 	
 	void nextPage() {
@@ -57,7 +55,7 @@ public abstract class PagedForm extends GHForm {
 	
 	// overriden from Form
 	public void setTitle(String title) {
-		super.setTitle(title.concat(pageText));
+		super.setTitle(title == null ? null : title.concat(pageText == null ? "" : pageText));
 		this.title = title;
 	}
 	
@@ -112,6 +110,8 @@ public abstract class PagedForm extends GHForm {
 		
 		if (page == 1 && !more) {
 			removeCommand(GH.gotoPageCmd);
+		} else {
+			addCommand(GH.gotoPageCmd);
 		}
 		
 		return r;
