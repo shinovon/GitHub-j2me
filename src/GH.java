@@ -64,6 +64,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	private static Command goCmd;
 	static Command downloadCmd;
+	static Command openCmd;
 	
 	static Command ownerCmd;
 	static Command releasesCmd;
@@ -94,6 +95,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		goCmd = new Command("Go", Command.ITEM, 1);
 		downloadCmd = new Command("Download", Command.ITEM, 1);
+		openCmd = new Command("Open", Command.ITEM, 1);
 		
 		ownerCmd = new Command("Owner", Command.SCREEN, 4);
 		releasesCmd = new Command("Releases", Command.SCREEN, 3);
@@ -564,6 +566,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static void parseMarkdown(String body, Form form) {
+		// TODO
+		if (body.trim().length() == 0) return;
+		StringItem s = new StringItem(null, body);
+		s.setFont(GH.medfont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		form.append(s);
 	}
 
 }

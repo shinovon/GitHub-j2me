@@ -38,10 +38,8 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 			
-			s = new StringItem(null, j.getString("body"));
-			s.setFont(GH.medfont);
-			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-			append(s);
+			GH.parseMarkdown(j.getString("body"), this);
+			
 
 			JSONArray assets = j.getArray("assets");
 			int l2 = assets.size();
