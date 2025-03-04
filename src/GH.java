@@ -38,6 +38,8 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Gauge;
+import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.ImageItem;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.StringItem;
@@ -184,7 +186,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		Form f = new Form("GitHub");
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
-//		f.addCommand(aboutCmd);
+		f.addCommand(aboutCmd);
 //		f.addCommand(bookmarksCmd);
 		f.setCommandListener(this);
 		
@@ -240,7 +242,43 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == aboutCmd) {
-				// TODO
+				Form f = new Form("About");
+				f.addCommand(backCmd);
+				f.setCommandListener(this);
+				
+				StringItem s;
+				s = new StringItem(null, "unnamed github j2me client v" + version);
+				s.setFont(medfont);
+				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_VCENTER | Item.LAYOUT_LEFT);
+				f.append(s);
+				
+				s = new StringItem(null, "Unofficial GitHub browser client");
+				s.setFont(Font.getDefaultFont());
+				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+				f.append(s);
+
+				s = new StringItem("Developer", "shinovon");
+				s.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_LEFT);
+				f.append(s);
+
+				s = new StringItem("GitHub", "github.com/shinovon");
+				s.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_LEFT);
+				s.setDefaultCommand(userCmd);
+				s.setItemCommandListener(this);
+				f.append(s);
+
+				s = new StringItem("Web", "nnproject.cc");
+				s.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_LEFT);
+				f.append(s);
+
+				s = new StringItem("Donate", "boosty.to/nnproject/donate");
+				s.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_LEFT);
+				f.append(s);
+
+				s = new StringItem("Chat", "t.me/nnmidletschat");
+				s.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_LEFT);
+				f.append(s);
+				display(f);
 				return;
 			}
 			if (c == bookmarksCmd) {
@@ -250,6 +288,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		if (d == settingsForm) {
 			if (c == backCmd) {
+				// save settings
 				proxyUrl = proxyField.getString();
 				useProxy = proxyChoice.isSelected(0);
 				
@@ -272,13 +311,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			return;
 		}
-		{ // RepoForm commands
+		// RepoForm commands
+		{
 			if (c == ownerCmd) {
 				String url = ((RepoForm) d).url;
 				url = url.substring(0, url.indexOf('/'));
 				
 				UserForm f = getUserForm(url);
-				
 				if (f == null) {
 					f = new UserForm(url);
 				}
@@ -417,12 +456,18 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		if (c == userCmd) {
 			String url = ((StringItem) item).getText();
+			if (url.startsWith("github.com/")) {
+				url = url.substring(11);
+			}
 			int i;
 			if ((i = url.indexOf('/')) != -1) {
 				url = url.substring(0, i);
 			}
 			
-			UserForm f = new UserForm(url);
+			UserForm f = getUserForm(url);
+			if (f == null) {
+				f = new UserForm(url);
+			}
 			display(f);
 			start(RUN_LOAD_FORM, f);
 			return;
