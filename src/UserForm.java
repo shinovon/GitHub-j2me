@@ -12,8 +12,9 @@ public class UserForm extends GHForm {
 
 	void loadInternal() throws Exception {
 		// TODO
-		JSONObject r = (JSONObject) GH.api("users/".concat(user));
-		append(r.toString());
+//		JSONObject r = (JSONObject) GH.api("users/".concat(user));
+//		append(r.toString());
+		append("TODO");
 	}
 
 }

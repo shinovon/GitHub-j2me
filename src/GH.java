@@ -4,11 +4,11 @@ import java.io.InterruptedIOException;
 import java.util.Calendar;
 import java.util.Vector;
 
-import javax.microedition.io.ConnectionNotFoundException;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Display;
@@ -16,21 +16,20 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Gauge;
-import javax.microedition.lcdui.ImageItem;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.StringItem;
-import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
-import javax.microedition.lcdui.Ticker;
 import javax.microedition.midlet.MIDlet;
-import javax.microedition.midlet.MIDletStateChangeException;
+import javax.microedition.rms.RecordStore;
 
 import cc.nnproject.json.JSONObject;
 
 public class GH extends MIDlet implements CommandListener, ItemCommandListener, Runnable {
 	
 	static final int RUN_LOAD_FORM = 1;
+	
+	private static final String SETTINGS_RECORDNAME = "ghsets";
 	
 	private static final String APIURL = "https://api.github.com/";
 	private static final String API_VERSION = "2022-11-28";
@@ -73,9 +72,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	// ui
 	private static Form mainForm;
+	private static Form settingsForm;
 	private static Vector formHistory = new Vector();
 
 	private static TextField field;
+
+	private static TextField proxyField;
+	private static ChoiceGroup proxyChoice;
 
 	protected void destroyApp(boolean unconditional)  {}
 
@@ -87,6 +90,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		version = getAppProperty("MIDlet-Version");
 		display = Display.getDisplay(this);
+		
+		try {
+			RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, false);
+			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
+			r.closeRecordStore();
+			
+			proxyUrl = j.getString("proxy", proxyUrl);
+			useProxy = j.getBoolean("useProxy", useProxy);
+		} catch (Exception e) {}
 		
 		exitCmd = new Command("Exit", Command.EXIT, 2);
 		backCmd = new Command("Back", Command.BACK, 2);
@@ -105,7 +117,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		Form f = new Form("GitHub");
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
-		f.addCommand(aboutCmd);
+//		f.addCommand(aboutCmd);
+		f.setCommandListener(this);
 		
 		field = new TextField("user or user/repo", "", 200, TextField.ANY);
 		field.addCommand(goCmd);
@@ -137,6 +150,48 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				start(RUN_LOAD_FORM, f);
 				return;
 			}
+			if (c == settingsCmd) {
+				if (settingsForm == null) {
+					Form f = new Form("Settings");
+					f.addCommand(backCmd);
+					f.setCommandListener(this);
+					
+					proxyField = new TextField("Proxy URL", proxyUrl, 200, TextField.NON_PREDICTIVE);
+					f.append(proxyField);
+					
+					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] { "Use proxy" }, null);
+					proxyChoice.setSelectedIndex(0, useProxy);
+					f.append(proxyChoice);
+					
+					settingsForm = f;
+				}
+				display(settingsForm);
+				return;
+			}
+		}
+		if (d == settingsForm) {
+			if (c == backCmd) {
+				proxyUrl = proxyField.getString();
+				useProxy = proxyChoice.isSelected(0);
+				
+				try {
+					RecordStore.deleteRecordStore(SETTINGS_RECORDNAME);
+				} catch (Exception e) {}
+				try {
+					JSONObject j = new JSONObject();
+					j.put("proxy", proxyUrl);
+					j.put("useProxy", useProxy);
+					
+					byte[] b = j.toString().getBytes("UTF-8");
+					RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
+					r.addRecord(b, 0, b.length);
+					r.closeRecordStore();
+				} catch (Exception e) {}
+				
+				display(mainForm, true);
+				return;
+			}
+			return;
 		}
 		if (c == ownerCmd) {
 			String url = ((RepoForm) d).url;
@@ -562,7 +617,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	void browse(String url) {
 		try {
-			if (platformRequest(url)) notifyDestroyed();
+			if (platformRequest(proxyUrl(url))) notifyDestroyed();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

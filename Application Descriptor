@@ -1,7 +1,7 @@
 MIDlet-Vendor: nnproject
-MIDlet-Version: 0.1.0
+MIDlet-Version: 0.1.1
 MicroEdition-Configuration: CLDC-1.1
-MIDlet-1: GH,,GH
+MIDlet-1: GitHub,,GH
 MIDlet-Name: GitHub
 MicroEdition-Profile: MIDP-2.0
 MIDlet-Jar-URL: GitHub.jar
