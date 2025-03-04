@@ -25,7 +25,8 @@ import javax.microedition.lcdui.StringItem;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
-public class UsersForm extends PagedForm  {
+// list of users (stargazers, followers, etc.)
+public class UsersForm extends PagedForm {
 
 	String url;
 	boolean mini;

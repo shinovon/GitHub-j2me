@@ -38,8 +38,6 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Gauge;
-import javax.microedition.lcdui.Image;
-import javax.microedition.lcdui.ImageItem;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.StringItem;
@@ -68,6 +66,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	static final IllegalStateException cancelException = new IllegalStateException("cancel");
 
+	// midp lifecycle
 	private static Display display;
 	static GH midlet;
 
@@ -117,7 +116,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command saveBookmarkCmd;
 	
 	private static Command removeBookmarkCmd;
-	
+
+	static Command okCmd;
 	static Command cancelCmd;
 
 	// ui
@@ -125,8 +125,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Form settingsForm;
 	private static Vector formHistory = new Vector();
 
+	// main form items
 	private static TextField field;
 
+	// settings items
 	private static TextField proxyField;
 	private static ChoiceGroup proxyChoice;
 
@@ -141,6 +143,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		version = getAppProperty("MIDlet-Version");
 		display = Display.getDisplay(this);
 		
+		// load settings
+		
 		try {
 			RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, false);
 			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
@@ -149,6 +153,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			proxyUrl = j.getString("proxy", proxyUrl);
 			useProxy = j.getBoolean("useProxy", useProxy);
 		} catch (Exception e) {}
+		
+		// commands
 		
 		exitCmd = new Command("Exit", Command.EXIT, 2);
 		backCmd = new Command("Back", Command.BACK, 2);
@@ -183,7 +189,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		removeBookmarkCmd = new Command("Delete", Command.ITEM, 3);
 
+		okCmd = new Command("Ok", Command.OK, 1);
 		cancelCmd = new Command("Cancel", Command.CANCEL, 2);
+		
+		// init main form
 		
 		Form f = new Form("GitHub");
 		f.addCommand(exitCmd);
@@ -250,7 +259,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				StringItem s;
 				s = new StringItem(null, "unnamed github j2me client v" + version);
-				s.setFont(medfont);
+				s.setFont(largefont);
 				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_VCENTER | Item.LAYOUT_LEFT);
 				f.append(s);
 				
@@ -386,7 +395,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		{
 			if (c == reposCmd) {
 				String url = ((UserForm) d).user;
-				ReposForm f = new ReposForm("users/".concat(url).concat("/repos"), url + " - Repos", "pushed", false);
+				ReposForm f = new ReposForm("users/".concat(url).concat("/repos"), url + " - Repositories", "pushed", false);
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -429,6 +438,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				((PagedForm) display.getCurrent()).gotoPage(Integer.parseInt(((TextBox) d).getString()));
 				return;
 			}
+//			if (c == firstPageCmd) {
+//				((PagedForm) d).gotoPage(1);
+//			}
 		}
 		if (c == backCmd) {
 			if (formHistory.size() == 0) {
@@ -498,6 +510,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		commandAction(c, display.getCurrent());
 	}
 	
+	// threading
 	public void run() {
 		int run;
 		Object param;
@@ -509,7 +522,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		System.out.println("run " + run + " " + param);
 		running++;
 		switch (run) {
-		case RUN_LOAD_FORM: {
+		case RUN_LOAD_FORM: { // load GHForm contents
 			try {
 				((GHForm) param).load();
 			} catch (InterruptedException e) {
@@ -524,7 +537,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		running--;
 	}
-	
+
+	// start task thread
 	Thread start(int i, Object param) {
 		Thread t = null;
 		try {
@@ -568,6 +582,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (p instanceof GHForm) {
 			((GHForm) p).closed(back);
 		}
+		// push to history
 		if (!back && d != mainForm) {
 			formHistory.addElement(d);
 		}
@@ -740,7 +755,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return "%".concat(s.length() < 2 ? "0" : "").concat(s);
 	}
 	
-	// 0 - date, 1 - offset or date, 2 - offset only
+	// detailMode: 0 - date, 1 - offset or date, 2 - offset only
 	static String localizeDate(String date, int detailMode) {
 		long now = System.currentTimeMillis();
 		long t = parseDateGMT(date);
@@ -837,7 +852,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return c.getTime().getTime() + c.getTimeZone().getRawOffset() - parseTimeZone(date);
 	}
 	
-	// парсер даты ISO 8601 без учета часового пояса
+	// ISO 8601 format date parser without timezone counted
 	static Calendar parseDate(String date) {
 		Calendar c = Calendar.getInstance();
 		if (date.indexOf('T') != -1) {
@@ -887,20 +902,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		return c;
 	}
-	
-	// отрезать таймзону из даты
-	static String getTimeZoneStr(String date) {
-		int i = date.lastIndexOf('+');
-		if (i == -1 && date.lastIndexOf('Z') != -1)
-			return null;
-		if (i == -1)
-			i = date.lastIndexOf('-');
-		if (i == -1)
-			return null;
-		return date.substring(i);
-	}
 
-	// получение оффсета таймзоны даты в миллисекундах
+	// get timezone offset of date in milliseconds
 	static int parseTimeZone(String date) {
 		int i = date.lastIndexOf('+');
 		boolean m = false;

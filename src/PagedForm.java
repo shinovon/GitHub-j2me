@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import cc.nnproject.json.JSONArray;
 
+// base class for pagination
 public abstract class PagedForm extends GHForm {
 	
 	int perPage = 30;
@@ -59,7 +60,7 @@ public abstract class PagedForm extends GHForm {
 		this.title = title;
 	}
 	
-	// wrapper for pagination
+	// wrapped api request
 	JSONArray pagedApi(Thread thread, String url) throws IOException {
 		StringBuffer sb = new StringBuffer(url);
 		if (sb.charAt(url.length() - 1) != '?') {
@@ -91,6 +92,7 @@ public abstract class PagedForm extends GHForm {
 		
 		if (thread != this.thread) throw GH.cancelException;
 		
+		// add page number to title
 		sb.setLength(0);
 		if (!(page == 1 && page == last)) {
 			sb.append(" (").append(page).append('/').append(last).append(')');
@@ -98,6 +100,7 @@ public abstract class PagedForm extends GHForm {
 		
 		super.setTitle(title.concat(pageText = sb.toString()));
 		
+		// pagination commands
 		if (page != 1) {
 			addCommand(GH.prevPageCmd);
 		} else {

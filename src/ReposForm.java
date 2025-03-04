@@ -29,7 +29,7 @@ import javax.microedition.lcdui.StringItem;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
-// список репозиториев (форки, т.д)
+// list of repositories (forks, etc)
 public class ReposForm extends PagedForm implements ItemCommandListener  {
 
 	String url;
@@ -86,6 +86,15 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 			safeAppend(thread, s);
 			
 			if (!mini) {
+				if (j.getBoolean("fork", false)) {
+					s.setLayout(Item.LAYOUT_LEFT);
+					
+					s = new StringItem(null, " (Fork)"/*"Forked from " + j.getObject("parent").getString("full_name")*/);
+					s.setFont(GH.smallfont);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+					safeAppend(thread, s);
+				}
+				
 				if ((t = j.getString("description")) != null) {
 					s = new StringItem(null, t);
 					s.setFont(GH.smallfont);
