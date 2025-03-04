@@ -27,6 +27,7 @@ import cc.nnproject.json.JSONObject;
 public class RepoForm extends GHForm {
 
 	String url;
+	String defaultBranch;
 
 	public RepoForm(String url) {
 		super(url);
@@ -42,6 +43,8 @@ public class RepoForm extends GHForm {
 		
 		// cancel check
 		if (thread != this.thread) return;
+		
+		defaultBranch = r.getString("default_branch");
 		
 		StringItem s;
 		String t;
@@ -115,6 +118,12 @@ public class RepoForm extends GHForm {
 		
 		s = new StringItem(null, "Contributors", StringItem.BUTTON);
 		s.setDefaultCommand(GH.contribsCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+		
+		s = new StringItem(null, "Download ZIP", StringItem.BUTTON);
+		s.setDefaultCommand(GH.downloadCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);

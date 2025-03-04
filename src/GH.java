@@ -209,7 +209,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	public void commandAction(Command c, Displayable d) {
 		if (d == mainForm) {
 			if (c == goCmd) {
-				String url = field.getString().trim();
+				String url = field.getString().trim().toLowerCase();
 				if (url.startsWith("https://github.com/")) {
 					url = url.substring(19);
 				}
@@ -333,30 +333,34 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			if (c == forksCmd) {
 				String url = ((RepoForm) d).url;
-				ReposForm f = new ReposForm("repos/".concat(url).concat("/forks"), url + " - Forks", null, true);
+				ReposForm f = new ReposForm("repos/".concat(url).concat("/forks"), url.concat(" - Forks"), null, true);
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
 			}
 			if (c == contribsCmd) {
 				String url = ((RepoForm) d).url;
-				UsersForm f = new UsersForm("repos/".concat(url).concat("/contributors"), url + " - Contributors");
+				UsersForm f = new UsersForm("repos/".concat(url).concat("/contributors"), url.concat(" - Contributors"));
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
 			}
 			if (c == stargazersCmd) {
 				String url = ((RepoForm) d).url;
-				UsersForm f = new UsersForm("repos/".concat(url).concat("/stargazers"), url + " - Stargazers");
+				UsersForm f = new UsersForm("repos/".concat(url).concat("/stargazers"), url.concat(" - Stargazers"));
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
 			}
 			if (c == watchersCmd) {
 				String url = ((RepoForm) d).url;
-				UsersForm f = new UsersForm("repos/".concat(url).concat("/subscribers"), url + " - Watchers");
+				UsersForm f = new UsersForm("repos/".concat(url).concat("/subscribers"), url.concat(" - Watchers"));
 				display(f);
 				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == downloadCmd) {
+				browse(APIURL.concat("repos/").concat(((RepoForm) d).url).concat("/zipball/").concat(((RepoForm) d).defaultBranch));
 				return;
 			}
 		}
