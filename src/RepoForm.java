@@ -68,6 +68,12 @@ public class RepoForm extends GHForm {
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
+		
+		s = new StringItem(null, "Releases", StringItem.BUTTON);
+		s.setDefaultCommand(GH.releasesCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
 	}
 
 }
