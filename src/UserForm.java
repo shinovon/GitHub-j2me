@@ -13,8 +13,11 @@ public class UserForm extends GHForm {
 		addCommand(GH.reposCmd);
 	}
 
-	void loadInternal() throws Exception {
+	void loadInternal(Thread thread) throws Exception {
 		JSONObject r = (JSONObject) GH.api("users/".concat(user));
+
+		// cancel check
+		if (thread != this.thread) return;
 		
 		StringItem s;
 		String t;
@@ -31,14 +34,14 @@ public class UserForm extends GHForm {
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 
-		if ((t = r.getString("bio")) != null) {
+		if ((t = r.getString("bio")) != null && t.length() != 0) {
 			s = new StringItem(null, t);
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
 
-		if ((t = r.getString("blog")) != null) {
+		if ((t = r.getString("blog")) != null && t.length() != 0) {
 			s = new StringItem("Blog", t);
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);

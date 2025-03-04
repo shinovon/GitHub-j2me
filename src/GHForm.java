@@ -1,4 +1,5 @@
 import javax.microedition.lcdui.Form;
+import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.Ticker;
 
 public abstract class GHForm extends Form {
@@ -17,10 +18,9 @@ public abstract class GHForm extends Form {
 		loaded = true;
 		canceled = finished = false;
 		
-		thread = Thread.currentThread();
-		setTicker(new Ticker("Loading"));
+		setTicker(new Ticker("Loading.."));
 		try {
-			loadInternal();
+			loadInternal(thread = Thread.currentThread());
 			finished = true;
 		} finally {
 			setTicker(null);
@@ -32,10 +32,24 @@ public abstract class GHForm extends Form {
 		if (finished || thread == null) return;
 		canceled = true;
 		thread.interrupt();
+		thread = null;
 	}
 	
-	abstract void loadInternal() throws Exception;
+	// for use with PagedForm
+	void safeAppend(Thread thread, Item item) {
+		if (thread != this.thread) throw GH.cancelException;
+		append(item);
+	}
 	
-	void closed(boolean destroy) {}
+	void safeAppend(Thread thread, String item) {
+		if (thread != this.thread) throw GH.cancelException;
+		append(item);
+	}
+	
+	abstract void loadInternal(Thread thread) throws Exception;
+	
+	void closed(boolean destroy) {
+		if (destroy) cancel();
+	}
 
 }

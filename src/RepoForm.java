@@ -15,9 +15,12 @@ public class RepoForm extends GHForm {
 		addCommand(GH.forksCmd);
 	}
 
-	void loadInternal() throws Exception {
+	void loadInternal(Thread thread) throws Exception {
 		// TODO
 		JSONObject r = (JSONObject) GH.api("repos/".concat(url));
+		
+		// cancel check
+		if (thread != this.thread) return;
 		
 		StringItem s;
 		String t;

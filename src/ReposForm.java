@@ -14,24 +14,30 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 	String url;
 	Hashtable urls;
 	boolean users;
+	String sort;
+	boolean mini;
 
-	public ReposForm(String url, boolean users) {
+	public ReposForm(String url, String sort, boolean users) {
 		super("Repos " + url);
 		this.url = url;
 		this.users = users;
+		this.sort = sort;
 	}
 
-	void loadInternal() throws Exception {
-		// TODO
-		JSONArray r = (JSONArray) GH.api(url);
-//		append(r.toString());
-
+	void loadInternal(Thread thread) throws Exception {
+		deleteAll();
+		
+		JSONArray r = pagedApi(thread, sort != null ? url.concat("?sort=").concat(sort) : url.concat("?"));
 		int l = r.size();
 		
-		urls = new Hashtable();
-		
+		if (urls == null) {
+			urls = new Hashtable();
+		} else {
+			urls.clear();
+		}
 		StringItem s;
-		for (int i = 0; i < l; ++i) {
+		String t;
+		for (int i = 0; i < l && thread == this.thread; ++i) {
 			JSONObject j = r.getObject(i);
 
 			if (users) {
@@ -40,12 +46,12 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 				s.setDefaultCommand(GH.userCmd);
 				s.setItemCommandListener(GH.midlet);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
-				append(s);
+				safeAppend(thread, s);
 				
 				s = new StringItem(null, "/");
 				s.setFont(GH.medfont);
 				s.setLayout(Item.LAYOUT_LEFT);
-				append(s);
+				safeAppend(thread, s);
 			}
 			
 			s = new StringItem(null, users ? j.getString("name") : j.getString("full_name"));
@@ -56,7 +62,23 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 			s.setDefaultCommand(GH.openCmd);
 			s.setItemCommandListener(this);
 			urls.put(s, j.getString("full_name"));
-			append(s);
+			safeAppend(thread, s);
+			
+			if (!mini) {
+				if ((t = j.getString("language")) != null) {
+					s = new StringItem(null, t.concat(" "));
+					s.setFont(GH.smallfont);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+					safeAppend(thread, s);
+				}
+				
+				s = new StringItem(null, "Updated ".concat(GH.localizeDate(j.getString("pushed_at"), 1)));
+				s.setFont(GH.smallfont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+				safeAppend(thread, s);
+				
+				safeAppend(thread, "\n\n");
+			}
 		}
 	}
 

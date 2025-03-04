@@ -18,24 +18,25 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		this.url = url;
 	}
 
-	void loadInternal() throws Exception {
+	void loadInternal(Thread thread) throws Exception {
 		deleteAll();
-		StringBuffer sb = new StringBuffer("repos/");
-		sb.append(url).append("/releases?per_page").append(perPage).append("&page=").append(page);
 		
-		JSONArray r = (JSONArray) GH.api(sb.toString());
+		JSONArray r = pagedApi(thread, "repos/".concat(url).concat("/releases?"));
 		int l = r.size();
 		
-		urls = new Hashtable();
-		sb.setLength(0);
+		if (urls == null) {
+			urls = new Hashtable();
+		} else {
+			urls.clear();
+		}
 		StringItem s;
-		for (int i = 0; i < l; ++i) {
+		for (int i = 0; i < l && thread == this.thread; ++i) {
 			JSONObject j = r.getObject(i);
 			
 			s = new StringItem(null, j.getString("name", j.getString("tag_name")));
 			s.setFont(GH.largefont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-			append(s);
+			safeAppend(thread, s);
 			
 			GH.parseMarkdown(j.getString("body"), this);
 			
@@ -43,10 +44,10 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			JSONArray assets = j.getArray("assets");
 			int l2 = assets.size();
 					
-			s = new StringItem(null, "Assets (" + (l2 + 1) + ")");
+			s = new StringItem(null, "Assets (" + (l2 + 1) + "):");
 			s.setFont(GH.smallboldfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-			append(s);
+			safeAppend(thread, s);
 			
 			for (int k = 0; k < l2; ++k) {
 				JSONObject asset = assets.getObject(k);
@@ -58,7 +59,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				s.setDefaultCommand(GH.downloadCmd);
 				s.setItemCommandListener(this);
 				urls.put(s, asset.getString("browser_download_url"));
-				append(s);
+				safeAppend(thread, s);
 			}
 			
 			s = new StringItem(null, "Source code (zip)");
@@ -68,9 +69,9 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			s.setDefaultCommand(GH.downloadCmd);
 			s.setItemCommandListener(this);
 			urls.put(s, j.getString("zipball_url"));
-			append(s);
+			safeAppend(thread, s);
 			
-			append("\n\n");
+			safeAppend(thread, "\n\n");
 		}
 	}
 

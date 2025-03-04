@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
@@ -19,6 +20,7 @@ import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.StringItem;
+import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.rms.RecordStore;
@@ -40,6 +42,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final Font medfont = Font.getFont(0, 0, Font.SIZE_MEDIUM);
 	static final Font smallboldfont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_SMALL);
 	static final Font smallfont = Font.getFont(0, 0, Font.SIZE_SMALL);
+
+	static final IllegalStateException cancelException = new IllegalStateException("cancel");
 
 	private static Display display;
 	static GH midlet;
@@ -71,6 +75,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command releasesCmd;
 	static Command forksCmd;
 	static Command reposCmd;
+	
+	static Command nextPageCmd;
+	static Command prevPageCmd;
+	static Command gotoPageCmd;
+	static Command gotoPageOkCmd;
+//	static Command firstPageCmd;
+//	static Command lastPageCmd;
+
+	static Command cancelCmd;
 
 	// ui
 	private static Form mainForm;
@@ -118,6 +131,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		forksCmd = new Command("Forks", Command.SCREEN, 5);
 		reposCmd = new Command("Repositories", Command.SCREEN, 5);
 		
+		nextPageCmd = new Command("Next page", Command.SCREEN, 6);
+		prevPageCmd = new Command("Prev. page", Command.SCREEN, 7);
+		gotoPageCmd = new Command("Go to page...", Command.SCREEN, 8);
+		gotoPageOkCmd = new Command("Go", Command.OK, 1);
+
+		cancelCmd = new Command("Cancel", Command.CANCEL, 2);
+		
 		Form f = new Form("GitHub");
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
@@ -144,6 +164,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (d == mainForm) {
 			if (c == goCmd) {
 				String url = field.getString();
+				if (url.startsWith("https://github.com/")) {
+					url = url.substring(19);
+				}
 				GHForm f;
 				if (url.indexOf('/') == -1) {
 					f = new UserForm(url);
@@ -197,36 +220,62 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			return;
 		}
-		if (c == ownerCmd) {
-			String url = ((RepoForm) d).url;
-			url = url.substring(0, url.indexOf('/'));
-			
-			UserForm f = getUserForm(url);
-			
-			if (f == null) {
-				f = new UserForm(url);
+		{ // RepoForm commands
+			if (c == ownerCmd) {
+				String url = ((RepoForm) d).url;
+				url = url.substring(0, url.indexOf('/'));
+				
+				UserForm f = getUserForm(url);
+				
+				if (f == null) {
+					f = new UserForm(url);
+				}
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
 			}
-			display(f);
-			start(RUN_LOAD_FORM, f);
-			return;
+			if (c == releasesCmd) {
+				ReleasesForm f = new ReleasesForm(((RepoForm) d).url);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == forksCmd) {
+				ReposForm f = new ReposForm("repos/".concat(((RepoForm) d).url).concat("/forks"), null, true);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
 		}
-		if (c == releasesCmd) {
-			ReleasesForm f = new ReleasesForm(((RepoForm) d).url);
-			display(f);
-			start(RUN_LOAD_FORM, f);
-			return;
-		}
+		// UserForm commands
 		if (c == reposCmd) {
-			ReposForm f = new ReposForm("users/".concat(((UserForm) d).user).concat("/repos"), false);
+			ReposForm f = new ReposForm("users/".concat(((UserForm) d).user).concat("/repos"), "pushed", false);
 			display(f);
 			start(RUN_LOAD_FORM, f);
 			return;
 		}
-		if (c == forksCmd) {
-			ReposForm f = new ReposForm("repos/".concat(((RepoForm) d).url).concat("/forks"), true);
-			display(f);
-			start(RUN_LOAD_FORM, f);
-			return;
+		// PagedForm commands
+		{
+			if (c == nextPageCmd) {
+				((PagedForm) d).nextPage();
+				return;
+			}
+			if (c == prevPageCmd) {
+				((PagedForm) d).prevPage();
+				return;
+			}
+			if (c == gotoPageCmd) {
+				TextBox t = new TextBox("Go to page", "", 10, TextField.NUMERIC);
+				t.addCommand(gotoPageOkCmd);
+				t.addCommand(cancelCmd);
+				t.setCommandListener(this);
+				display(t);
+				return;
+			}
+			if (c == gotoPageOkCmd) {
+				((PagedForm) d).gotoPage(Integer.parseInt(((TextBox) d).getString()));
+				return;
+			}
 		}
 		if (c == backCmd) {
 			if (formHistory.size() == 0) {
@@ -304,10 +353,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		switch (run) {
 		case RUN_LOAD_FORM: {
 			try {
-				((GHForm) param).loadInternal();
+				((GHForm) param).load();
 			} catch (InterruptedException e) {
 			} catch (InterruptedIOException e) {
 			} catch (Exception e) {
+				if (e == cancelException) break;
 				display(errorAlert(e.toString()), (Displayable) param);
 				e.printStackTrace();
 			}
@@ -391,6 +441,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 	
 	static Object api(String url) throws IOException {
+		return api(url, null);
+	}
+	
+	static Object api(String url, String[] linkPtr) throws IOException {
 		Object res;
 
 		HttpConnection hc = null;
@@ -405,6 +459,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
 			if (c >= 400) {
 				throw new APIException(url, c, res);
+			}
+			if (linkPtr != null) {
+				linkPtr[0] = hc.getHeaderField("link");
 			}
 		} finally {
 			if (in != null) try {
@@ -525,6 +582,85 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return "%".concat(s.length() < 2 ? "0" : "").concat(s);
 	}
 	
+	// 0 - date, 1 - offset or date, 2 - offset only
+	static String localizeDate(String date, int detailMode) {
+		long now = System.currentTimeMillis();
+		long t = parseDateGMT(date);
+		long d = (now - t) / 1000L;
+		boolean ru = false;
+		
+		if (detailMode != 0) {
+			if (d < 5) {
+				return "just now";
+			}
+			
+			if (d < 60) {
+				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
+					return Integer.toString((int) d).concat(" second ago");
+//				if (ru && (d % 10 > 4 || d % 10 < 2))
+//					return Integer.toString((int) d).concat(L[SecondsAgo2]);
+				return Integer.toString((int) d).concat(" seconds ago");
+			}
+			
+			if (d < 60 * 60) {
+				d /= 60L;
+				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
+					return Integer.toString((int) d).concat(" minute ago");
+//				if (ru && (d % 10 > 4 || d % 10 < 2))
+//					return Integer.toString((int) d).concat(L[MinutesAgo2]);
+				return Integer.toString((int) d).concat(" minutes ago");
+			}
+			
+			if (d < 24 * 60 * 60) {
+				d /= 60 * 60L;
+				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
+					return Integer.toString((int) d).concat(" hour ago");
+//				if (ru && (d % 10 > 4 || d % 10 < 2))
+//					return Integer.toString((int) d).concat(L[HoursAgo2]);
+				return Integer.toString((int) d).concat(" hours ago");
+			}
+			
+			if (d < 30 * 24 * 60 * 60) {
+				d /= 24 * 60 * 60L;
+				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
+					return Integer.toString((int) d).concat(" day ago");
+//				if (ru && (d % 10 > 4 || d % 10 < 2))
+//					return Integer.toString((int) d).concat(L[DaysAgo2]);
+				return Integer.toString((int) d).concat(" days ago");
+			}
+			
+			if (d < 365 * 24 * 60 * 60) {
+				d /= 30 * 24 * 60 * 60L;
+				if (d == 1)
+					return Integer.toString((int) d).concat(" month ago");
+//				if (ru && (d % 10 > 4 || d % 10 < 2))
+//					return Integer.toString((int) d).concat(L[MonthsAgo2]);
+				return Integer.toString((int) d).concat(" months ago");
+			}
+	
+			if (detailMode == 1) {
+				d /= 365 * 24 * 60 * 60L;
+				if (d == 1) return Integer.toString((int) d).concat(" year ago");
+//				if (ru && (d % 10 > 4 || d % 10 < 2))
+//					return Integer.toString((int) d).concat(L[YearsAgo2]);
+				return Integer.toString((int) d).concat(" years ago");
+			}
+		}
+		
+		Calendar c = Calendar.getInstance();
+		int currentYear = c.get(Calendar.YEAR);
+		c.setTime(new Date(t));
+		
+		StringBuffer sb = new StringBuffer(localizeMonth(c.get(Calendar.MONTH)));
+		sb.append(' ').append(c.get(Calendar.DAY_OF_MONTH));
+		int year = c.get(Calendar.YEAR);
+		if (year != currentYear) {
+			sb.append(", ").append(year);
+		}
+		
+		return sb.toString();
+	}
+	
 	static long parseDateGMT(String date) {
 		Calendar c = parseDate(date);
 		return c.getTime().getTime() + c.getTimeZone().getRawOffset() - parseTimeZone(date);
@@ -584,6 +720,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// отрезать таймзону из даты
 	static String getTimeZoneStr(String date) {
 		int i = date.lastIndexOf('+');
+		if (i == -1 && date.lastIndexOf('Z') != -1)
+			return null;
 		if (i == -1)
 			i = date.lastIndexOf('-');
 		if (i == -1)
@@ -595,6 +733,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static int parseTimeZone(String date) {
 		int i = date.lastIndexOf('+');
 		boolean m = false;
+		if (i == -1 && date.lastIndexOf('Z') != -1)
+			return 0;
 		if (i == -1) {
 			i = date.lastIndexOf('-');
 			m = true;
@@ -615,6 +755,37 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					(Integer.parseInt(date.substring(offset + 1)) * 60000);
 		}
 		return m ? -offset : offset;
+	}
+	
+	static String localizeMonth(int month) {
+		switch(month) {
+		case Calendar.JANUARY:
+			return "Jan";
+		case Calendar.FEBRUARY:
+			return "Feb";
+		case Calendar.MARCH:
+			return "Mar";
+		case Calendar.APRIL:
+			return "Apr";
+		case Calendar.MAY:
+			return "May";
+		case Calendar.JUNE:
+			return "Jun";
+		case Calendar.JULY:
+			return "Jul";
+		case Calendar.AUGUST:
+			return "Aug";
+		case Calendar.SEPTEMBER:
+			return "Sep";
+		case Calendar.OCTOBER:
+			return "Oct";
+		case Calendar.NOVEMBER:
+			return "Nov";
+		case Calendar.DECEMBER:
+			return "Dec";
+		default:
+			return "";
+		}
 	}
 	
 	static String n(int n) {
