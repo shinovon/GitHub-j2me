@@ -4,6 +4,7 @@ import java.io.InterruptedIOException;
 import java.util.Calendar;
 import java.util.Vector;
 
+import javax.microedition.io.ConnectionNotFoundException;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 import javax.microedition.lcdui.Alert;
@@ -62,6 +63,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Command aboutCmd;
 	
 	private static Command goCmd;
+	static Command downloadCmd;
 	
 	static Command ownerCmd;
 	static Command releasesCmd;
@@ -91,6 +93,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		aboutCmd = new Command("About", Command.SCREEN, 4);
 		
 		goCmd = new Command("Go", Command.ITEM, 1);
+		downloadCmd = new Command("Download", Command.ITEM, 1);
 		
 		ownerCmd = new Command("Owner", Command.SCREEN, 4);
 		releasesCmd = new Command("Releases", Command.SCREEN, 3);
@@ -333,7 +336,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 	
 	private static String proxyUrl(String url) {
-//		System.out.println(url);
+		System.out.println(url);
 		if (url == null
 				|| (!useProxy && url.indexOf(";tw=") == -1)
 				|| proxyUrl == null || proxyUrl.length() == 0 || "https://".equals(proxyUrl)) {
@@ -553,6 +556,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		String[] r = new String[v.size()];
 		v.copyInto(r);
 		return r;
+	}
+
+	void browse(String url) {
+		try {
+			if (platformRequest(url)) notifyDestroyed();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }

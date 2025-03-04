@@ -3,7 +3,7 @@ import javax.microedition.lcdui.Ticker;
 
 public abstract class GHForm extends Form {
 	
-	boolean loaded, finished;
+	boolean loaded, finished, canceled;
 	Thread thread;
 
 	public GHForm(String title) {
@@ -15,7 +15,7 @@ public abstract class GHForm extends Form {
 	void load() throws Exception {
 		if (loaded) return;
 		loaded = true;
-		finished = false;
+		canceled = finished = false;
 		
 		thread = Thread.currentThread();
 		setTicker(new Ticker("Loading"));
@@ -30,6 +30,7 @@ public abstract class GHForm extends Form {
 	
 	void cancel() {
 		if (finished || thread == null) return;
+		canceled = true;
 		thread.interrupt();
 	}
 	
