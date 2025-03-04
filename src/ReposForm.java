@@ -13,10 +13,12 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 
 	String url;
 	Hashtable urls;
+	boolean users;
 
-	public ReposForm(String url) {
+	public ReposForm(String url, boolean users) {
 		super("Repos " + url);
 		this.url = url;
+		this.users = users;
 	}
 
 	void loadInternal() throws Exception {
@@ -31,11 +33,26 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 		StringItem s;
 		for (int i = 0; i < l; ++i) {
 			JSONObject j = r.getObject(i);
+
+			if (users) {
+				s = new StringItem(null, j.getObject("owner").getString("login"));
+				s.setFont(GH.medfont);
+				s.setDefaultCommand(GH.userCmd);
+				s.setItemCommandListener(GH.midlet);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+				append(s);
+				
+				s = new StringItem(null, "/");
+				s.setFont(GH.medfont);
+				s.setLayout(Item.LAYOUT_LEFT);
+				append(s);
+			}
 			
-			s = new StringItem(null, j.getString("full_name"));
+			s = new StringItem(null, users ? j.getString("name") : j.getString("full_name"));
 			s.setFont(GH.medfont);
-			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 			s.addCommand(GH.openCmd);
+			if (!users) s.addCommand(GH.userCmd);
 			s.setDefaultCommand(GH.openCmd);
 			s.setItemCommandListener(this);
 			urls.put(s, j.getString("full_name"));

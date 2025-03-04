@@ -22,9 +22,21 @@ public class RepoForm extends GHForm {
 		StringItem s;
 		String t;
 		
-		s = new StringItem(null, r.getString("full_name"));
+		s = new StringItem(null, r.getObject("owner").getString("login"));
 		s.setFont(GH.medfont);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		s.setDefaultCommand(GH.userCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+		
+		s = new StringItem(null, "/");
+		s.setFont(GH.medfont);
+		s.setLayout(Item.LAYOUT_LEFT);
+		append(s);
+		
+		s = new StringItem(null, r.getString("name"));
+		s.setFont(GH.medfont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 		append(s);
 
 		if ((t = r.getString("description")) != null) {
@@ -49,6 +61,13 @@ public class RepoForm extends GHForm {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
+		
+		s = new StringItem(null, r.getString("forks") + " forks");
+		s.setFont(GH.smallfont);
+		s.setDefaultCommand(GH.forksCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
 	}
 
 }

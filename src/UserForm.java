@@ -54,6 +54,8 @@ public class UserForm extends GHForm {
 		
 		s = new StringItem(null, r.getString("public_repos") + " repositories");
 		s.setFont(GH.smallfont);
+		s.setDefaultCommand(GH.reposCmd);
+		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 	}

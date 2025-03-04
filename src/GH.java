@@ -65,6 +65,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command downloadCmd;
 	static Command openCmd;
 	static Command linkCmd;
+	static Command userCmd;
 	
 	static Command ownerCmd;
 	static Command releasesCmd;
@@ -110,6 +111,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		downloadCmd = new Command("Download", Command.ITEM, 1);
 		openCmd = new Command("Open", Command.ITEM, 1);
 		linkCmd = new Command("Open", Command.ITEM, 1);
+		userCmd = new Command("View user", Command.ITEM, 1);
 		
 		ownerCmd = new Command("Owner", Command.SCREEN, 4);
 		releasesCmd = new Command("Releases", Command.SCREEN, 3);
@@ -199,18 +201,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			String url = ((RepoForm) d).url;
 			url = url.substring(0, url.indexOf('/'));
 			
-			UserForm f = null;
-			// search in previous screens
-			synchronized (formHistory) {
-				int l = formHistory.size();
-				for (int i = 0; i < l; ++i) {
-					Object o = formHistory.elementAt(i);
-					if (!(o instanceof UserForm) || !url.equals(((UserForm) o).user)) {
-						break;
-					}
-					f = (UserForm) o;
-				}
-			}
+			UserForm f = getUserForm(url);
+			
 			if (f == null) {
 				f = new UserForm(url);
 			}
@@ -225,13 +217,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		if (c == reposCmd) {
-			ReposForm f = new ReposForm("users/".concat(((UserForm) d).user).concat("/repos"));
+			ReposForm f = new ReposForm("users/".concat(((UserForm) d).user).concat("/repos"), false);
 			display(f);
 			start(RUN_LOAD_FORM, f);
 			return;
 		}
 		if (c == forksCmd) {
-			ReposForm f = new ReposForm("repos/".concat(((RepoForm) d).url).concat("/forks"));
+			ReposForm f = new ReposForm("repos/".concat(((RepoForm) d).url).concat("/forks"), true);
 			display(f);
 			start(RUN_LOAD_FORM, f);
 			return;
@@ -262,9 +254,37 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
+	private UserForm getUserForm(String url) {
+		UserForm f = null;
+		// search in previous screens
+		synchronized (formHistory) {
+			int l = formHistory.size();
+			for (int i = 0; i < l; ++i) {
+				Object o = formHistory.elementAt(i);
+				if (!(o instanceof UserForm) || !url.equals(((UserForm) o).user)) {
+					break;
+				}
+				f = (UserForm) o;
+			}
+		}
+		return f;
+	}
+
 	public void commandAction(Command c, Item item) {
 		if (c == linkCmd) {
 			browse(((StringItem) item).getText());
+			return;
+		}
+		if (c == userCmd) {
+			String url = ((StringItem) item).getText();
+			int i;
+			if ((i = url.indexOf('/')) != -1) {
+				url = url.substring(0, i);
+			}
+			
+			UserForm f = new UserForm(url);
+			display(f);
+			start(RUN_LOAD_FORM, f);
 			return;
 		}
 		commandAction(c, display.getCurrent());
@@ -394,7 +414,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				hc.close();
 			} catch (IOException e) {}
 		}
-		System.out.println(res);
+//		System.out.println(res);
 		return res;
 	}
 	
