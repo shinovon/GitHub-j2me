@@ -91,11 +91,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command openCmd;
 	static Command linkCmd;
 	static Command userCmd;
+	static Command spoilerCmd;
 	
 	static Command ownerCmd;
 	static Command releasesCmd;
 	static Command forksCmd;
 	static Command reposCmd;
+	static Command contribsCmd;
+	static Command stargazersCmd;
+	static Command watchersCmd;
 	
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -146,11 +150,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		openCmd = new Command("Open", Command.ITEM, 1);
 		linkCmd = new Command("Open", Command.ITEM, 1);
 		userCmd = new Command("View user", Command.ITEM, 1);
+		spoilerCmd = new Command("Show", Command.ITEM, 1);
 		
 		ownerCmd = new Command("Owner", Command.SCREEN, 4);
 		releasesCmd = new Command("Releases", Command.SCREEN, 3);
 		forksCmd = new Command("Forks", Command.SCREEN, 5);
 		reposCmd = new Command("Repositories", Command.SCREEN, 5);
+		contribsCmd = new Command("Contributors", Command.ITEM, 1);
+		stargazersCmd = new Command("Stargazers", Command.ITEM, 1);
+		watchersCmd = new Command("Watchers", Command.ITEM, 1);
 		
 		nextPageCmd = new Command("Next page", Command.SCREEN, 6);
 		prevPageCmd = new Command("Prev. page", Command.SCREEN, 7);
@@ -264,6 +272,27 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (c == forksCmd) {
 				String url = ((RepoForm) d).url;
 				ReposForm f = new ReposForm("repos/".concat(url).concat("/forks"), url + " - Forks", null, true);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == contribsCmd) {
+				String url = ((RepoForm) d).url;
+				UsersForm f = new UsersForm("repos/".concat(url).concat("/contributors"), url + " - Contributors");
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == stargazersCmd) {
+				String url = ((RepoForm) d).url;
+				UsersForm f = new UsersForm("repos/".concat(url).concat("/stargazers"), url + " - Stargazers");
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == watchersCmd) {
+				String url = ((RepoForm) d).url;
+				UsersForm f = new UsersForm("repos/".concat(url).concat("/subscribers"), url + " - Watchers");
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;

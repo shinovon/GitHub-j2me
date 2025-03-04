@@ -86,6 +86,20 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 		
+		s = new StringItem(null, r.getString("stargazers_count") + " stars");
+		s.setFont(GH.smallfont);
+		s.setDefaultCommand(GH.stargazersCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+		
+		s = new StringItem(null, r.getString("subscribers_count") + " watching");
+		s.setFont(GH.smallfont);
+		s.setDefaultCommand(GH.watchersCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+		
 		s = new StringItem(null, r.getString("forks") + " forks");
 		s.setFont(GH.smallfont);
 		s.setDefaultCommand(GH.forksCmd);
@@ -95,6 +109,12 @@ public class RepoForm extends GHForm {
 		
 		s = new StringItem(null, "Releases", StringItem.BUTTON);
 		s.setDefaultCommand(GH.releasesCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+		
+		s = new StringItem(null, "Contributors", StringItem.BUTTON);
+		s.setDefaultCommand(GH.contribsCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);

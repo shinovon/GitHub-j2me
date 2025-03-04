@@ -92,7 +92,9 @@ public abstract class PagedForm extends GHForm {
 		if (thread != this.thread) throw GH.cancelException;
 		
 		sb.setLength(0);
-		sb.append(" (").append(page).append('/').append(last).append(')');
+		if (!(page == 1 && page == last)) {
+			sb.append(" (").append(page).append('/').append(last).append(')');
+		}
 		
 		super.setTitle(title.concat(pageText = sb.toString()));
 		
