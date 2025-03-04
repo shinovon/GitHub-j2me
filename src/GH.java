@@ -64,6 +64,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Command goCmd;
 	static Command downloadCmd;
 	static Command openCmd;
+	static Command linkCmd;
 	
 	static Command ownerCmd;
 	static Command releasesCmd;
@@ -108,6 +109,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		goCmd = new Command("Go", Command.ITEM, 1);
 		downloadCmd = new Command("Download", Command.ITEM, 1);
 		openCmd = new Command("Open", Command.ITEM, 1);
+		linkCmd = new Command("Open", Command.ITEM, 1);
 		
 		ownerCmd = new Command("Owner", Command.SCREEN, 4);
 		releasesCmd = new Command("Releases", Command.SCREEN, 3);
@@ -261,6 +263,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 
 	public void commandAction(Command c, Item item) {
+		if (c == linkCmd) {
+			browse(((StringItem) item).getText());
+			return;
+		}
 		commandAction(c, display.getCurrent());
 	}
 	
@@ -617,7 +623,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	void browse(String url) {
 		try {
-			if (platformRequest(proxyUrl(url))) notifyDestroyed();
+			if (url.startsWith("https://github.com")) url = proxyUrl(url);
+			if (platformRequest(url)) notifyDestroyed();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -27,7 +27,6 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		int l = r.size();
 		
 		urls = new Hashtable();
-		
 		sb.setLength(0);
 		StringItem s;
 		for (int i = 0; i < l; ++i) {
