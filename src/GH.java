@@ -591,7 +591,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		if (detailMode != 0) {
 			if (d < 5) {
-				return "just now";
+				return "now";
 			}
 			
 			if (d < 60) {
@@ -620,25 +620,38 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return Integer.toString((int) d).concat(" hours ago");
 			}
 			
-			if (d < 30 * 24 * 60 * 60) {
+			if (d < 7 * 24 * 60 * 60) {
 				d /= 24 * 60 * 60L;
-				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
-					return Integer.toString((int) d).concat(" day ago");
+				if (d == 1)
+					return "yesterday";
+//				if (ru && d % 10 == 1 && d % 100 != 11)
+//					return Integer.toString((int) d).concat(" day ago");
 //				if (ru && (d % 10 > 4 || d % 10 < 2))
 //					return Integer.toString((int) d).concat(L[DaysAgo2]);
 				return Integer.toString((int) d).concat(" days ago");
 			}
-			
-			if (d < 365 * 24 * 60 * 60) {
-				d /= 30 * 24 * 60 * 60L;
+
+			if (d < 28 * 24 * 60 * 60) {
+				d /= 7 * 24 * 60 * 60L;
 				if (d == 1)
-					return Integer.toString((int) d).concat(" month ago");
+					return "last week";
+//				if (ru && d % 10 == 1 && d % 100 != 11)
+//					return Integer.toString((int) d).concat(" week ago");
 //				if (ru && (d % 10 > 4 || d % 10 < 2))
-//					return Integer.toString((int) d).concat(L[MonthsAgo2]);
-				return Integer.toString((int) d).concat(" months ago");
+//					return Integer.toString((int) d).concat(L[DaysAgo2]);
+				return Integer.toString((int) d).concat(" weeks ago");
 			}
-	
-			if (detailMode == 1) {
+			
+			if (detailMode != 1) {
+				if (d < 365 * 24 * 60 * 60) {
+					d /= 30 * 24 * 60 * 60L;
+					if (d == 1)
+						return Integer.toString((int) d).concat(" month ago");
+	//				if (ru && (d % 10 > 4 || d % 10 < 2))
+	//					return Integer.toString((int) d).concat(L[MonthsAgo2]);
+					return Integer.toString((int) d).concat(" months ago");
+				}
+				
 				d /= 365 * 24 * 60 * 60L;
 				if (d == 1) return Integer.toString((int) d).concat(" year ago");
 //				if (ru && (d % 10 > 4 || d % 10 < 2))
