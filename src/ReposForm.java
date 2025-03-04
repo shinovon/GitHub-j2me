@@ -75,7 +75,7 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 				safeAppend(thread, s);
 			}
 			
-			s = new StringItem(null, users ? j.getString("name") : j.getString("full_name"));
+			s = new StringItem(null, j.getString("name"));
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 			s.addCommand(GH.openCmd);
@@ -86,19 +86,26 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 			safeAppend(thread, s);
 			
 			if (!mini) {
-				if ((t = j.getString("language")) != null) {
-					s = new StringItem(null, t.concat(" "));
+				if ((t = j.getString("description")) != null) {
+					s = new StringItem(null, t);
 					s.setFont(GH.smallfont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 					safeAppend(thread, s);
 				}
 				
-				s = new StringItem(null, "Updated ".concat(GH.localizeDate(j.getString("pushed_at"), 1)));
+			
+				if ((t = j.getString("language")) != null) {
+					s = new StringItem(null, t);
+					s.setFont(GH.smallfont);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+					safeAppend(thread, s);
+				}
+				
+				s = new StringItem(null, " Updated ".concat(GH.localizeDate(j.getString("pushed_at"), 1)));
 				s.setFont(GH.smallfont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 				safeAppend(thread, s);
-				
-				safeAppend(thread, "\n\n");
+				safeAppend(thread, "\n");
 			}
 		}
 	}
