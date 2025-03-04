@@ -1,5 +1,5 @@
 MIDlet-Vendor: nnproject
-MIDlet-Version: 0.3.3
+MIDlet-Version: 0.3.4
 MicroEdition-Configuration: CLDC-1.1
 MIDlet-1: GitHub,,GH
 MIDlet-Name: GitHub

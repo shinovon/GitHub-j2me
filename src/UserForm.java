@@ -71,9 +71,18 @@ public class UserForm extends GHForm {
 			append(s);
 		}
 		
-		s = new StringItem(null, r.getString("followers") + " followers, " + r.getString("following") + " following");
+		s = new StringItem(null, r.getString("followers").concat(" followers,"));
 		s.setFont(GH.smallfont);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+		s.setDefaultCommand(GH.followersCmd);
+		s.setItemCommandListener(GH.midlet);
+		append(s);
+		
+		s = new StringItem(null, " " + r.getString("following") + " following");
+		s.setFont(GH.smallfont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER );
+		s.setDefaultCommand(GH.followingCmd);
+		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
 		s = new StringItem(null, r.getString("public_repos") + " repositories");

@@ -85,6 +85,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command backCmd;
 	private static Command settingsCmd;
 	private static Command aboutCmd;
+	private static Command bookmarksCmd;
 	
 	private static Command goCmd;
 	static Command downloadCmd;
@@ -100,6 +101,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command contribsCmd;
 	static Command stargazersCmd;
 	static Command watchersCmd;
+	static Command followersCmd;
+	static Command followingCmd;
 	
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -108,6 +111,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //	static Command firstPageCmd;
 //	static Command lastPageCmd;
 
+	static Command saveBookmarkCmd;
+	
+	private static Command removeBookmarkCmd;
+	
 	static Command cancelCmd;
 
 	// ui
@@ -142,8 +149,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		exitCmd = new Command("Exit", Command.EXIT, 2);
 		backCmd = new Command("Back", Command.BACK, 2);
-		settingsCmd = new Command("Settings", Command.SCREEN, 3);
-		aboutCmd = new Command("About", Command.SCREEN, 4);
+		bookmarksCmd = new Command("Bookmarks", Command.SCREEN, 3);
+		settingsCmd = new Command("Settings", Command.SCREEN, 4);
+		aboutCmd = new Command("About", Command.SCREEN, 5);
 		
 		goCmd = new Command("Go", Command.ITEM, 1);
 		downloadCmd = new Command("Download", Command.ITEM, 1);
@@ -159,11 +167,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		contribsCmd = new Command("Contributors", Command.ITEM, 1);
 		stargazersCmd = new Command("Stargazers", Command.ITEM, 1);
 		watchersCmd = new Command("Watchers", Command.ITEM, 1);
+		followersCmd = new Command("Followers", Command.ITEM, 1);
+		followingCmd = new Command("Following", Command.ITEM, 1);
 		
 		nextPageCmd = new Command("Next page", Command.SCREEN, 6);
 		prevPageCmd = new Command("Prev. page", Command.SCREEN, 7);
 		gotoPageCmd = new Command("Go to page...", Command.SCREEN, 8);
 		gotoPageOkCmd = new Command("Go", Command.OK, 1);
+
+		saveBookmarkCmd = new Command("Save to bookmarks", Command.OK, 1);
+		
+		removeBookmarkCmd = new Command("Delete", Command.ITEM, 3);
 
 		cancelCmd = new Command("Cancel", Command.CANCEL, 2);
 		
@@ -171,6 +185,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
 //		f.addCommand(aboutCmd);
+//		f.addCommand(bookmarksCmd);
 		f.setCommandListener(this);
 		
 		field = new TextField("user or user/repo", "", 200, TextField.ANY);
@@ -222,6 +237,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					settingsForm = f;
 				}
 				display(settingsForm);
+				return;
+			}
+			if (c == aboutCmd) {
+				// TODO
+				return;
+			}
+			if (c == bookmarksCmd) {
+				// TODO
 				return;
 			}
 		}
@@ -299,12 +322,28 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		}
 		// UserForm commands
-		if (c == reposCmd) {
-			String url = ((UserForm) d).user;
-			ReposForm f = new ReposForm("users/".concat(url).concat("/repos"), url + " - Repos", "pushed", false);
-			display(f);
-			start(RUN_LOAD_FORM, f);
-			return;
+		{
+			if (c == reposCmd) {
+				String url = ((UserForm) d).user;
+				ReposForm f = new ReposForm("users/".concat(url).concat("/repos"), url + " - Repos", "pushed", false);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == followersCmd) {
+				String url = ((UserForm) d).user;
+				UsersForm f = new UsersForm("users/".concat(url).concat("/followers"), url + " - Followers");
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == followingCmd) {
+				String url = ((UserForm) d).user;
+				UsersForm f = new UsersForm("users/".concat(url).concat("/following"), url + " - Following");
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
 		}
 		// PagedForm commands
 		{
@@ -399,7 +438,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			param = GH.runParam;
 			notify();
 		}
-//		System.out.println("run ".concat(n(run)));
 		System.out.println("run " + run + " " + param);
 		running++;
 		switch (run) {
