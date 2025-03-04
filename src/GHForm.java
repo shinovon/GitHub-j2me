@@ -67,6 +67,11 @@ public abstract class GHForm extends Form {
 		append(item);
 	}
 	
+	void safeInsert(Thread thread, int n, Item item) {
+		if (thread != this.thread) throw GH.cancelException;
+		insert(n, item);
+	}
+	
 	abstract void loadInternal(Thread thread) throws Exception;
 	
 	void closed(boolean destroy) {

@@ -36,6 +36,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 
 	public ReleasesForm(String url) {
 		super(url + " - Releases");
+		this.perPage = 10;
 		this.url = url;
 	}
 
@@ -51,6 +52,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			urls.clear();
 		}
 		StringItem s;
+		String t;
 		for (int i = 0; i < l && thread == this.thread; ++i) {
 			JSONObject j = r.getObject(i);
 			
@@ -59,9 +61,21 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
 			
-			GH.parseMarkdown(j.getString("body"), this);
+			if ((t = j.getString("body")).length() != 0) {
+				if (t.length() < 100 || i == 0) {
+					GH.parseMarkdown(thread, this, t, -1);
+				} else {
+					s = new StringItem(null, "Show text", Item.HYPERLINK);
+					s.setFont(GH.medfont);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+					s.setDefaultCommand(GH.spoilerCmd);
+					s.setItemCommandListener(this);
+	
+					urls.put(s, new Object[] { new Integer(size()), t});
+					safeAppend(thread, s);
+				}
+			}
 			
-
 			JSONArray assets = j.getArray("assets");
 			int l2 = assets.size();
 					
@@ -70,36 +84,99 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
 			
-			for (int k = 0; k < l2; ++k) {
-				JSONObject asset = assets.getObject(k);
-				
-				s = new StringItem(null, asset.getString("name") + " (" + asset.getString("size") + " bytes)");
+			if (i == 0) {
+				parseAssets(thread, assets, j.getString("zipball_url"), -1);
+			} else {
+				s = new StringItem(null, "Show assets", Item.HYPERLINK);
 				s.setFont(GH.medfont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-				s.addCommand(GH.downloadCmd);
-				s.setDefaultCommand(GH.downloadCmd);
+				s.setDefaultCommand(GH.spoilerCmd);
 				s.setItemCommandListener(this);
-				urls.put(s, asset.getString("browser_download_url"));
+
+				urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url")});
 				safeAppend(thread, s);
 			}
-			
-			s = new StringItem(null, "Source code (zip)");
-			s.setFont(GH.medfont);
-			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-			s.addCommand(GH.downloadCmd);
-			s.setDefaultCommand(GH.downloadCmd);
-			s.setItemCommandListener(this);
-			urls.put(s, j.getString("zipball_url"));
-			safeAppend(thread, s);
 			
 			safeAppend(thread, "\n\n");
 		}
 	}
 
+	private void parseAssets(Thread thread, JSONArray assets, String zipball, int i) {
+		StringItem s;
+		int l = assets.size();
+		
+		StringBuffer sb = new StringBuffer();
+		for (int k = 0; k < l; ++k) {
+			JSONObject asset = assets.getObject(k);
+			
+			sb.setLength(0);
+			sb.append(asset.getString("name")).append(" (");
+			int size = asset.getInt("size");
+			if (size < 1024) {
+				sb.append(size).append(" B");
+			} else if (size < 1024*1024) {
+				sb.append(((int) ((size / (1024D)) * 100)) / 100D).append(" KB");
+			} else if (size < 1024*1024*1024) {
+				sb.append(((int) ((size / (1024D * 1024D) * 100))) / 100D).append(" MB");
+			} else {
+				sb.append(((int) ((size / (1024D * 1024D * 1024D)) * 100)) / 100D).append(" MB");
+			}
+			sb.append(')');
+			
+			s = new StringItem(null, sb.toString());
+			s.setFont(GH.medfont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setDefaultCommand(GH.downloadCmd);
+			s.setItemCommandListener(this);
+			urls.put(s, asset.getString("browser_download_url"));
+			
+			if (i == -1) safeAppend(thread, s);
+			else safeInsert(thread, i + k, s);
+		}
+		
+		s = new StringItem(null, "Source code (zip)");
+		s.setFont(GH.medfont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		s.addCommand(GH.downloadCmd);
+		s.setDefaultCommand(GH.downloadCmd);
+		s.setItemCommandListener(this);
+		urls.put(s, zipball);
+		
+		if (i == -1) safeAppend(thread, s);
+		else safeInsert(thread, i + l, s);
+	}
+
 	public void commandAction(Command c, Item item) {
 		if (urls == null) return;
-		String url = (String) urls.get(item);
-		GH.midlet.browse(url);
+		if (c == GH.downloadCmd) {
+			String url = (String) urls.get(item);
+			GH.midlet.browse(url);
+			return;
+		}
+		if (c == GH.spoilerCmd) {
+			Object[] data = (Object[]) urls.get(item);
+			if (data == null) return;
+			
+			int i = ((Integer) data[0]).intValue();
+			int l = size();
+			do {
+				if (get(i) == item) break;
+			} while (++i < l);
+			if (i == l) return;
+			
+			super.delete(i);
+			urls.remove(item);
+			
+			if (data.length == 2) {
+				GH.parseMarkdown(null, this, (String) data[1], i);
+				return;
+			}
+			
+			try {
+				parseAssets(null, (JSONArray) data[1], (String) data[2], i);
+			} catch (Exception ignored) {}
+			return;
+		}
 	}
 
 }

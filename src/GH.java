@@ -886,13 +886,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
-	public static void parseMarkdown(String body, Form form) {
+	public static void parseMarkdown(Thread thread, GHForm form, String body, int i) {
 		// TODO
 		if (body.trim().length() == 0) return;
+		
 		StringItem s = new StringItem(null, body);
 		s.setFont(GH.medfont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		form.append(s);
+		
+		if (i == -1) form.safeAppend(thread, s);
+		else form.safeInsert(thread, i, s);
 	}
 
 }
