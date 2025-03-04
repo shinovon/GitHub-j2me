@@ -38,8 +38,8 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 	String sort;
 	boolean mini;
 
-	public ReposForm(String url, String sort, boolean users) {
-		super("Repos " + url);
+	public ReposForm(String url, String title, String sort, boolean users) {
+		super(title);
 		this.url = url;
 		this.users = users;
 		this.sort = sort;

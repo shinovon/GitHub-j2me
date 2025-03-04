@@ -184,7 +184,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	public void commandAction(Command c, Displayable d) {
 		if (d == mainForm) {
 			if (c == goCmd) {
-				String url = field.getString();
+				String url = field.getString().trim();
 				if (url.startsWith("https://github.com/")) {
 					url = url.substring(19);
 				}
@@ -262,7 +262,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == forksCmd) {
-				ReposForm f = new ReposForm("repos/".concat(((RepoForm) d).url).concat("/forks"), null, true);
+				String url = ((RepoForm) d).url;
+				ReposForm f = new ReposForm("repos/".concat(url).concat("/forks"), url + " - Forks", null, true);
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -270,7 +271,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		// UserForm commands
 		if (c == reposCmd) {
-			ReposForm f = new ReposForm("users/".concat(((UserForm) d).user).concat("/repos"), "pushed", false);
+			String url = ((UserForm) d).user;
+			ReposForm f = new ReposForm("users/".concat(url).concat("/repos"), url + " - Repos", "pushed", false);
 			display(f);
 			start(RUN_LOAD_FORM, f);
 			return;
