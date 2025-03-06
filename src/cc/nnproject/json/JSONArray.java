@@ -448,6 +448,46 @@ public class JSONArray {
 		return s.toString();
 	}
 
+	public String format(int l) {
+		int size = count;
+		if (size == 0)
+			return "[]";
+		String t = "";
+		for (int i = 0; i < l; i++) {
+			t = t.concat("  ");
+		}
+		String t2 = t.concat("  ");
+		StringBuffer s = new StringBuffer("[\n");
+		s.append(t2);
+		int i = 0;
+		while (i < size) {
+			Object v = elements[i];
+			if (v instanceof String[])
+				v = elements[i] = JSONObject.parseJSON(((String[]) v)[0]);
+			if (v instanceof JSONObject) {
+				s.append(((JSONObject) v).format(l + 1));
+			} else if (v instanceof JSONArray) {
+				s.append(((JSONArray) v).format(l + 1));
+			} else if (v instanceof String) {
+				s.append("\"").append(JSONObject.escape_utf8((String) v)).append("\"");
+			} else if (v == JSONObject.json_null) {
+				s.append((String) null);
+			} else {
+				s.append(v);
+			}
+			i++;
+			if (i < size) {
+				s.append(",\n").append(t2);
+			}
+		}
+		if (l > 0) {
+			s.append("\n").append(t).append("]");
+		} else {
+			s.append("\n]");
+		}
+		return s.toString();
+	}
+
 	public Enumeration elements() {
 		return new Enumeration() {
 			int i = 0;

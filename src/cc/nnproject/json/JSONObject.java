@@ -397,7 +397,7 @@ public class JSONObject {
 		if (text == null || text.length() <= 1)
 			throw new RuntimeException("JSON: Empty text");
 		if (text.charAt(0) != '{')
-			throw new RuntimeException("JSON: Not JSON object");
+			throw new RuntimeException("JSON: Not JSON object: " + text);
 		return (JSONObject) parseJSON(text);
 	}
 
@@ -422,7 +422,7 @@ public class JSONObject {
 		return obj;
 	}
 
-	public static Object parseJSON(String str) {
+	static Object parseJSON(String str) {
 		char first = str.charAt(0);
 		int length;
 		char last = str.charAt(length = str.length() - 1);
@@ -695,5 +695,48 @@ public class JSONObject {
 				return ((Double) o).longValue();
 		} catch (Throwable e) {}
 		throw new RuntimeException("JSON: Cast to long failed: " + o);
+	}
+
+	public String format(int l) {
+		int size = size();
+		if (size == 0)
+			return "{}";
+		String t = "";
+		for (int i = 0; i < l; i++) {
+			t = t.concat("  ");
+		}
+		String t2 = t.concat("  ");
+		StringBuffer s = new StringBuffer("{\n");
+		s.append(t2);
+		Enumeration keys = table.keys();
+		int i = 0;
+		while (keys.hasMoreElements()) {
+			String k = (String) keys.nextElement();
+			s.append("\"").append(k).append("\": ");
+			Object v = get(k);
+			if (v instanceof String[])
+				table.put(k, v = parseJSON(((String[]) v)[0]));
+			if (v instanceof JSONObject) {
+				s.append(((JSONObject) v).format(l + 1));
+			} else if (v instanceof JSONArray) {
+				s.append(((JSONArray) v).format(l + 1));
+			} else if (v instanceof String) {
+				s.append("\"").append(escape_utf8((String) v)).append("\"");
+			} else if (v == json_null) {
+				s.append((String) null);
+			} else {
+				s.append(v);
+			}
+			i++;
+			if (i < size) {
+				s.append(",\n").append(t2);
+			}
+		}
+		if (l > 0) {
+			s.append("\n").append(t).append("}");
+		} else {
+			s.append("\n}");
+		}
+		return s.toString();
 	}
 }
