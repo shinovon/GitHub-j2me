@@ -75,6 +75,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	// settings
 	private static String proxyUrl = "http://nnp.nnchan.ru/hproxy.php?";
+	private static String browseProxyUrl = "http://nnp.nnchan.ru/glype/browse.php?u=";
 	private static boolean useProxy = false;
 
 	// threading
@@ -132,6 +133,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	// settings items
 	private static TextField proxyField;
+	private static TextField browseProxyField;
 	private static ChoiceGroup proxyChoice;
 
 	protected void destroyApp(boolean unconditional)  {}
@@ -154,6 +156,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			
 			proxyUrl = j.getString("proxy", proxyUrl);
 			useProxy = j.getBoolean("useProxy", useProxy);
+			browseProxyUrl = j.getString("browseProxy", browseProxyUrl);
 		} catch (Exception e) {}
 		
 		// commands
@@ -239,6 +242,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					proxyField = new TextField("Proxy URL", proxyUrl, 200, TextField.NON_PREDICTIVE);
 					f.append(proxyField);
 					
+					browseProxyField = new TextField("Browser Proxy URL", browseProxyUrl, 200, TextField.NON_PREDICTIVE);
+					f.append(browseProxyField);
+					
 					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] { "Use proxy" }, null);
 					proxyChoice.setSelectedIndex(0, useProxy);
 					f.append(proxyChoice);
@@ -306,6 +312,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					JSONObject j = new JSONObject();
 					j.put("proxy", proxyUrl);
 					j.put("useProxy", useProxy);
+					j.put("browseProxy", browseProxyUrl);
 					
 					byte[] b = j.toString().getBytes("UTF-8");
 					RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
@@ -597,6 +604,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			display.setCurrent(a);
 			return;
 		}
+		if (display.getCurrent() != d) {
+			display(d);
+		}
 		display.setCurrent(a, d);
 	}
 	
@@ -696,7 +706,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				|| proxyUrl == null || proxyUrl.length() == 0 || "https://".equals(proxyUrl)) {
 			return url;
 		}
-		return proxyUrl + url(url);
+		return proxyUrl.concat(url(url));
 	}
 	
 	private static byte[] readBytes(InputStream inputStream, int initialSize, int bufferSize, int expandSize)
@@ -1029,7 +1039,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	void browse(String url) {
 		try {
-			if (url.startsWith("https://github.com")) url = proxyUrl(url);
+			if (useProxy && (url.startsWith("https://github.com") || url.startsWith(APIURL))) {
+				url = browseProxyUrl.concat(url(url));
+			}
 			if (platformRequest(url)) notifyDestroyed();
 		} catch (Exception e) {
 			e.printStackTrace();
