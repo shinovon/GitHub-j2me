@@ -27,9 +27,9 @@ import cc.nnproject.json.JSONObject;
 public class RepoForm extends GHForm {
 
 	String url;
-	String defaultBranch;
 	String parent;
 	String selectedBranch;
+	StringItem branchItem;
 
 	public RepoForm(String name) {
 		super(name);
@@ -46,7 +46,7 @@ public class RepoForm extends GHForm {
 		// cancel check
 		if (thread != this.thread) return;
 		
-		selectedBranch = defaultBranch = r.getString("default_branch");
+		selectedBranch = r.getString("default_branch");
 		
 		StringItem s;
 		String t;
@@ -113,41 +113,47 @@ public class RepoForm extends GHForm {
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
-		
-		s = new StringItem(null, "Releases", StringItem.BUTTON);
-		s.setDefaultCommand(GH.releasesCmd);
+
+		s = branchItem = new StringItem("Branch", selectedBranch, StringItem.BUTTON);
 		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		s.setDefaultCommand(GH.selectBranchCmd);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+		
+		s = new StringItem(null, "Download ZIP", StringItem.BUTTON);
+		s.setDefaultCommand(GH.downloadCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 		append(s);
 
 		s = new StringItem(null, "Commits", StringItem.BUTTON);
 		s.setDefaultCommand(GH.commitsCmd);
 		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		s.setLayout(Item.LAYOUT_LEFT);
 		append(s);
 		
 		if (r.getBoolean("has_issues")) {
 			s = new StringItem(null, "Issues (".concat(Integer.toString(r.getInt("open_issues")).concat(" open)")), StringItem.BUTTON);
 			s.setDefaultCommand(GH.issuesCmd);
 			s.setItemCommandListener(GH.midlet);
-			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setLayout(Item.LAYOUT_LEFT);
 			append(s);
 		}
 
 		s = new StringItem(null, "Pull requests", StringItem.BUTTON);
 		s.setDefaultCommand(GH.pullsCmd);
 		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+		append(s);
+		
+		s = new StringItem(null, "Releases", StringItem.BUTTON);
+		s.setDefaultCommand(GH.releasesCmd);
+		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 		
 		s = new StringItem(null, "Contributors", StringItem.BUTTON);
 		s.setDefaultCommand(GH.contribsCmd);
-		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		append(s);
-		
-		s = new StringItem(null, "Download ZIP", StringItem.BUTTON);
-		s.setDefaultCommand(GH.downloadCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);

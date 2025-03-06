@@ -36,7 +36,7 @@ public class PullForm extends DiscussionForm {
 	void loadInternal(Thread thread) throws Exception {
 		deleteAll();
 		
-		
+		append("TODO");
 	}
 
 }

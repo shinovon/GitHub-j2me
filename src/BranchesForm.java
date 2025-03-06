@@ -25,14 +25,20 @@ import javax.microedition.lcdui.StringItem;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
-//TODO
 public class BranchesForm extends PagedForm {
 
 	String url;
+	RepoForm repoForm;
 	
 	public BranchesForm(String repo) {
 		super(repo.concat(" - Branches"));
 		this.url = repo;
+	}
+
+	public BranchesForm(RepoForm d) {
+		super(d.url.concat(" - Branches"));
+		this.url = d.url;
+		this.repoForm = d;
 	}
 
 	void loadInternal(Thread thread) throws Exception {
@@ -46,9 +52,17 @@ public class BranchesForm extends PagedForm {
 		for (int i = 0; i < l && thread == this.thread; ++i) {
 			JSONObject j = r.getObject(i);
 			
-			s = new StringItem(null, j.getString("name"));
-			s.setFont(GH.medfont);
-			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			t = j.getString("name");
+			if (repoForm != null) {
+				s = new StringItem(null, t, Item.BUTTON);
+				s.setDefaultCommand(GH.branchItemCmd);
+				s.setItemCommandListener(GH.midlet);
+				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			} else {
+				s = new StringItem(null, t);
+				s.setFont(GH.medfont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			}
 			safeAppend(thread, s);
 		}
 	}

@@ -107,21 +107,24 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command linkCmd;
 	static Command userCmd;
 	static Command spoilerCmd;
+	static Command branchItemCmd;
+
+	static Command followersCmd;
+	static Command followingCmd;
+	static Command reposCmd;
 	
 	static Command ownerCmd;
 	static Command releasesCmd;
 	static Command tagsCmd;
 	static Command forksCmd;
-	static Command reposCmd;
 	static Command contribsCmd;
 	static Command stargazersCmd;
 	static Command watchersCmd;
-	static Command followersCmd;
-	static Command followingCmd;
 	static Command forkCmd;
 	static Command issuesCmd;
 	static Command pullsCmd;
 	static Command commitsCmd;
+	static Command selectBranchCmd;
 	
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -194,21 +197,24 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		linkCmd = new Command("Open", Command.ITEM, 1);
 		userCmd = new Command("View user", Command.ITEM, 1);
 		spoilerCmd = new Command("Show", Command.ITEM, 1);
+		branchItemCmd = new Command("Select branch", Command.ITEM, 1);
+
+		followersCmd = new Command("Followers", Command.ITEM, 1);
+		followingCmd = new Command("Following", Command.ITEM, 1);
+		reposCmd = new Command("Repositories", Command.ITEM, 1);
 		
 		ownerCmd = new Command("Owner", Command.SCREEN, 5);
 		releasesCmd = new Command("Releases", Command.SCREEN, 3);
 		tagsCmd = new Command("Tags", Command.SCREEN, 4);
-		forksCmd = new Command("Forks", Command.SCREEN, 6);
-		reposCmd = new Command("Repositories", Command.SCREEN, 5);
+		forksCmd = new Command("Forks", Command.ITEM, 1);
 		contribsCmd = new Command("Contributors", Command.ITEM, 1);
 		stargazersCmd = new Command("Stargazers", Command.ITEM, 1);
 		watchersCmd = new Command("Watchers", Command.ITEM, 1);
-		followersCmd = new Command("Followers", Command.ITEM, 1);
-		followingCmd = new Command("Following", Command.ITEM, 1);
 		forkCmd = new Command("Open parent", Command.ITEM, 1);
 		issuesCmd = new Command("Issues", Command.ITEM, 1);
 		pullsCmd = new Command("Pulls", Command.ITEM, 1);
 		commitsCmd = new Command("Commits", Command.ITEM, 1);
+		selectBranchCmd = new Command("Select branch", Command.ITEM, 1);
 		
 		showOpenCmd = new Command("Show open", Command.SCREEN, 4);
 		showClosedCmd = new Command("Show closed", Command.SCREEN, 5);
@@ -234,7 +240,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
 		f.addCommand(aboutCmd);
-		f.addCommand(bookmarksCmd);
+//		f.addCommand(bookmarksCmd);
 		f.setCommandListener(this);
 		f.setItemStateListener(this);
 		
@@ -244,12 +250,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		mainField.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		f.append(mainField);
 		
-		StringItem btn = new StringItem(null, "Go", StringItem.BUTTON);
-		btn.addCommand(goCmd);
-		btn.setDefaultCommand(goCmd);
-		btn.setItemCommandListener(this);
-		btn.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		f.append(btn);
+		StringItem s;
+		
+		s = new StringItem(null, "Go", StringItem.BUTTON);
+		s.setDefaultCommand(goCmd);
+		s.setItemCommandListener(this);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		f.append(s);
+		
+		s = new StringItem(null, "Bookmarks", StringItem.BUTTON);
+		s.setDefaultCommand(bookmarksCmd);
+		s.setItemCommandListener(this);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		f.append(s);
 		
 		display.setCurrent(current = mainForm = f);
 	}
@@ -436,7 +449,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == downloadCmd) {
-				browse(APIURL.concat("repos/").concat(((RepoForm) d).url).concat("/zipball/").concat(((RepoForm) d).defaultBranch));
+				browse(APIURL.concat("repos/").concat(((RepoForm) d).url).concat("/zipball/").concat(((RepoForm) d).selectedBranch));
 				return;
 			}
 			if (c == forkCmd) {
@@ -463,7 +476,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} else if (c == pullsCmd) {
 					f = new PullsForm(url);
 				} else if (c == commitsCmd) {
-					f = new CommitsForm(url);
+					f = new CommitsForm(url, ((RepoForm) d).selectedBranch);
+				} else if (c == selectBranchCmd) {
+					f = new BranchesForm((RepoForm) d);
 				} else break a;
 	
 				display(f);
@@ -607,6 +622,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			openUser(url);
 			return;
 		}
+		if (c == GH.branchItemCmd) {
+			((BranchesForm) current).repoForm.branchItem
+			.setText(((BranchesForm) current).repoForm.selectedBranch = ((StringItem) item).getText());
+			
+			commandAction(backCmd, current);
+			return;
+		}
 		commandAction(c, display.getCurrent());
 	}
 
@@ -663,7 +685,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new PullsForm(repo);
 					break;
 				case 'c': // commits
-					f = new CommitsForm(repo);
+					if (split.length == 4) {
+						f = new CommitsForm(repo, split[3]);
+						break;
+					}
+					f = new CommitsForm(repo, null);
 					break;
 				case 'b': // branches
 					f = new BranchesForm(repo);
