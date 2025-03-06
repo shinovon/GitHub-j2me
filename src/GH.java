@@ -47,6 +47,7 @@ import javax.microedition.midlet.MIDlet;
 import javax.microedition.rms.RecordStore;
 
 import cc.nnproject.json.JSONObject;
+import cc.nnproject.json.JSONStream;
 
 public class GH extends MIDlet implements CommandListener, ItemCommandListener, Runnable {
 	
@@ -668,7 +669,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			hc.setRequestProperty("X-Github-Api-Version", API_VERSION);
 			
 			int c = hc.getResponseCode();
-			res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
+			res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+//			res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
 			if (c >= 400) {
 				throw new APIException(url, c, res);
 			}
