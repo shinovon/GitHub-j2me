@@ -30,7 +30,7 @@ public abstract class PagedForm extends GHForm {
 	int page = 1;
 	private boolean more;
 	private String title;
-	private String pageText = "";
+	String pageText = "";
 
 	public PagedForm(String title) {
 		super(title);

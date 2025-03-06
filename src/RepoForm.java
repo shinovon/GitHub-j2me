@@ -29,13 +29,14 @@ public class RepoForm extends GHForm {
 	String url;
 	String defaultBranch;
 	String parent;
+	String selectedBranch;
 
 	public RepoForm(String name) {
 		super(name);
 		this.url = name;
 		addCommand(GH.releasesCmd);
 		addCommand(GH.ownerCmd);
-		addCommand(GH.forksCmd);
+//		addCommand(GH.forksCmd);
 		addCommand(GH.saveBookmarkCmd);
 	}
 
@@ -45,7 +46,7 @@ public class RepoForm extends GHForm {
 		// cancel check
 		if (thread != this.thread) return;
 		
-		defaultBranch = r.getString("default_branch");
+		selectedBranch = defaultBranch = r.getString("default_branch");
 		
 		StringItem s;
 		String t;
@@ -115,6 +116,26 @@ public class RepoForm extends GHForm {
 		
 		s = new StringItem(null, "Releases", StringItem.BUTTON);
 		s.setDefaultCommand(GH.releasesCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+
+		s = new StringItem(null, "Commits", StringItem.BUTTON);
+		s.setDefaultCommand(GH.commitsCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+		
+		if (r.getBoolean("has_issues")) {
+			s = new StringItem(null, "Issues (".concat(Integer.toString(r.getInt("open_issues")).concat(" open)")), StringItem.BUTTON);
+			s.setDefaultCommand(GH.issuesCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			append(s);
+		}
+
+		s = new StringItem(null, "Pull requests", StringItem.BUTTON);
+		s.setDefaultCommand(GH.pullsCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);

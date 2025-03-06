@@ -119,6 +119,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command followersCmd;
 	static Command followingCmd;
 	static Command forkCmd;
+	static Command issuesCmd;
+	static Command pullsCmd;
+	static Command commitsCmd;
 	
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -199,6 +202,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		followersCmd = new Command("Followers", Command.ITEM, 1);
 		followingCmd = new Command("Following", Command.ITEM, 1);
 		forkCmd = new Command("Open parent", Command.ITEM, 1);
+		issuesCmd = new Command("Issues", Command.ITEM, 1);
+		pullsCmd = new Command("Pulls", Command.ITEM, 1);
+		commitsCmd = new Command("Commits", Command.ITEM, 1);
 		
 		nextPageCmd = new Command("Next page", Command.SCREEN, 6);
 		prevPageCmd = new Command("Prev. page", Command.SCREEN, 7);
@@ -415,7 +421,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		}
 		// RepoForm commands
-		{
+		if (d instanceof RepoForm) {
 			if (c == ownerCmd) {
 				String url = ((RepoForm) d).url;
 				openUser(url.substring(0, url.indexOf('/')));
@@ -479,9 +485,30 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				openRepo(((RepoForm) d).parent);
 				return;
 			}
+			if (c == issuesCmd) {
+				String url = ((RepoForm) d).url;
+				IssuesForm f = new IssuesForm(url);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == pullsCmd) {
+				String url = ((RepoForm) d).url;
+				PullsForm f = new PullsForm(url);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+			if (c == commitsCmd) {
+				String url = ((RepoForm) d).url;
+				CommitsForm f = new CommitsForm(url);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
 		}
 		// UserForm commands
-		{
+		if (d instanceof UserForm) {
 			if (c == reposCmd) {
 				String url = ((UserForm) d).user;
 				ReposForm f = new ReposForm("users/".concat(url).concat("/repos"), url + " - Repositories", "pushed", false);
@@ -504,8 +531,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 		}
+		// ReleasesForm commands
+		if (d instanceof ReleasesForm) {
+			if (c == releasesCmd) {
+				((ReleasesForm) d).toggleMode();
+				return;
+			}
+			if (c == tagsCmd) {
+				((ReleasesForm) d).toggleMode();
+				return;
+			}
+		}
 		// PagedForm commands
-		{
+		if (d instanceof PagedForm) {
 			if (c == nextPageCmd) {
 				((PagedForm) d).nextPage();
 				return;
@@ -515,21 +553,29 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == gotoPageCmd) {
-				TextBox t = new TextBox("Go to page", "", 10, TextField.NUMERIC);
+				TextBox t = new TextBox("Go to page".concat(((PagedForm) d).pageText), "", 10, TextField.NUMERIC);
 				t.addCommand(gotoPageOkCmd);
 				t.addCommand(cancelCmd);
 				t.setCommandListener(this);
 				display(t);
 				return;
 			}
-			if (c == gotoPageOkCmd) {
+//			if (c == firstPageCmd) {
+//				((PagedForm) d).gotoPage(1);
+//			}
+		}
+		// TextBox commands
+		if (d instanceof TextBox) {
+			if (c == gotoPageOkCmd) { // go to page dialog confirm
 				commandAction(backCmd, d);
 				((PagedForm) current).gotoPage(Integer.parseInt(((TextBox) d).getString()));
 				return;
 			}
-//			if (c == firstPageCmd) {
-//				((PagedForm) d).gotoPage(1);
-//			}
+			if (c == okCmd) { // bookmark save confirm
+				commandAction(backCmd, d);
+				addBookmark(((TextBox) d).getString().trim().toLowerCase(), current);
+				return;
+			}
 		}
 		if (c == saveBookmarkCmd) {
 			if (d instanceof RepoForm) {
@@ -544,11 +590,26 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				addBookmark(((ReleasesForm) d).url.concat("/releases"), d);
 				return;
 			}
-			return;
-		}
-		if (c == okCmd) { // bookmark save confirm
-			commandAction(backCmd, d);
-			addBookmark(((TextBox) d).getString().trim().toLowerCase(), current);
+			if (d instanceof IssuesForm) {
+				addBookmark(((IssuesForm) d).url.concat("/issues"), d);
+				return;
+			}
+			if (d instanceof PullsForm) {
+				addBookmark(((PullsForm) d).url.concat("/pulls"), d);
+				return;
+			}
+			if (d instanceof CommitsForm) {
+				addBookmark(((CommitsForm) d).url.concat("/commits"), d);
+				return;
+			}
+			if (d instanceof IssueForm) {
+				addBookmark(((IssueForm) d).url.concat("/issues/").concat(((IssueForm) d).num), d);
+				return;
+			}
+			if (d instanceof PullForm) {
+				addBookmark(((PullForm) d).url.concat("/pulls/").concat(((PullForm) d).num), d);
+				return;
+			}
 			return;
 		}
 		if (c == backCmd || c == cancelCmd) {
@@ -636,11 +697,26 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				case 'w': // watchers
 					f = new UsersForm("repos/".concat(url).concat("/subscribers"), url.concat(" - Watchers"));
 					break;
-				// TODO
-//				case 'i': // issues
-//				case 'p': // pulls
-//				case 'b': // branches
-//				case 'c': // commits
+				case 'i': // issues
+					if (split.length == 4) {
+						f = new IssueForm(url, split[3]);
+						break;
+					}
+					f = new IssuesForm(url);
+					break;
+				case 'p': // pulls
+					if (split.length == 4) {
+						f = new PullForm(url, split[3]);
+						break;
+					}
+					f = new PullsForm(url);
+					break;
+				case 'c': // commits
+					f = new CommitsForm(url);
+					break;
+				case 'b': // branches
+					f = new BranchesForm(url);
+					break;
 				default:
 					return;
 				}
