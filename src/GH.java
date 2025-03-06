@@ -105,6 +105,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command watchersCmd;
 	static Command followersCmd;
 	static Command followingCmd;
+	static Command forkCmd;
 	
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -179,6 +180,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		watchersCmd = new Command("Watchers", Command.ITEM, 1);
 		followersCmd = new Command("Followers", Command.ITEM, 1);
 		followingCmd = new Command("Following", Command.ITEM, 1);
+		forkCmd = new Command("Open parent", Command.ITEM, 1);
 		
 		nextPageCmd = new Command("Next page", Command.SCREEN, 6);
 		prevPageCmd = new Command("Prev. page", Command.SCREEN, 7);
@@ -374,6 +376,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			if (c == downloadCmd) {
 				browse(APIURL.concat("repos/").concat(((RepoForm) d).url).concat("/zipball/").concat(((RepoForm) d).defaultBranch));
+				return;
+			}
+			if (c == forkCmd) {
+				openRepo(((RepoForm) d).parent);
 				return;
 			}
 		}

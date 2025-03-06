@@ -28,6 +28,7 @@ public class RepoForm extends GHForm {
 
 	String url;
 	String defaultBranch;
+	String parent;
 
 	public RepoForm(String name) {
 		super(name);
@@ -82,9 +83,11 @@ public class RepoForm extends GHForm {
 		}
 
 		if (r.getBoolean("fork")) {
-			s = new StringItem(null, "Forked from " + r.getObject("parent").getString("full_name"));
+			s = new StringItem(null, "Forked from ".concat(parent = r.getObject("parent").getString("full_name")));
 			s.setFont(GH.smallfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setDefaultCommand(GH.forkCmd);
+			s.setItemCommandListener(GH.midlet);
 			append(s);
 		}
 		
