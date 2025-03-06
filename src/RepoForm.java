@@ -55,17 +55,17 @@ public class RepoForm extends GHForm {
 		s.setFont(GH.medfont);
 		s.setDefaultCommand(GH.userCmd);
 		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_BOTTOM | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 		
 		s = new StringItem(null, "/");
 		s.setFont(GH.medfont);
-		s.setLayout(Item.LAYOUT_LEFT);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_BOTTOM);
 		append(s);
 		
 		s = new StringItem(null, r.getString("name"));
-		s.setFont(GH.medfont);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+		s.setFont(GH.largefont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_VCENTER | Item.LAYOUT_NEWLINE_AFTER);
 		append(s);
 
 		if ((t = r.getString("description")) != null) {
@@ -75,8 +75,8 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 
-		if ((t = r.getString("homepage")) != null) {
-			s = new StringItem(null, t);
+		if ((t = r.getString("homepage")) != null && t.length() != 0) {
+			s = new StringItem("Web", t);
 			s.setFont(GH.smallfont);
 			s.setDefaultCommand(GH.linkCmd);
 			s.setItemCommandListener(GH.midlet);
@@ -93,66 +93,68 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 		
-		s = new StringItem(null, r.getString("stargazers_count") + " stars");
-		s.setFont(GH.medfont);
+		s = new StringItem(null, r.getString("stargazers_count").concat(" stars"), Item.BUTTON);
+		s.setFont(GH.smallfont);
 		s.setDefaultCommand(GH.stargazersCmd);
-		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		append(s);
-		
-		s = new StringItem(null, r.getString("subscribers_count") + " watching");
-		s.setFont(GH.medfont);
-		s.setDefaultCommand(GH.watchersCmd);
-		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		append(s);
-		
-		s = new StringItem(null, r.getString("forks") + " forks");
-		s.setFont(GH.medfont);
-		s.setDefaultCommand(GH.forksCmd);
-		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		append(s);
-
-		s = branchItem = new StringItem("Branch", selectedBranch, StringItem.BUTTON);
-		s.setItemCommandListener(GH.midlet);
-		s.setDefaultCommand(GH.selectBranchCmd);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
-		append(s);
-		
-		s = new StringItem(null, "Download ZIP", StringItem.BUTTON);
-		s.setDefaultCommand(GH.downloadCmd);
-		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
-		append(s);
-
-		s = new StringItem(null, "Commits", StringItem.BUTTON);
-		s.setDefaultCommand(GH.commitsCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT);
 		append(s);
 		
+		s = new StringItem(null, r.getString("subscribers_count").concat(" watching"), Item.BUTTON);
+		s.setFont(GH.smallfont);
+		s.setDefaultCommand(GH.watchersCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_LEFT);
+		append(s);
+		
+		s = new StringItem(null, r.getString("forks").concat(" forks"), Item.BUTTON);
+		s.setFont(GH.smallfont);
+		s.setDefaultCommand(GH.forksCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_LEFT);
+		append(s);
+
+		s = branchItem = new StringItem("Branch", selectedBranch, Item.BUTTON);
+		s.setItemCommandListener(GH.midlet);
+		s.setDefaultCommand(GH.selectBranchCmd);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+		append(s);
+		
+		s = new StringItem(null, "Download ZIP", Item.BUTTON);
+		s.setDefaultCommand(GH.downloadCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+		append(s);
+
+		s = new StringItem(null, "Commits", Item.BUTTON);
+		s.setDefaultCommand(GH.commitsCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+		append(s);
+		
+		append("\n");
+		
 		if (r.getBoolean("has_issues")) {
-			s = new StringItem(null, "Issues (".concat(Integer.toString(r.getInt("open_issues")).concat(" open)")), StringItem.BUTTON);
+			s = new StringItem(null, "Issues (".concat(Integer.toString(r.getInt("open_issues")).concat(" open)")), Item.BUTTON);
 			s.setDefaultCommand(GH.issuesCmd);
 			s.setItemCommandListener(GH.midlet);
-			s.setLayout(Item.LAYOUT_LEFT);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			append(s);
 		}
 
-		s = new StringItem(null, "Pull requests", StringItem.BUTTON);
+		s = new StringItem(null, "Pull requests", Item.BUTTON);
 		s.setDefaultCommand(GH.pullsCmd);
 		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 		append(s);
 		
-		s = new StringItem(null, "Releases", StringItem.BUTTON);
+		s = new StringItem(null, "Releases", Item.BUTTON);
 		s.setDefaultCommand(GH.releasesCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 		
-		s = new StringItem(null, "Contributors", StringItem.BUTTON);
+		s = new StringItem(null, "Contributors", Item.BUTTON);
 		s.setDefaultCommand(GH.contribsCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);

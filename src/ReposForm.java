@@ -101,15 +101,15 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 					safeAppend(thread, s);
 				}
 				
-			
-				if ((t = j.getString("language")) != null) {
+				boolean b;
+				if (b = ((t = j.getString("language")) != null && t.length() != 0)) {
 					s = new StringItem(null, t);
 					s.setFont(GH.smallfont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 					safeAppend(thread, s);
 				}
 				
-				s = new StringItem(null, " Updated ".concat(GH.localizeDate(j.getString("pushed_at"), 1)));
+				s = new StringItem(null, (b ? " Updated " : "Updated ").concat(GH.localizeDate(j.getString("pushed_at"), 1)));
 				s.setFont(GH.smallfont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 				safeAppend(thread, s);
