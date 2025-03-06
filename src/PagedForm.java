@@ -37,12 +37,12 @@ public abstract class PagedForm extends GHForm {
 		this.title = title;
 	}
 	
-	void nextPage() {
-		if (!more) return;
-		gotoPage(page + 1);
-	}
-	
-	void prevPage() {
+	void changePage(boolean next) {
+		if (next) {
+			if (!more) return;
+			gotoPage(page + 1);
+			return;
+		}
 		gotoPage(page <= 1 ? 1 : page - 1);
 	}
 	

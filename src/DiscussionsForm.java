@@ -43,6 +43,20 @@ public abstract class DiscussionsForm extends PagedForm implements ItemCommandLi
 		JSONArray r = request();
 		int l = r.size();
 
+		if ("open".equals(state)) {
+			removeCommand(GH.showOpenCmd);
+			addCommand(GH.showClosedCmd);
+			addCommand(GH.showAllCmd);
+		} else if ("all".equals(state)) {
+			removeCommand(GH.showAllCmd);
+			addCommand(GH.showOpenCmd);
+			addCommand(GH.showClosedCmd);
+		} else {
+			removeCommand(GH.showClosedCmd);
+			addCommand(GH.showOpenCmd);
+			addCommand(GH.showAllCmd);
+		}
+
 		StringBuffer sb = new StringBuffer();
 		if (urls == null) {
 			urls = new Hashtable();

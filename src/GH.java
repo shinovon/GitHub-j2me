@@ -435,56 +435,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				openUser(url.substring(0, url.indexOf('/')));
 				return;
 			}
-			if (c == releasesCmd) {
-				if (d instanceof ReleasesForm) {
-					((ReleasesForm) d).toggleMode();
-					return;
-				}
-				String url = ((RepoForm) d).url;
-				ReleasesForm f = new ReleasesForm(url, false);
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			if (c == tagsCmd) {
-				if (d instanceof ReleasesForm) {
-					((ReleasesForm) d).toggleMode();
-					return;
-				}
-				String url = ((RepoForm) d).url;
-				ReleasesForm f = new ReleasesForm(url, true);
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			if (c == forksCmd) {
-				String url = ((RepoForm) d).url;
-				ReposForm f = new ReposForm("repos/".concat(url).concat("/forks"), url.concat(" - Forks"), null, true);
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			if (c == contribsCmd) {
-				String url = ((RepoForm) d).url;
-				UsersForm f = new UsersForm("repos/".concat(url).concat("/contributors"), url.concat(" - Contributors"));
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			if (c == stargazersCmd) {
-				String url = ((RepoForm) d).url;
-				UsersForm f = new UsersForm("repos/".concat(url).concat("/stargazers"), url.concat(" - Stargazers"));
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			if (c == watchersCmd) {
-				String url = ((RepoForm) d).url;
-				UsersForm f = new UsersForm("repos/".concat(url).concat("/subscribers"), url.concat(" - Watchers"));
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
 			if (c == downloadCmd) {
 				browse(APIURL.concat("repos/").concat(((RepoForm) d).url).concat("/zipball/").concat(((RepoForm) d).defaultBranch));
 				return;
@@ -493,23 +443,29 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				openRepo(((RepoForm) d).parent);
 				return;
 			}
-			if (c == issuesCmd) {
+			a: {
 				String url = ((RepoForm) d).url;
-				IssuesForm f = new IssuesForm(url);
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			if (c == pullsCmd) {
-				String url = ((RepoForm) d).url;
-				PullsForm f = new PullsForm(url);
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			if (c == commitsCmd) {
-				String url = ((RepoForm) d).url;
-				CommitsForm f = new CommitsForm(url);
+				Form f;
+				if (c == releasesCmd) {
+					f = new ReleasesForm(url, false);
+				} else if (c == tagsCmd) {
+					f = new ReleasesForm(url, true);
+				} else if (c == forksCmd) {
+					f = new ReposForm("repos/".concat(url).concat("/forks"), url.concat(" - Forks"), null, true);
+				} else if (c == contribsCmd) {
+					f = new UsersForm("repos/".concat(url).concat("/contributors"), url.concat(" - Contributors"));
+				} else if (c == stargazersCmd) {
+					 f = new UsersForm("repos/".concat(url).concat("/stargazers"), url.concat(" - Stargazers"));
+				} else if (c == watchersCmd) {
+					f = new UsersForm("repos/".concat(url).concat("/subscribers"), url.concat(" - Watchers"));
+				} else if (c == issuesCmd) {
+					f = new IssuesForm(url);
+				} else if (c == pullsCmd) {
+					f = new PullsForm(url);
+				} else if (c == commitsCmd) {
+					f = new CommitsForm(url);
+				} else break a;
+	
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -524,16 +480,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				start(RUN_LOAD_FORM, f);
 				return;
 			}
-			if (c == followersCmd) {
+			boolean b;
+			if ((b = c == followersCmd) || c == followingCmd) {
 				String url = ((UserForm) d).user;
-				UsersForm f = new UsersForm("users/".concat(url).concat("/followers"), url + " - Followers");
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			if (c == followingCmd) {
-				String url = ((UserForm) d).user;
-				UsersForm f = new UsersForm("users/".concat(url).concat("/following"), url + " - Following");
+				UsersForm f = new UsersForm(
+						"users/".concat(url).concat(b ? "/followers" : "/following"),
+						url.concat(b ? " - Followers" : " - Following")
+						);
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -541,23 +494,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		// ReleasesForm commands
 		if (d instanceof ReleasesForm) {
-			if (c == releasesCmd) {
-				((ReleasesForm) d).toggleMode();
-				return;
-			}
-			if (c == tagsCmd) {
+			if (c == releasesCmd || c == tagsCmd) {
 				((ReleasesForm) d).toggleMode();
 				return;
 			}
 		}
 		// PagedForm commands
 		if (d instanceof PagedForm) {
-			if (c == nextPageCmd) {
-				((PagedForm) d).nextPage();
-				return;
-			}
-			if (c == prevPageCmd) {
-				((PagedForm) d).prevPage();
+			boolean b;
+			if ((b = c == nextPageCmd) || c == prevPageCmd) {
+				((PagedForm) d).changePage(b);
 				return;
 			}
 			if (c == gotoPageCmd) {
@@ -571,6 +517,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //			if (c == firstPageCmd) {
 //				((PagedForm) d).gotoPage(1);
 //			}
+		}
+		// DiscussionsForm commands
+		if (d instanceof DiscussionsForm) {
+			if (c == showOpenCmd || c == showClosedCmd || c == showAllCmd) {
+				((DiscussionsForm) d).state = c == showOpenCmd ? "open" : c == showClosedCmd ? "closed" : "all";
+				((DiscussionsForm) d).cancel();
+				GH.midlet.start(GH.RUN_LOAD_FORM, d);
+				return;
+			}
 		}
 		// TextBox commands
 		if (d instanceof TextBox) {
@@ -586,38 +541,26 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		}
 		if (c == saveBookmarkCmd) {
+			String s;
 			if (d instanceof RepoForm) {
-				addBookmark(((RepoForm) d).url, d);
-				return;
-			}
-			if (d instanceof UserForm) {
-				addBookmark(((UserForm) d).user, d);
-				return;
-			}
-			if (d instanceof ReleasesForm) {
-				addBookmark(((ReleasesForm) d).url.concat("/releases"), d);
-				return;
-			}
-			if (d instanceof IssuesForm) {
-				addBookmark(((IssuesForm) d).url.concat("/issues"), d);
-				return;
-			}
-			if (d instanceof PullsForm) {
-				addBookmark(((PullsForm) d).url.concat("/pulls"), d);
-				return;
-			}
-			if (d instanceof CommitsForm) {
-				addBookmark(((CommitsForm) d).url.concat("/commits"), d);
-				return;
-			}
-			if (d instanceof IssueForm) {
-				addBookmark(((IssueForm) d).url.concat("/issues/").concat(((IssueForm) d).num), d);
-				return;
-			}
-			if (d instanceof PullForm) {
-				addBookmark(((PullForm) d).url.concat("/pulls/").concat(((PullForm) d).num), d);
-				return;
-			}
+				s = ((RepoForm) d).url;
+			} else if (d instanceof UserForm) {
+				s = ((UserForm) d).user;
+			} else if (d instanceof ReleasesForm) {
+				s = ((ReleasesForm) d).url.concat("/releases");
+			} else if (d instanceof IssuesForm) {
+				s = ((IssuesForm) d).url.concat("/issues");
+			} else if (d instanceof PullsForm) {
+				s = ((PullsForm) d).url.concat("/pulls");
+			} else if (d instanceof CommitsForm) {
+				s = ((CommitsForm) d).url.concat("/commits");
+			} else if (d instanceof IssueForm) {
+				s = ((IssueForm) d).url.concat("/issues/").concat(((IssueForm) d).num);
+			} else if (d instanceof PullForm) {
+				s = ((PullForm) d).url.concat("/pulls/").concat(((PullForm) d).num);
+			} else return;
+			
+			addBookmark(s, d);
 			return;
 		}
 		if (c == backCmd || c == cancelCmd) {
@@ -968,28 +911,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return url;
 		}
 		return proxyUrl.concat(url(url));
-	}
-	
-	private static byte[] readBytes(InputStream inputStream, int initialSize, int bufferSize, int expandSize)
-			throws IOException {
-		if (initialSize <= 0) initialSize = bufferSize;
-		byte[] buf = new byte[initialSize];
-		int count = 0;
-		byte[] readBuf = new byte[bufferSize];
-		int readLen;
-		while ((readLen = inputStream.read(readBuf)) != -1) {
-			if (count + readLen > buf.length) {
-				System.arraycopy(buf, 0, buf = new byte[count + expandSize], 0, count);
-			}
-			System.arraycopy(readBuf, 0, buf, count, readLen);
-			count += readLen;
-		}
-		if (buf.length == count) {
-			return buf;
-		}
-		byte[] res = new byte[count];
-		System.arraycopy(buf, 0, res, 0, count);
-		return res;
 	}
 	
 	private static HttpConnection openHttpConnection(String url) throws IOException {
