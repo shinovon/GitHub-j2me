@@ -224,14 +224,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (url.startsWith("https://github.com/")) {
 					url = url.substring(19);
 				}
-				GHForm f;
-				if (url.indexOf('/') == -1) {
-					f = new UserForm(url);
-				} else {
-					f = new RepoForm(url);
-				}
-				display(f);
-				start(RUN_LOAD_FORM, f);
+				openUrl(url);
 				return;
 			}
 			if (c == settingsCmd) {
@@ -326,14 +319,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		{
 			if (c == ownerCmd) {
 				String url = ((RepoForm) d).url;
-				url = url.substring(0, url.indexOf('/'));
-				
-				UserForm f = getUserForm(url);
-				if (f == null) {
-					f = new UserForm(url);
-				}
-				display(f);
-				start(RUN_LOAD_FORM, f);
+				openUser(url.substring(0, url.indexOf('/')));
 				return;
 			}
 			if (c == releasesCmd) {
@@ -467,8 +453,56 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			notifyDestroyed();
 		}
 	}
-
-	private UserForm getUserForm(String url) {
+	
+	static void openUrl(String url) {
+		if (url.indexOf('/') == -1) {
+			// user
+			openUser(url);
+		} else {
+			// repo
+			String[] split = split(url, '/');
+			if (split.length == 2 || split[3].length() == 0) {
+				openRepo(url);
+			} else {
+				String repo = split[0].concat("/").concat(split[1]);
+				GHForm f;
+				switch (split[2].charAt(0)) {
+				case 'f': // forks
+					f = new ReposForm(repo.concat("/forks"), url.concat(" - Forks"), null, true);
+					break;
+				case 'r': // releases
+					f = new ReleasesForm(repo, false);
+					break;
+				case 't': // tags
+					f = new ReleasesForm(repo, true);
+					break;
+				case 's': // stargazers
+					f = new UsersForm("repos/".concat(url).concat("/stargazers"), url.concat(" - Stargazers"));
+					break;
+				case 'w': // watchers
+					f = new UsersForm("repos/".concat(url).concat("/subscribers"), url.concat(" - Watchers"));
+					break;
+				// TODO
+//				case 'i': // issues
+//				case 'p': // pulls
+//				case 'b': // branches
+//				case 'c': // commits
+				default:
+					return;
+				}
+				display(f);
+				midlet.start(RUN_LOAD_FORM, f);
+			}
+		}
+	}
+	
+	static void openRepo(String url) {
+		RepoForm f = new RepoForm(url);
+		display(f);
+		midlet.start(RUN_LOAD_FORM, f);
+	}
+	
+	static void openUser(String url) {
 		UserForm f = null;
 		// search in previous screens
 		synchronized (formHistory) {
@@ -481,7 +515,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f = (UserForm) o;
 			}
 		}
-		return f;
+		if (f == null) {
+			f = new UserForm(url);
+		}
+		display(f);
+		midlet.start(RUN_LOAD_FORM, f);
 	}
 
 	public void commandAction(Command c, Item item) {
@@ -499,12 +537,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				url = url.substring(0, i);
 			}
 			
-			UserForm f = getUserForm(url);
-			if (f == null) {
-				f = new UserForm(url);
-			}
-			display(f);
-			start(RUN_LOAD_FORM, f);
+			openUser(url);
 			return;
 		}
 		commandAction(c, display.getCurrent());
@@ -623,7 +656,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		HttpConnection hc = null;
 		InputStream in = null;
 		try {
-			hc = open(proxyUrl(APIURL.concat(url)));
+			hc = openHttpConnection(proxyUrl(APIURL.concat(url)));
 			hc.setRequestMethod("GET");
 			hc.setRequestProperty("Accept", "application/vnd.github+json");
 			hc.setRequestProperty("X-Github-Api-Version", API_VERSION);
@@ -696,7 +729,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		HttpConnection hc = null;
 		InputStream in = null;
 		try {
-			hc = open(url);
+			hc = openHttpConnection(url);
 			hc.setRequestMethod("GET");
 			int r;
 			if ((r = hc.getResponseCode()) >= 400) {
@@ -714,7 +747,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 	
-	private static HttpConnection open(String url) throws IOException {
+	private static HttpConnection openHttpConnection(String url) throws IOException {
 		HttpConnection hc = (HttpConnection) Connector.open(url);
 		hc.setRequestProperty("User-Agent", "j2me-client/" + version + " (https://github.com/shinovon)");
 		return hc;

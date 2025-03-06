@@ -79,7 +79,6 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 			s.addCommand(GH.openCmd);
-			if (!users) s.addCommand(GH.userCmd);
 			s.setDefaultCommand(GH.openCmd);
 			s.setItemCommandListener(this);
 			urls.put(s, j.getString("full_name"));
@@ -98,7 +97,7 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 				if ((t = j.getString("description")) != null) {
 					s = new StringItem(null, t);
 					s.setFont(GH.smallfont);
-					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 					safeAppend(thread, s);
 				}
 				
@@ -121,11 +120,7 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 
 	public void commandAction(Command c, Item item) {
 		if (urls == null) return;
-		String url = (String) urls.get(item);
-		
-		RepoForm f = new RepoForm(url);
-		GH.display(f);
-		GH.midlet.start(GH.RUN_LOAD_FORM, f);
+		GH.openRepo((String) urls.get(item));
 	}
 
 }

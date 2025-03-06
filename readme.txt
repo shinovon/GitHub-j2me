@@ -1,8 +1,11 @@
-Unofficial GitHub browser client for j2me, name is temporary
+Unofficial GitHub browser client for j2me
 
 todo:
 markdown parsing
 issues
 repositories search
-local follow list
+local follow list (bookmarks)
 branches
+commits
+pulls
+name, icon

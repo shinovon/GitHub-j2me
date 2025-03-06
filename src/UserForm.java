@@ -31,7 +31,7 @@ public class UserForm extends GHForm {
 	public UserForm(String user) {
 		super(user);
 		this.user = user;
-		addCommand(GH.reposCmd);
+//		addCommand(GH.reposCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {

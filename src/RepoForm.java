@@ -38,7 +38,6 @@ public class RepoForm extends GHForm {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		// TODO
 		JSONObject r = (JSONObject) GH.api("repos/".concat(url));
 		
 		// cancel check
