@@ -95,7 +95,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 				safeAppend(thread, s);
 				
-				if (i == 0) {
+				if (i == 0 || l2 == 0) {
 					parseAssets(thread, assets, j.getString("zipball_url"), -1);
 				} else {
 					s = new StringItem(null, "Show assets", Item.HYPERLINK);
