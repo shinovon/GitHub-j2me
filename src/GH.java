@@ -30,6 +30,7 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Choice;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
@@ -40,20 +41,25 @@ import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
+import javax.microedition.lcdui.ItemStateListener;
+import javax.microedition.lcdui.List;
 import javax.microedition.lcdui.StringItem;
 import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.rms.RecordStore;
 
+import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 import cc.nnproject.json.JSONStream;
 
-public class GH extends MIDlet implements CommandListener, ItemCommandListener, Runnable {
+public class GH extends MIDlet implements CommandListener, ItemCommandListener, ItemStateListener, Runnable {
 	
 	static final int RUN_LOAD_FORM = 1;
+	static final int RUN_BOOKMARKS_SCREEN = 2;
 	
 	private static final String SETTINGS_RECORDNAME = "ghsets";
+	private static final String BOOKMARKS_RECORDNAME = "ghbm";
 	
 	private static final String APIURL = "https://api.github.com/";
 	private static final String API_VERSION = "2022-11-28";
@@ -70,6 +76,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// midp lifecycle
 	static Display display;
 	static GH midlet;
+	static Displayable current;
 
 	private static String version;
 	
@@ -82,6 +89,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static int run;
 	private static Object runParam;
 	private static int running;
+	
+	// bookmarks
+	private static JSONArray bookmarks;
+	private static int movingBookmark = -1;
 
 	// ui commands
 	private static Command exitCmd;
@@ -117,8 +128,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //	static Command lastPageCmd;
 
 	static Command saveBookmarkCmd;
-	
+
+	private static Command addBookmarkCmd;
 	private static Command removeBookmarkCmd;
+	private static Command moveBookmarkCmd;
 
 	static Command okCmd;
 	static Command cancelCmd;
@@ -126,10 +139,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// ui
 	private static Form mainForm;
 	private static Form settingsForm;
+	private static List bookmarksList;
 	private static Vector formHistory = new Vector();
 
 	// main form items
-	private static TextField field;
+	private static TextField mainField;
 
 	// settings items
 	private static TextField proxyField;
@@ -163,9 +177,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		exitCmd = new Command("Exit", Command.EXIT, 2);
 		backCmd = new Command("Back", Command.BACK, 2);
-		bookmarksCmd = new Command("Bookmarks", Command.SCREEN, 3);
-		settingsCmd = new Command("Settings", Command.SCREEN, 4);
-		aboutCmd = new Command("About", Command.SCREEN, 5);
+		bookmarksCmd = new Command("Bookmarks", Command.SCREEN, 4);
+		settingsCmd = new Command("Settings", Command.SCREEN, 5);
+		aboutCmd = new Command("About", Command.SCREEN, 6);
 		
 		goCmd = new Command("Go", Command.ITEM, 1);
 		downloadCmd = new Command("Download", Command.ITEM, 1);
@@ -192,8 +206,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		gotoPageOkCmd = new Command("Go", Command.OK, 1);
 
 		saveBookmarkCmd = new Command("Save to bookmarks", Command.OK, 1);
-		
+
+		addBookmarkCmd = new Command("New", Command.SCREEN, 5);
 		removeBookmarkCmd = new Command("Delete", Command.ITEM, 3);
+		moveBookmarkCmd = new Command("Move", Command.ITEM, 4);
 
 		okCmd = new Command("Ok", Command.OK, 1);
 		cancelCmd = new Command("Cancel", Command.CANCEL, 2);
@@ -204,14 +220,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
 		f.addCommand(aboutCmd);
-//		f.addCommand(bookmarksCmd);
+		f.addCommand(bookmarksCmd);
 		f.setCommandListener(this);
+		f.setItemStateListener(this);
 		
-		field = new TextField("user or user/repo", "", 200, TextField.ANY);
-		field.addCommand(goCmd);
-		field.setItemCommandListener(this);
-		field.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		f.append(field);
+		mainField = new TextField("user or user/repo", "", 200, TextField.NON_PREDICTIVE);
+		mainField.addCommand(goCmd);
+		mainField.setItemCommandListener(this);
+		mainField.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		f.append(mainField);
 		
 		StringItem btn = new StringItem(null, "Go", StringItem.BUTTON);
 		btn.addCommand(goCmd);
@@ -220,13 +237,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		btn.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		f.append(btn);
 		
-		display.setCurrent(mainForm = f);
+		display.setCurrent(current = mainForm = f);
 	}
 
 	public void commandAction(Command c, Displayable d) {
+		// mainForm commands
 		if (d == mainForm) {
 			if (c == goCmd) {
-				String url = field.getString().trim().toLowerCase();
+				String url = mainField.getString().trim().toLowerCase();
 				if (url.startsWith("https://github.com/")) {
 					url = url.substring(19);
 				}
@@ -282,6 +300,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 				s = new StringItem("Web", "nnproject.cc");
 				s.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_LEFT);
+				s.setDefaultCommand(linkCmd);
+				s.setItemCommandListener(this);
 				f.append(s);
 
 				s = new StringItem("Donate", "boosty.to/nnproject/donate");
@@ -295,10 +315,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == bookmarksCmd) {
-				// TODO
+				if (running != 0) return;
+				display(loadingAlert());
+				start(RUN_BOOKMARKS_SCREEN, null);
 				return;
 			}
 		}
+		// settingsForm commands
 		if (d == settingsForm) {
 			if (c == backCmd) {
 				// save settings
@@ -324,6 +347,72 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			return;
+		}
+		// bookmarksList commands
+		if (d == bookmarksList && c != backCmd) {
+			if (c == addBookmarkCmd) {
+				TextBox t = new TextBox("user or user/repo", "", 100, TextField.NON_PREDICTIVE);
+				t.addCommand(okCmd);
+				t.addCommand(cancelCmd);
+				t.setCommandListener(this);
+				display(t);
+				return;
+			}
+			if (c == cancelCmd) {
+				// cancel moving
+				movingBookmark = -1;
+				d.removeCommand(cancelCmd);
+				d.addCommand(removeBookmarkCmd);
+				d.addCommand(moveBookmarkCmd);
+				d.addCommand(backCmd);
+				d.addCommand(addBookmarkCmd);
+				return;
+			}
+			int i = ((List) d).getSelectedIndex();
+			if (i == -1 || bookmarks == null) return;
+			if (c == removeBookmarkCmd) {
+				if (movingBookmark != -1) return;
+				((List) d).delete(i);
+				bookmarks.remove(i);
+				return;
+			}
+			if (c == moveBookmarkCmd) {
+				// start moving
+				movingBookmark = i;
+				d.removeCommand(removeBookmarkCmd);
+				d.removeCommand(moveBookmarkCmd);
+				d.removeCommand(backCmd);
+				d.removeCommand(addBookmarkCmd);
+				d.addCommand(cancelCmd);
+				return;
+			}
+			if (c == List.SELECT_COMMAND) {
+				// finish moving
+				if (movingBookmark != -1) {
+					int j = movingBookmark;
+					movingBookmark = -1;
+					d.removeCommand(cancelCmd);
+					d.addCommand(removeBookmarkCmd);
+					d.addCommand(moveBookmarkCmd);
+					d.addCommand(backCmd);
+					d.addCommand(addBookmarkCmd);
+					if (i != j) {
+						Object bm = bookmarks.get(j);
+						bookmarks.remove(i);
+						bookmarks.put(i, (String) bm);
+						String s = ((List) d).getString(j);
+						((List) d).delete(j);
+						((List) d).insert(i, s, null);
+					}
+					return;
+				}
+				// bookmark selected
+				Object bm = bookmarks.get(i);
+				if (bm instanceof String) {
+					openUrl((String) bm);
+				}
+				return;
+			}
 		}
 		// RepoForm commands
 		{
@@ -435,14 +524,34 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			if (c == gotoPageOkCmd) {
 				commandAction(backCmd, d);
-				((PagedForm) display.getCurrent()).gotoPage(Integer.parseInt(((TextBox) d).getString()));
+				((PagedForm) current).gotoPage(Integer.parseInt(((TextBox) d).getString()));
 				return;
 			}
 //			if (c == firstPageCmd) {
 //				((PagedForm) d).gotoPage(1);
 //			}
 		}
-		if (c == backCmd) {
+		if (c == saveBookmarkCmd) {
+			if (d instanceof RepoForm) {
+				addBookmark(((RepoForm) d).url, d);
+				return;
+			}
+			if (d instanceof UserForm) {
+				addBookmark(((UserForm) d).user, d);
+				return;
+			}
+			if (d instanceof ReleasesForm) {
+				addBookmark(((ReleasesForm) d).url.concat("/releases"), d);
+				return;
+			}
+			return;
+		}
+		if (c == okCmd) { // bookmark save confirm
+			commandAction(backCmd, d);
+			addBookmark(((TextBox) d).getString().trim().toLowerCase(), current);
+			return;
+		}
+		if (c == backCmd || c == cancelCmd) {
 			if (formHistory.size() == 0) {
 				display(mainForm, true);
 				return;
@@ -465,6 +574,37 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		if (c == exitCmd) {
 			notifyDestroyed();
+		}
+	}
+
+	public void commandAction(Command c, Item item) {
+		if (c == linkCmd) {
+			browse(((StringItem) item).getText());
+			return;
+		}
+		if (c == userCmd) {
+			String url = ((StringItem) item).getText();
+			if (url.startsWith("github.com/")) {
+				url = url.substring(11);
+			}
+			int i;
+			if ((i = url.indexOf('/')) != -1) {
+				url = url.substring(0, i);
+			}
+			
+			openUser(url);
+			return;
+		}
+		commandAction(c, display.getCurrent());
+	}
+
+	public void itemStateChanged(Item item) {
+		if (item == mainField) {
+			String t;
+			if ((t = ((TextField) item).getString()).endsWith("\n")) {
+				commandAction(goCmd, item);
+				((TextField) item).setString(t.trim());
+			}
 		}
 	}
 	
@@ -535,33 +675,43 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		display(f);
 		midlet.start(RUN_LOAD_FORM, f);
 	}
-
-	public void commandAction(Command c, Item item) {
-		if (c == linkCmd) {
-			browse(((StringItem) item).getText());
-			return;
-		}
-		if (c == userCmd) {
-			String url = ((StringItem) item).getText();
-			if (url.startsWith("github.com/")) {
-				url = url.substring(11);
+	
+	static void addBookmark(String url, Displayable d) {
+		if (bookmarks == null) {
+			try {
+				RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
+				bookmarks = JSONObject.parseArray(new String(r.getRecord(1), "UTF-8"));
+				r.closeRecordStore();
+			} catch (Exception e) {
+				bookmarks = new JSONArray(10);
 			}
-			int i;
-			if ((i = url.indexOf('/')) != -1) {
-				url = url.substring(0, i);
-			}
-			
-			openUser(url);
-			return;
+		} else {
+			// check if this bookmark already exists
+			if (bookmarks.has(url)) return;  
 		}
-		commandAction(c, display.getCurrent());
+		bookmarks.add(url);
+		if (bookmarksList != null) {
+			bookmarksList.append(url, null);
+		}
+		
+		try {
+			RecordStore.deleteRecordStore(BOOKMARKS_RECORDNAME);
+		} catch (Exception ignored) {}
+		try {
+			RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, true);
+			byte[] b = bookmarks.toString().getBytes("UTF-8");
+			r.addRecord(b, 0, b.length);
+			r.closeRecordStore();
+		} catch (Exception ignored) {}
+		
+		display(infoAlert("Bookmark saved"), d);
 	}
 	
 	// threading
 	public void run() {
 		int run;
 		Object param;
-		synchronized(this) {
+		synchronized (this) {
 			run = GH.run;
 			param = GH.runParam;
 			notify();
@@ -581,6 +731,33 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			break;
 		}
+		case RUN_BOOKMARKS_SCREEN: {
+			if (bookmarksList == null) {
+				List list = new List("Bookmarks", List.IMPLICIT);
+				list.setFitPolicy(Choice.TEXT_WRAP_ON);
+				list.addCommand(backCmd);
+				list.addCommand(List.SELECT_COMMAND);
+				list.addCommand(removeBookmarkCmd);
+				list.addCommand(moveBookmarkCmd);
+				list.addCommand(addBookmarkCmd);
+				list.setCommandListener(this);
+				try {
+					if (bookmarks == null) {
+						RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
+						bookmarks = JSONObject.parseArray(new String(r.getRecord(1), "UTF-8"));
+						r.closeRecordStore();
+					}
+					int l = bookmarks.size();
+					for (int i = 0; i < l; i++) {
+						Object bm = bookmarks.get(i);
+						list.append(bm.toString(), null);
+					}
+				} catch (Exception e) {}
+				bookmarksList = list;
+			}
+			display(bookmarksList);
+			break;
+		}
 		}
 		running--;
 	}
@@ -589,7 +766,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	Thread start(int i, Object param) {
 		Thread t = null;
 		try {
-			synchronized(this) {
+			synchronized (this) {
 				run = i;
 				runParam = param;
 				(t = new Thread(this)).start();
@@ -626,7 +803,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			formHistory.removeAllElements();
 		}
 		Displayable p = display.getCurrent();
-		display.setCurrent(d);
+		display.setCurrent(current = d);
 		if (p == null || p == d) return;
 		
 		if (p instanceof GHForm) {
@@ -1039,7 +1216,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	void browse(String url) {
 		try {
-			if (useProxy && (url.startsWith("https://github.com") || url.startsWith(APIURL))) {
+			if (url.indexOf(':') == -1) {
+				url = "http://".concat(url);
+			} else if (useProxy && (url.startsWith("https://github.com") || url.startsWith(APIURL))) {
 				url = browseProxyUrl.concat(url(url));
 			}
 			if (platformRequest(url)) notifyDestroyed();

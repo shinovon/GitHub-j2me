@@ -36,6 +36,7 @@ public class RepoForm extends GHForm {
 		addCommand(GH.releasesCmd);
 		addCommand(GH.ownerCmd);
 		addCommand(GH.forksCmd);
+		addCommand(GH.saveBookmarkCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {

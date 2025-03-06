@@ -32,6 +32,7 @@ public class UserForm extends GHForm {
 		super(user);
 		this.user = user;
 //		addCommand(GH.reposCmd);
+		addCommand(GH.saveBookmarkCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {

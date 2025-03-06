@@ -41,6 +41,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		this.url = repo;
 		this.tags = tags;
 		addCommand(tags ? GH.releasesCmd : GH.tagsCmd);
+		addCommand(GH.saveBookmarkCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {
