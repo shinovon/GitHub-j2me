@@ -59,7 +59,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		for (int i = 0; i < l && thread == this.thread; ++i) {
 			JSONObject j = r.getObject(i);
 			
-			s = new StringItem(null, j.getString("name", j.getString("tag_name", "")));
+			s = new StringItem(null, (t = j.getString("name", null)) == null || t.length() == 0 ? j.getString("tag_name", "") : t);
 			s.setFont(GH.largefont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
@@ -152,7 +152,14 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			urls.put(s, asset.getString("browser_download_url"));
 			
 			if (i == -1) safeAppend(thread, s);
-			else safeInsert(thread, i + k, s);
+			else {
+				safeInsert(thread, i + k, s);
+				if (k == 0) {
+					try {
+						GH.display.setCurrentItem(s);
+					} catch (Exception ignored) {}
+				}
+			}
 		}
 		
 		s = new StringItem(null, "Source code (zip)");

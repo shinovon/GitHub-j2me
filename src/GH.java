@@ -67,7 +67,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final IllegalStateException cancelException = new IllegalStateException("cancel");
 
 	// midp lifecycle
-	private static Display display;
+	static Display display;
 	static GH midlet;
 
 	private static String version;
