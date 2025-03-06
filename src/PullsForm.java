@@ -19,38 +19,29 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Item;
-import javax.microedition.lcdui.StringItem;
 
 import cc.nnproject.json.JSONArray;
-import cc.nnproject.json.JSONObject;
 
-// TODO
-public class PullsForm extends PagedForm {
+public class PullsForm extends DiscussionsForm {
 
 	String url;
 	
 	public PullsForm(String repo) {
 		super(repo.concat(" - Pull requests"));
 		this.url = repo;
+		addCommand(GH.saveBookmarkCmd);
+	}
+	
+	JSONArray request() throws Exception {
+		return pagedApi(thread, "repos/".concat(url).concat("/pulls?state=").concat(state));
 	}
 
-	void loadInternal(Thread thread) throws Exception {
-		deleteAll();
-		
-		JSONArray r = pagedApi(thread, "repos/".concat(url).concat("/pulls?"));
-		int l = r.size();
-		
-		StringItem s;
-		String t;
-		for (int i = 0; i < l && thread == this.thread; ++i) {
-			JSONObject j = r.getObject(i);
-			
-			s = new StringItem(null, j.getString("title"));
-			s.setFont(GH.largefont);
-			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-			safeAppend(thread, s);
-		}
+	public void commandAction(Command c, Item item) {
+		if (urls == null) return;
+		String num = (String) urls.get(item);
+		GH.openUrl(url.concat("/pulls/").concat(num));
 	}
 
 }

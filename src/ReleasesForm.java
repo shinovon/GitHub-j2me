@@ -214,6 +214,8 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		tags = !tags;
 		perPage = tags ? 30 : 10;
 		setTitle(url.concat(tags ? " - Tags" : " - Releases"));
+		removeCommand(tags ? GH.tagsCmd : GH.releasesCmd);
+		addCommand(tags ? GH.releasesCmd : GH.tagsCmd);
 
 		GH.midlet.start(GH.RUN_LOAD_FORM, this);
 	}

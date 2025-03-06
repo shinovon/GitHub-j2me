@@ -129,6 +129,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command gotoPageOkCmd;
 //	static Command firstPageCmd;
 //	static Command lastPageCmd;
+	
+	static Command showOpenCmd;
+	static Command showClosedCmd;
+	static Command showAllCmd;
 
 	static Command saveBookmarkCmd;
 
@@ -206,14 +210,18 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		pullsCmd = new Command("Pulls", Command.ITEM, 1);
 		commitsCmd = new Command("Commits", Command.ITEM, 1);
 		
-		nextPageCmd = new Command("Next page", Command.SCREEN, 6);
-		prevPageCmd = new Command("Prev. page", Command.SCREEN, 7);
-		gotoPageCmd = new Command("Go to page...", Command.SCREEN, 8);
+		showOpenCmd = new Command("Show open", Command.SCREEN, 4);
+		showClosedCmd = new Command("Show closed", Command.SCREEN, 5);
+		showAllCmd = new Command("Show all", Command.SCREEN, 6);
+		
+		nextPageCmd = new Command("Next page", Command.SCREEN, 7);
+		prevPageCmd = new Command("Prev. page", Command.SCREEN, 8);
+		gotoPageCmd = new Command("Go to page...", Command.SCREEN, 9);
 		gotoPageOkCmd = new Command("Go", Command.OK, 1);
 
 		saveBookmarkCmd = new Command("Save to bookmarks", Command.OK, 1);
 
-		addBookmarkCmd = new Command("New", Command.SCREEN, 5);
+		addBookmarkCmd = new Command("New...", Command.SCREEN, 5);
 		removeBookmarkCmd = new Command("Delete", Command.ITEM, 3);
 		moveBookmarkCmd = new Command("Move", Command.ITEM, 4);
 
@@ -676,7 +684,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} else {
 			// repo
 			String[] split = split(url, '/');
-			if (split.length == 2 || split[3].length() == 0) {
+			if (split.length == 2 || split[2].length() == 0) {
 				openRepo(url);
 			} else {
 				String repo = split[0].concat("/").concat(split[1]);
@@ -699,23 +707,23 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					break;
 				case 'i': // issues
 					if (split.length == 4) {
-						f = new IssueForm(url, split[3]);
+						f = new IssueForm(repo, split[3]);
 						break;
 					}
-					f = new IssuesForm(url);
+					f = new IssuesForm(repo);
 					break;
 				case 'p': // pulls
 					if (split.length == 4) {
-						f = new PullForm(url, split[3]);
+						f = new PullForm(repo, split[3]);
 						break;
 					}
-					f = new PullsForm(url);
+					f = new PullsForm(repo);
 					break;
 				case 'c': // commits
-					f = new CommitsForm(url);
+					f = new CommitsForm(repo);
 					break;
 				case 'b': // branches
-					f = new BranchesForm(url);
+					f = new BranchesForm(repo);
 					break;
 				default:
 					return;
@@ -984,40 +992,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return res;
 	}
 	
-	private static String readUtf(InputStream in, int i) throws IOException {
-		byte[] buf = new byte[i <= 0 ? 1024 : i];
-		i = 0;
-		int j;
-		while ((j = in.read(buf, i, buf.length - i)) != -1) {
-			if ((i += j) >= buf.length) {
-				System.arraycopy(buf, 0, buf = new byte[i + 2048], 0, i);
-			}
-		}
-		return new String(buf, 0, i, "UTF-8");
-	}
-	
-	private static byte[] get(String url) throws IOException {
-		HttpConnection hc = null;
-		InputStream in = null;
-		try {
-			hc = openHttpConnection(url);
-			hc.setRequestMethod("GET");
-			int r;
-			if ((r = hc.getResponseCode()) >= 400) {
-				throw new IOException("HTTP ".concat(Integer.toString(r)));
-			}
-			in = hc.openInputStream();
-			return readBytes(in, (int) hc.getLength(), 8*1024, 16*1024);
-		} finally {
-			try {
-				if (in != null) in.close();
-			} catch (IOException e) {}
-			try {
-				if (hc != null) hc.close();
-			} catch (IOException e) {}
-		}
-	}
-	
 	private static HttpConnection openHttpConnection(String url) throws IOException {
 		HttpConnection hc = (HttpConnection) Connector.open(url);
 		hc.setRequestProperty("User-Agent", "j2me-client/" + version + " (https://github.com/shinovon)");
@@ -1141,8 +1115,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		int currentYear = c.get(Calendar.YEAR);
 		c.setTime(new Date(t));
 		
-		StringBuffer sb = new StringBuffer(localizeMonth(c.get(Calendar.MONTH)));
-		sb.append(' ').append(c.get(Calendar.DAY_OF_MONTH));
+		StringBuffer sb = new StringBuffer();
+		if (detailMode != 0) sb.append("on ");
+		sb.append(localizeMonth(c.get(Calendar.MONTH))).append(' ').append(c.get(Calendar.DAY_OF_MONTH));
 		int year = c.get(Calendar.YEAR);
 		if (year != currentYear) {
 			sb.append(", ").append(year);

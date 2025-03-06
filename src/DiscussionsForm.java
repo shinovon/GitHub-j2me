@@ -19,38 +19,72 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+import java.util.Hashtable;
+
 import javax.microedition.lcdui.Item;
+import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.StringItem;
 
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
-//TODO
-public class BranchesForm extends PagedForm {
-
-	String url;
+public abstract class DiscussionsForm extends PagedForm implements ItemCommandListener {
 	
-	public BranchesForm(String repo) {
-		super(repo.concat(" - Branches"));
-		this.url = repo;
+	String state = "open";
+	Hashtable urls;
+
+	public DiscussionsForm(String title) {
+		super(title);
 	}
 
 	void loadInternal(Thread thread) throws Exception {
 		deleteAll();
 		
-		JSONArray r = pagedApi(thread, "repos/".concat(url).concat("/branches?"));
+		JSONArray r = request();
 		int l = r.size();
-		
+
+		StringBuffer sb = new StringBuffer();
+		if (urls == null) {
+			urls = new Hashtable();
+		} else {
+			urls.clear();
+		}
 		StringItem s;
 		String t;
 		for (int i = 0; i < l && thread == this.thread; ++i) {
 			JSONObject j = r.getObject(i);
 			
-			s = new StringItem(null, j.getString("name"));
+			s = new StringItem(null, j.getString("title"));
 			s.setFont(GH.medfont);
-			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setDefaultCommand(GH.openCmd);
+			
+			urls.put(s, t = j.getString("number"));
+			safeAppend(thread, s);
+
+			sb.setLength(0);
+			sb.append('#').append(t);
+			
+			t = j.getObject("user").getString("login");
+			if ("open".equals(j.getString("state"))) {
+				sb.append(" opened ").append(GH.localizeDate(j.getString("created_at"), 1))
+				.append(" by ").append(t);
+			} else {
+				sb.append(" by ").append(t);
+				if ((t = j.getString("merged_at", null)) != null) {
+					sb.append(" was merged ").append(GH.localizeDate(t, 1));
+				} else {
+					sb.append(" was closed ").append(GH.localizeDate(j.getString("closed_at"), 1));
+				}
+			}
+			
+			s = new StringItem(null, sb.toString());
+			s.setFont(GH.smallfont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
 		}
 	}
+
+	abstract JSONArray request() throws Exception;
 
 }

@@ -34,7 +34,7 @@ public class RepoForm extends GHForm {
 	public RepoForm(String name) {
 		super(name);
 		this.url = name;
-		addCommand(GH.releasesCmd);
+//		addCommand(GH.releasesCmd);
 		addCommand(GH.ownerCmd);
 //		addCommand(GH.forksCmd);
 		addCommand(GH.saveBookmarkCmd);
