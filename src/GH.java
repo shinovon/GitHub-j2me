@@ -744,7 +744,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				char c;
 				switch (c = split[2].charAt(0)) {
 				case 'f': // forks
-					f = new ReposForm(repo.concat("/forks?"), "Forks - ".concat(repo), null, true);
+					f = new ReposForm("repos/".concat(repo).concat("/forks?"), "Forks - ".concat(repo), null, true);
 					break;
 				case 'r': // releases
 					f = new ReleasesForm(repo, false);
