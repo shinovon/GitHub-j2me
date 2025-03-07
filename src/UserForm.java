@@ -72,25 +72,25 @@ public class UserForm extends GHForm {
 			append(s);
 		}
 		
-		s = new StringItem(null, r.getString("followers").concat(" followers,"));
-		s.setFont(GH.medfont);
+		s = new StringItem(null, r.getString("followers").concat(" followers"), Item.BUTTON);
+		s.setFont(GH.smallfont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 		s.setDefaultCommand(GH.followersCmd);
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
-		s = new StringItem(null, " " + r.getString("following") + " following");
-		s.setFont(GH.medfont);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER );
+		s = new StringItem(null, r.getString("following").concat(" following"), Item.BUTTON);
+		s.setFont(GH.smallfont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 		s.setDefaultCommand(GH.followingCmd);
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
-		s = new StringItem(null, r.getString("public_repos") + " repositories");
+		s = new StringItem(null, r.getString("public_repos").concat(" repositories"), Item.BUTTON);
 		s.setFont(GH.medfont);
 		s.setDefaultCommand(GH.reposCmd);
 		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 	}
 
