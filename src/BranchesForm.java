@@ -27,7 +27,6 @@ import cc.nnproject.json.JSONObject;
 
 public class BranchesForm extends PagedForm {
 
-	String url;
 	RepoForm repoForm;
 	
 	public BranchesForm(String repo) {

@@ -564,7 +564,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// UserForm commands
 		if (d instanceof UserForm) {
 			if (c == reposCmd) {
-				String url = ((UserForm) d).user;
+				String url = ((UserForm) d).url;
 				ReposForm f = new ReposForm("users/".concat(url).concat("/repos?"), url + " - Repositories", "pushed", false);
 				display(f);
 				start(RUN_LOAD_FORM, f);
@@ -572,7 +572,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			boolean b;
 			if ((b = c == followersCmd) || c == followingCmd) {
-				String url = ((UserForm) d).user;
+				String url = ((UserForm) d).url;
 				UsersForm f = new UsersForm(
 						"users/".concat(url).concat(b ? "/followers?" : "/following?"),
 						url.concat(b ? " - Followers" : " - Following")
@@ -635,7 +635,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (d instanceof RepoForm) {
 				s = ((RepoForm) d).url;
 			} else if (d instanceof UserForm) {
-				s = ((UserForm) d).user;
+				s = ((UserForm) d).url;
 			} else if (d instanceof ReleasesForm) {
 				s = ((ReleasesForm) d).url.concat("/releases");
 			} else if (d instanceof IssuesForm) {
@@ -643,9 +643,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else if (d instanceof CommitsForm) {
 				s = ((CommitsForm) d).url.concat("/commits");
 			} else if (d instanceof IssueForm) {
-				s = ((IssueForm) d).url.concat("/issues/").concat(((IssueForm) d).num);
-			} else if (d instanceof PullForm) {
-				s = ((PullForm) d).url.concat("/pulls/").concat(((PullForm) d).num);
+				s = ((IssueForm) d).url;
 			} else return;
 			
 			addBookmark(s, d);
@@ -725,6 +723,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 	
 	static void openUrl(String url) {
+//		System.out.println("openUrl:".concat(url));
 		if (url.startsWith("https://github.com/")) {
 			url = url.substring(19);
 		} else if (url.startsWith("https://api.github.com/repos/")
@@ -742,7 +741,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else {
 				String repo = split[0].concat("/").concat(split[1]);
 				GHForm f;
-				switch (split[2].charAt(0)) {
+				char c;
+				switch (c = split[2].charAt(0)) {
 				case 'f': // forks
 					f = new ReposForm(repo.concat("/forks?"), url.concat(" - Forks"), null, true);
 					break;
@@ -759,18 +759,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new UsersForm("repos/".concat(url).concat("/subscribers?"), url.concat(" - Watchers"));
 					break;
 				case 'i': // issues
-					if (split.length == 4) {
-						f = new IssueForm(repo, split[3]);
-						break;
-					}
-					f = new IssuesForm(repo, 0);
-					break;
 				case 'p': // pulls
 					if (split.length == 4) {
-						f = new PullForm(repo, split[3]);
+						f = new IssueForm(url);
 						break;
 					}
-					f = new IssuesForm(repo, 1);
+					f = new IssuesForm(repo, c == 'p' ? 1 : 0);
 					break;
 				case 'c': // commits
 					if (split.length == 4) {
@@ -804,7 +798,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			int l = formHistory.size();
 			for (int i = 0; i < l; ++i) {
 				Object o = formHistory.elementAt(i);
-				if (!(o instanceof UserForm) || !url.equals(((UserForm) o).user)) {
+				if (!(o instanceof UserForm) || !url.equals(((UserForm) o).url)) {
 					break;
 				}
 				f = (UserForm) o;

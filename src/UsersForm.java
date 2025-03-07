@@ -28,7 +28,6 @@ import cc.nnproject.json.JSONObject;
 // list of users (stargazers, followers, etc.)
 public class UsersForm extends PagedForm {
 
-	String url;
 	boolean mini;
 
 	public UsersForm(String url, String title) {

@@ -26,7 +26,6 @@ import cc.nnproject.json.JSONObject;
 
 public class RepoForm extends GHForm {
 
-	String url;
 	String parent;
 	String selectedBranch;
 	StringItem branchItem;

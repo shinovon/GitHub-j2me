@@ -21,15 +21,13 @@ SOFTWARE.
 */
 
 // TODO
-public class IssueForm extends DiscussionForm {
+public class IssueForm extends PagedForm {
 
 	String url;
-	String num;
-
-	public IssueForm(String url, String num) {
+	
+	public IssueForm(String url) {
 		super(url);
 		this.url = url;
-		this.num = num;
 		addCommand(GH.saveBookmarkCmd);
 	}
 

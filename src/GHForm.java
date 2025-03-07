@@ -24,6 +24,8 @@ import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.Ticker;
 
 public abstract class GHForm extends Form {
+
+	String url;
 	
 	boolean loaded, finished, canceled;
 	Thread thread;

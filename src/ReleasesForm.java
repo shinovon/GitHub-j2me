@@ -31,7 +31,6 @@ import cc.nnproject.json.JSONObject;
 
 public class ReleasesForm extends PagedForm implements ItemCommandListener {
 
-	String url;
 	private Hashtable urls;
 	private boolean tags;
 

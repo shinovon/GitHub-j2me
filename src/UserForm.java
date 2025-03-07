@@ -26,17 +26,17 @@ import cc.nnproject.json.JSONObject;
 
 public class UserForm extends GHForm {
 
-	String user;
+	String url;
 
 	public UserForm(String user) {
 		super(user);
-		this.user = user;
+		this.url = user;
 //		addCommand(GH.reposCmd);
 		addCommand(GH.saveBookmarkCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		JSONObject r = (JSONObject) GH.api("users/".concat(user));
+		JSONObject r = (JSONObject) GH.api("users/".concat(url));
 
 		// cancel check
 		if (thread != this.thread) return;

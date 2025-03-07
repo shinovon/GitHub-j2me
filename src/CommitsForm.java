@@ -32,7 +32,6 @@ import cc.nnproject.json.JSONObject;
 
 public class CommitsForm extends PagedForm implements ItemCommandListener {
 
-	String url;
 	String sha;
 	boolean search;
 	Hashtable urls;

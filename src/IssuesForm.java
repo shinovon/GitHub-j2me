@@ -34,7 +34,6 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 	
 	String state;
 	Hashtable urls;
-	String url;
 	int mode;
 
 	// 0 - issues, 1 - pulls, 2 - search issues and pulls

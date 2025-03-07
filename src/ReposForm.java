@@ -32,7 +32,6 @@ import cc.nnproject.json.JSONObject;
 // list of repositories (forks, etc)
 public class ReposForm extends PagedForm implements ItemCommandListener  {
 
-	String url;
 	Hashtable urls;
 	boolean users;
 	String sort;
