@@ -49,7 +49,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 
 		StringBuffer sb = new StringBuffer(
 				mode == 2 || (mode == 0 && GH.apiMode != GH.API_GITEA) ?
-						(GH.apiMode == GH.API_GITEA ? "issues/search?" : "search/issues?") : "repos/");
+						(GH.apiMode == GH.API_GITEA ? "repos/issues/search?" : "search/issues?") : "repos/");
 		if (mode == 2) {
 			sb.append("q=").append(GH.url(url));
 		} else if (mode == 0 && GH.apiMode != GH.API_GITEA) {
@@ -59,6 +59,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			}
 		} else {
 			sb.append(url).append(mode == 1 ? "/pulls?" : "/issues?");
+			if (GH.apiMode == GH.API_GITEA) sb.append("type=issues");
 			if (state != null) sb.append("state=").append(state);
 		}
 		

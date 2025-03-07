@@ -5,5 +5,4 @@ Unofficial GitHub browser client for j2me
 - markdown parsing
 - source browser?
 - avatars?
-- GitLab, Gitea API usage
 - auth?
