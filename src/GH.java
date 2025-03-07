@@ -55,14 +55,21 @@ import cc.nnproject.json.JSONStream;
 
 public class GH extends MIDlet implements CommandListener, ItemCommandListener, ItemStateListener, Runnable {
 	
+	// threading tasks
 	static final int RUN_LOAD_FORM = 1;
 	static final int RUN_BOOKMARKS_SCREEN = 2;
 	
+	// api modes
+	static final int API_GITHUB = 0;
+	static final int API_GITEA = 1;
+	
+	// constants
 	private static final String SETTINGS_RECORDNAME = "ghsets";
 	private static final String BOOKMARKS_RECORDNAME = "ghbm";
 	
-	private static final String APIURL = "https://api.github.com/";
-	private static final String API_VERSION = "2022-11-28";
+	private static final String GITHUB_API_URL = "https://api.github.com/";
+	private static final String GITHUB_API_VERSION = "2022-11-28";
+	private static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
 
 	// fonts
 	static final Font largefont = Font.getFont(0, 0, Font.SIZE_LARGE);
@@ -84,6 +91,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static String proxyUrl = "http://nnp.nnchan.ru/hproxy.php?";
 	private static String browseProxyUrl = "http://nnp.nnchan.ru/glype/browse.php?u=";
 	private static boolean useProxy = false;
+	static int apiMode = API_GITHUB;
+	private static String customApiUrl = GITEA_DEFAULT_API_URL;
 
 	// threading
 	private static int run;
@@ -163,6 +172,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static TextField proxyField;
 	private static TextField browseProxyField;
 	private static ChoiceGroup proxyChoice;
+	private static ChoiceGroup modeChoice;
+	private static TextField customApiField;
 	
 	// search items
 	private static TextField searchField;
@@ -189,6 +200,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			proxyUrl = j.getString("proxy", proxyUrl);
 			useProxy = j.getBoolean("useProxy", useProxy);
 			browseProxyUrl = j.getString("browseProxy", browseProxyUrl);
+			apiMode = j.getInt("apiMode", apiMode);
+			customApiUrl = j.getString("customApiUrl", customApiUrl);
 		} catch (Exception e) {}
 		
 		// commands
@@ -247,7 +260,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		// init main form
 		
-		Form f = new Form("GitHub");
+		Form f = new Form("gh2me");
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
 		f.addCommand(aboutCmd);
@@ -296,6 +309,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					Form f = new Form("Settings");
 					f.addCommand(backCmd);
 					f.setCommandListener(this);
+					
+					modeChoice = new ChoiceGroup("Mode", ChoiceGroup.POPUP, new String[] {
+							"GitHub", "Gitea", /* "GitLab" */
+							}, null);
+					modeChoice.setSelectedIndex(apiMode, true);
+					f.append(modeChoice);
+					
+					customApiField = new TextField("Gitea API URL",
+							customApiUrl == null ? GITEA_DEFAULT_API_URL : customApiUrl, 200, TextField.URL);
+					f.append(customApiField);
 					
 					proxyField = new TextField("Proxy URL", proxyUrl, 200, TextField.NON_PREDICTIVE);
 					f.append(proxyField);
@@ -401,6 +424,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				// save settings
 				proxyUrl = proxyField.getString();
 				useProxy = proxyChoice.isSelected(0);
+				apiMode = modeChoice.getSelectedIndex();
+				if ((customApiUrl = customApiField.getString()).trim().length() == 0)
+					customApiUrl = null;
 				
 				try {
 					RecordStore.deleteRecordStore(SETTINGS_RECORDNAME);
@@ -410,6 +436,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					j.put("proxy", proxyUrl);
 					j.put("useProxy", useProxy);
 					j.put("browseProxy", browseProxyUrl);
+					j.put("apiMode", apiMode);
+					j.put("customApiUrl", customApiUrl);
 					
 					byte[] b = j.toString().getBytes("UTF-8");
 					RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
@@ -497,7 +525,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				Form f;
 				switch (type) {
 				case 0: // repositories
-					f = new ReposForm("search/repositories?q=".concat(url(q)), "Search", null, true);
+					f = new ReposForm((GH.apiMode == GH.API_GITEA ? "repos/search?q=" : "search/repositories?q=").concat(url(q)), 
+							"Search", /*GH.apiMode == GH.API_GITEA ? "updated" : */null, true);
 					break;
 				case 1: // issues
 					f = new IssuesForm(q, 2);
@@ -506,7 +535,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new CommitsForm(q, null, true);
 					break;
 				case 3: // users
-					f = new UsersForm("search/users?q=".concat(url(q)), "Search");
+					f = new UsersForm((GH.apiMode == GH.API_GITEA ? "users/search?q=" : "search/users?q=").concat(url(q)),
+							"Search");
 					break;
 				default:
 					return;
@@ -524,7 +554,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == downloadCmd) {
-				browse(APIURL.concat("repos/").concat(((RepoForm) d).url).concat("/zipball/").concat(((RepoForm) d).selectedBranch));
+				String inst;
+				if (apiMode == API_GITHUB) {
+					inst = GITHUB_API_URL;
+				} else if (customApiUrl != null) {
+					inst = customApiUrl;
+				} else if (apiMode == API_GITEA) {
+					inst = GITEA_DEFAULT_API_URL;
+				} else return;
+				browse(inst.concat("repos/").concat(((RepoForm) d).url)
+						.concat(apiMode == API_GITEA ? "/archive/" : "/zipball/")
+						.concat(((RepoForm) d).selectedBranch).concat(apiMode == API_GITEA ? ".zip" : ""));
 				return;
 			}
 			if (c == forkCmd) {
@@ -565,7 +605,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (d instanceof UserForm) {
 			if (c == reposCmd) {
 				String url = ((UserForm) d).url;
-				ReposForm f = new ReposForm("users/".concat(url).concat("/repos?"), "Repositories - ".concat(url), "pushed", false);
+				ReposForm f = new ReposForm("users/".concat(url).concat("/repos?"),
+						"Repositories - ".concat(url), GH.apiMode == GH.API_GITEA ? "updated" : "pushed", false);
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -985,14 +1026,34 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		HttpConnection hc = null;
 		InputStream in = null;
 		try {
-			hc = openHttpConnection(proxyUrl(APIURL.concat(url)));
+			String inst;
+			if (apiMode == API_GITHUB) {
+				inst = GITHUB_API_URL;
+			} else if (customApiUrl != null) {
+				inst = customApiUrl;
+			} else if (apiMode == API_GITEA) {
+				inst = GITEA_DEFAULT_API_URL;
+			} else {
+				throw new RuntimeException("Invalid API mode");
+			}
+			hc = openHttpConnection(proxyUrl(inst.concat(url)));
 			hc.setRequestMethod("GET");
-			hc.setRequestProperty("Accept", "application/vnd.github+json");
-			hc.setRequestProperty("X-Github-Api-Version", API_VERSION);
+			if (apiMode == API_GITHUB) {
+				hc.setRequestProperty("Accept", "application/vnd.github+json");
+				hc.setRequestProperty("X-Github-Api-Version", GITHUB_API_VERSION);
+			} else {
+				hc.setRequestProperty("Accept", "application/json");
+			}
 			
 			int c = hc.getResponseCode();
-			res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
-//			res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
+			try {
+				res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+//				res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
+			} catch (RuntimeException e) {
+				if (c >= 400) {
+					throw new APIException(url, c, null);
+				} else throw e;
+			}
 			if (c >= 400) {
 				throw new APIException(url, c, res);
 			}
@@ -1298,7 +1359,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		try {
 			if (url.indexOf(':') == -1) {
 				url = "http://".concat(url);
-			} else if (useProxy && (url.startsWith("https://github.com") || url.startsWith(APIURL))) {
+			} else if (useProxy && (url.startsWith("https://github.com") || url.startsWith(GITHUB_API_URL))) {
 				url = browseProxyUrl.concat(url(url));
 			}
 			if (platformRequest(url)) notifyDestroyed();

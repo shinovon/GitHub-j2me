@@ -67,14 +67,14 @@ public abstract class PagedForm extends GHForm {
 		if (sb.charAt(url.length() - 1) != '?') {
 			sb.append('&');
 		}
-		sb.append("per_page=").append(perPage)
+		sb.append(GH.apiMode == GH.API_GITEA ? "limit=" : "per_page=").append(perPage)
 		.append("&page=").append(page);
 		
 		String[] s = new String[1];
 		Object r = GH.api(sb.toString(), s);
 		
 		if (r instanceof JSONObject) {
-			r = ((JSONObject) r).getArray("items");
+			r = ((JSONObject) r).getArray(GH.apiMode == GH.API_GITEA ? "data" : "items");
 		}
 
 // <https://api.github.com/user/43963888/repos?page=2>; rel="next", <https://api.github.com/user/43963888/repos?page=2>; rel="last"
@@ -87,7 +87,8 @@ public abstract class PagedForm extends GHForm {
 					for (int i = 0; i < s.length; ++i) {
 						if (s[i].indexOf("rel=\"last\"") != -1) {
 							int k = s[i].indexOf("&page=");
-							last = Integer.parseInt(s[i].substring(k + 6, s[i].indexOf('>', k + 6)));
+							int m = s[i].indexOf('&', k + 6);
+							last = Integer.parseInt(s[i].substring(k + 6, m != -1 ? m : s[i].indexOf('>', k + 6)));
 							break;
 						}
 					}

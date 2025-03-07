@@ -42,7 +42,7 @@ public class UserForm extends GHForm {
 		StringItem s;
 		String t;
 		
-		if ((t = r.getString("name")) != null) {
+		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "full_name" : "name")) != null) {
 			s = new StringItem(null, t);
 			s.setFont(GH.largefont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
@@ -54,15 +54,15 @@ public class UserForm extends GHForm {
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 
-		if ((t = r.getString("bio")) != null && t.length() != 0) {
+		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "description" : "bio")) != null && t.length() != 0) {
 			s = new StringItem(null, t);
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
 
-		if ((t = r.getString("blog")) != null && t.length() != 0) {
-			s = new StringItem("Blog", t);
+		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "website" : "blog")) != null && t.length() != 0) {
+			s = new StringItem("Web", t);
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.linkCmd);
@@ -70,21 +70,21 @@ public class UserForm extends GHForm {
 			append(s);
 		}
 		
-		s = new StringItem(null, r.getString("followers").concat(" followers"), Item.BUTTON);
+		s = new StringItem(null, r.getString(GH.apiMode == GH.API_GITEA ? "followers_count" : "followers").concat(" followers"), Item.BUTTON);
 		s.setFont(GH.smallfont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 		s.setDefaultCommand(GH.followersCmd);
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
-		s = new StringItem(null, r.getString("following").concat(" following"), Item.BUTTON);
+		s = new StringItem(null, r.getString(GH.apiMode == GH.API_GITEA ? "following_count" : "following").concat(" following"), Item.BUTTON);
 		s.setFont(GH.smallfont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 		s.setDefaultCommand(GH.followingCmd);
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
-		s = new StringItem(null, r.getString("public_repos").concat(" repositories"), Item.BUTTON);
+		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? "Repositories" : r.getString("public_repos").concat(" repositories"), Item.BUTTON);
 		s.setFont(GH.medfont);
 		s.setDefaultCommand(GH.reposCmd);
 		s.setItemCommandListener(GH.midlet);

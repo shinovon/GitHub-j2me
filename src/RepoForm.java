@@ -67,14 +67,14 @@ public class RepoForm extends GHForm {
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_VCENTER | Item.LAYOUT_NEWLINE_AFTER);
 		append(s);
 
-		if ((t = r.getString("description")) != null) {
+		if ((t = r.getString("description")) != null && t.length() != 0) {
 			s = new StringItem("About", t);
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
 
-		if ((t = r.getString("homepage")) != null && t.length() != 0) {
+		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "website" : "homepage")) != null && t.length() != 0) {
 			s = new StringItem("Web", t);
 			s.setFont(GH.smallfont);
 			s.setDefaultCommand(GH.linkCmd);
@@ -83,7 +83,8 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 
-		if (!r.isNull("license") && (t = r.getObject("license").getString("name")) != null && t.length() != 0) {
+		if (GH.apiMode != GH.API_GITEA && !r.isNull("license")
+				&& (t = r.getObject("license").getString("name")) != null && t.length() != 0) {
 			s = new StringItem("License", t);
 			s.setFont(GH.smallfont);
 			s.setItemCommandListener(GH.midlet);
@@ -100,21 +101,23 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 		
-		s = new StringItem(null, r.getString("stargazers_count").concat(" stars"), Item.BUTTON);
+		s = new StringItem(null, r.getString(GH.apiMode == GH.API_GITEA ? "stars_count" :"stargazers_count")
+				.concat(" stars"), Item.BUTTON);
 		s.setFont(GH.smallfont);
 		s.setDefaultCommand(GH.stargazersCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT);
 		append(s);
 		
-		s = new StringItem(null, r.getString("subscribers_count").concat(" watching"), Item.BUTTON);
+		s = new StringItem(null, r.getString(GH.apiMode == GH.API_GITEA ? "watchers_count" :"subscribers_count")
+				.concat(" watching"), Item.BUTTON);
 		s.setFont(GH.smallfont);
 		s.setDefaultCommand(GH.watchersCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT);
 		append(s);
 		
-		s = new StringItem(null, r.getString("forks").concat(" forks"), Item.BUTTON);
+		s = new StringItem(null, r.getString(GH.apiMode == GH.API_GITEA ? "forks_count" : "forks").concat(" forks"), Item.BUTTON);
 		s.setFont(GH.smallfont);
 		s.setDefaultCommand(GH.forksCmd);
 		s.setItemCommandListener(GH.midlet);
@@ -141,31 +144,39 @@ public class RepoForm extends GHForm {
 		
 		append("\n");
 		
-		if (r.getBoolean("has_issues")) {
-			s = new StringItem(null, "Issues (".concat(Integer.toString(r.getInt("open_issues")).concat(" open)")), Item.BUTTON);
+		boolean b;
+		if (b = r.getBoolean("has_issues")) {
+			s = new StringItem(null, GH.apiMode == GH.API_GITEA ? "Issues" : "Issues ("
+				.concat(Integer.toString(r.getInt("open_issues")).concat(" open)")), Item.BUTTON);
 			s.setDefaultCommand(GH.issuesCmd);
 			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			append(s);
 		}
 
-		s = new StringItem(null, "Pull requests", Item.BUTTON);
-		s.setDefaultCommand(GH.pullsCmd);
-		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
-		append(s);
+		if (r.getBoolean("has_pull_requests", b)) {
+			s = new StringItem(null, "Pull requests", Item.BUTTON);
+			s.setDefaultCommand(GH.pullsCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+			append(s);
+		}
+
+		if (r.getBoolean("has_releases", true)) {
+			s = new StringItem(null, "Releases", Item.BUTTON);
+			s.setDefaultCommand(GH.releasesCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			append(s);
+		}
 		
-		s = new StringItem(null, "Releases", Item.BUTTON);
-		s.setDefaultCommand(GH.releasesCmd);
-		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		append(s);
-		
-		s = new StringItem(null, "Contributors", Item.BUTTON);
-		s.setDefaultCommand(GH.contribsCmd);
-		s.setItemCommandListener(GH.midlet);
-		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		append(s);
+		if (GH.apiMode != GH.API_GITEA) { 
+			s = new StringItem(null, "Contributors", Item.BUTTON);
+			s.setDefaultCommand(GH.contribsCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			append(s);
+		}
 	}
 
 }
