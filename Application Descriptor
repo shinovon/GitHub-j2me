@@ -2,9 +2,9 @@ MIDlet-Vendor: nnproject
 MIDlet-Version: 0.6.1
 MIDlet-Icon: /g.png
 MicroEdition-Configuration: CLDC-1.1
-MIDlet-1: GitHub,/g.png,GH
-MIDlet-Name: GitHub
+MIDlet-1: GH2ME,/g.png,GH
+MIDlet-Name: GH2ME
 MicroEdition-Profile: MIDP-2.0
-MIDlet-Jar-URL: GitHub.jar
+MIDlet-Jar-URL: GH2ME.jar
 Nokia-Scalable-Icon: /g.svg
 Nokia-Scalable-Icon-MIDlet-1: /g.svg
