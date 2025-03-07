@@ -19,18 +19,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+import java.util.Hashtable;
+
+import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Item;
+import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.Spacer;
 import javax.microedition.lcdui.StringItem;
 
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
-public class CommitsForm extends PagedForm {
+public class CommitsForm extends PagedForm implements ItemCommandListener {
 
 	String url;
 	String sha;
 	boolean search;
+	Hashtable urls;
 	
 	public CommitsForm(String repo, String sha, boolean search) {
 		super(search ? "Search" : repo.concat(" - Commits"));
@@ -52,7 +57,12 @@ public class CommitsForm extends PagedForm {
 		
 		JSONArray r = pagedApi(thread, sb.toString());
 		int l = r.size();
-
+		
+		if (urls == null) {
+			urls = new Hashtable();
+		} else {
+			urls.clear();
+		}
 		StringItem s;
 		String t;
 		int k;
@@ -66,15 +76,21 @@ public class CommitsForm extends PagedForm {
 			s = new StringItem(null, t);
 			s.setFont(GH.medboldfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			if (search && j.has("repository")) {
+				urls.put(s, t = j.getObject("repository").getString("full_name"));
+				s.addCommand(GH.repoCmd);
+				s.setItemCommandListener(this);
+			}
 			safeAppend(thread, s);
 			
 			sb.setLength(0);
 			
-			if (j.getObject("author") != null && !"invalid-email-address".equals(t = j.getObject("author").getString("login"))) {
+			JSONObject m;
+			if ((m = j.getObject("author")) != null && !"invalid-email-address".equals(t = m.getString("login"))) {
 				sb.append(t);
 				sb.append(!t.equals(j.getObject("committer").getString("login")) ? " authored " : " commited ");
-			} else {
-				sb.append(t = commit.getObject("author").getString("name"));
+			} else if ((m = commit.getObject("author")) != null) {
+				sb.append(t = m.getString("name"));
 				sb.append(!t.equals(commit.getObject("committer").getString("name")) ? " authored " : " commited ");
 			}
 			
@@ -86,6 +102,12 @@ public class CommitsForm extends PagedForm {
 			safeAppend(thread, s);
 			safeAppend(thread, new Spacer(10, 4));
 		}
+	}
+
+	public void commandAction(Command c, Item item) {
+		if (urls == null) return;
+		String s = (String) urls.get(item);
+		GH.openUrl(s);
 	}
 
 }

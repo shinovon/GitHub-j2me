@@ -110,6 +110,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command userCmd;
 	static Command spoilerCmd;
 	static Command branchItemCmd;
+	static Command repoCmd;
 
 	static Command followersCmd;
 	static Command followingCmd;
@@ -207,6 +208,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		userCmd = new Command("View user", Command.ITEM, 1);
 		spoilerCmd = new Command("Show", Command.ITEM, 1);
 		branchItemCmd = new Command("Select branch", Command.ITEM, 1);
+		repoCmd = new Command("View repository", Command.ITEM, 1);
 
 		followersCmd = new Command("Followers", Command.ITEM, 1);
 		followingCmd = new Command("Following", Command.ITEM, 1);
