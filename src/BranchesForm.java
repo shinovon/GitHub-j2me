@@ -30,7 +30,7 @@ public class BranchesForm extends PagedForm {
 	RepoForm repoForm;
 	
 	public BranchesForm(String repo) {
-		super(repo.concat("Branches - "));
+		super("Branches - ".concat(repo));
 		this.url = repo;
 	}
 
