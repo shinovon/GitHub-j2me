@@ -84,6 +84,14 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 
+		if (!r.isNull("license") && (t = r.getObject("license").getString("name")) != null && t.length() != 0) {
+			s = new StringItem("License", t);
+			s.setFont(GH.smallfont);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			append(s);
+		}
+
 		if (r.getBoolean("fork")) {
 			s = new StringItem(null, "Forked from ".concat(parent = r.getObject("parent").getString("full_name")));
 			s.setFont(GH.smallfont);
