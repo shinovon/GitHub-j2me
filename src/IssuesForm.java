@@ -24,6 +24,7 @@ import java.util.Hashtable;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
+import javax.microedition.lcdui.Spacer;
 import javax.microedition.lcdui.StringItem;
 
 import cc.nnproject.json.JSONArray;
@@ -48,7 +49,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 		deleteAll();
 
 		StringBuffer sb = new StringBuffer(mode == 2 ? "search/issues?" : "repos/");
-		if (mode == 3) {
+		if (mode == 2) {
 			sb.append("q=").append(GH.url(url));
 		} else {
 			sb.append(url).append(mode == 1 ? "/pulls?" : "/issues?");
@@ -88,9 +89,8 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.openCmd);
-			
-			urls.put(s, t = j.getString("number"));
 			safeAppend(thread, s);
+			urls.put(s, t = j.getString("number"));
 
 			sb.setLength(0);
 			sb.append('#').append(t);
@@ -110,8 +110,9 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			
 			s = new StringItem(null, sb.toString());
 			s.setFont(GH.smallfont);
-			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			safeAppend(thread, s);
+			safeAppend(thread, new Spacer(10, 4));
 		}
 	}
 

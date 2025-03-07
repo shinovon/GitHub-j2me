@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 import javax.microedition.lcdui.Item;
+import javax.microedition.lcdui.Spacer;
 import javax.microedition.lcdui.StringItem;
 
 import cc.nnproject.json.JSONArray;
@@ -29,19 +30,25 @@ public class CommitsForm extends PagedForm {
 
 	String url;
 	String sha;
+	boolean search;
 	
-	public CommitsForm(String repo, String sha) {
-		super(repo.concat(" - Commits"));
+	public CommitsForm(String repo, String sha, boolean search) {
+		super(search ? "Search" : repo.concat(" - Commits"));
 		this.url = repo;
 		this.sha = sha;
+		this.search = search;
 	}
 
 	void loadInternal(Thread thread) throws Exception {
 		deleteAll();
 		
-		StringBuffer sb = new StringBuffer("repos/");
-		sb.append(url).append("/commits?");
-		if (sha != null) sb.append("sha=").append(sha);
+		StringBuffer sb = new StringBuffer(search ? "search/commits?" : "repos/");
+		if (search) {
+			sb.append("q=").append(GH.url(url));
+		} else {
+			sb.append(url).append("/commits?");
+			if (sha != null) sb.append("sha=").append(sha);
+		}
 		
 		JSONArray r = pagedApi(thread, sb.toString());
 		int l = r.size();
@@ -63,7 +70,7 @@ public class CommitsForm extends PagedForm {
 			
 			sb.setLength(0);
 			
-			if (!"invalid-email-address".equals(t = j.getObject("author").getString("login"))) {
+			if (j.getObject("author") != null && !"invalid-email-address".equals(t = j.getObject("author").getString("login"))) {
 				sb.append(t);
 				sb.append(!t.equals(j.getObject("committer").getString("login")) ? " authored " : " commited ");
 			} else {
@@ -77,6 +84,7 @@ public class CommitsForm extends PagedForm {
 			s.setFont(GH.smallfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
+			safeAppend(thread, new Spacer(10, 4));
 		}
 	}
 

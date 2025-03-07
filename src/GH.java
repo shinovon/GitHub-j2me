@@ -384,6 +384,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					s.setDefaultCommand(searchCmd);
 					s.setItemCommandListener(this);
 					f.append(s);
+					
+					searchForm = f;
 				}
 				
 				searchField.setString(mainField.getString());
@@ -493,15 +495,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				Form f;
 				switch (type) {
 				case 0: // repositories
-					f = new ReposForm("/search/repos?q=".concat(url(q)), "Search", null, true);
+					f = new ReposForm("search/repositories?q=".concat(url(q)), "Search", null, true);
 					break;
 				case 1: // issues
 					f = new IssuesForm(q, 2);
 					break;
-//				case 2: // commits
-//					break;
+				case 2: // commits
+					f = new CommitsForm(q, null, true);
+					break;
 				case 3: // users
-					f = new UsersForm("/search/users?q=".concat(url(q)), "Search");
+					f = new UsersForm("search/users?q=".concat(url(q)), "Search");
 					break;
 				default:
 					return;
@@ -546,7 +549,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} else if (c == pullsCmd) {
 					f = new IssuesForm(url, 1);
 				} else if (c == commitsCmd) {
-					f = new CommitsForm(url, ((RepoForm) d).selectedBranch);
+					f = new CommitsForm(url, ((RepoForm) d).selectedBranch, false);
 				} else if (c == selectBranchCmd) {
 					f = new BranchesForm((RepoForm) d);
 				} else break a;
@@ -769,10 +772,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					break;
 				case 'c': // commits
 					if (split.length == 4) {
-						f = new CommitsForm(repo, split[3]);
+						f = new CommitsForm(repo, split[3], false);
 						break;
 					}
-					f = new CommitsForm(repo, null);
+					f = new CommitsForm(repo, null, false);
 					break;
 				case 'b': // branches
 					f = new BranchesForm(repo);
@@ -946,7 +949,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			((GHForm) p).closed(back);
 		}
 		// push to history
-		if (!back && d != mainForm) {
+		if (!back && d != mainForm && (formHistory.isEmpty() || formHistory.lastElement() != d)) {
 			formHistory.addElement(d);
 		}
 	}
