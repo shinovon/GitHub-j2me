@@ -37,7 +37,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 	Hashtable urls;
 	
 	public CommitsForm(String repo, String sha, boolean search) {
-		super(search ? "Search" : "Commits -".concat(repo));
+		super(search ? "Search" : "Commits - ".concat(repo));
 		this.url = repo;
 		this.sha = sha;
 		this.search = search;

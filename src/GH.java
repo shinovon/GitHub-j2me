@@ -753,7 +753,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new ReleasesForm(repo, true);
 					break;
 				case 's': // stargazers
-					f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), "Stargazers -".concat(repo));
+					f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), "Stargazers - ".concat(repo));
 					break;
 				case 'w': // watchers
 					f = new UsersForm("repos/".concat(repo).concat("/subscribers?"), "Watchers - ".concat(repo));
