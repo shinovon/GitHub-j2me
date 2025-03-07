@@ -22,6 +22,7 @@ SOFTWARE.
 import java.io.IOException;
 
 import cc.nnproject.json.JSONArray;
+import cc.nnproject.json.JSONObject;
 
 // base class for pagination
 public abstract class PagedForm extends GHForm {
@@ -70,7 +71,11 @@ public abstract class PagedForm extends GHForm {
 		.append("&page=").append(page);
 		
 		String[] s = new String[1];
-		JSONArray r = (JSONArray) GH.api(sb.toString(), s);
+		Object r = GH.api(sb.toString(), s);
+		
+		if (r instanceof JSONObject) {
+			r = ((JSONObject) r).getArray("items");
+		}
 
 // <https://api.github.com/user/43963888/repos?page=2>; rel="next", <https://api.github.com/user/43963888/repos?page=2>; rel="last"
 // <https://api.github.com/user/43963888/repos?page=1>; rel="prev", <https://api.github.com/user/43963888/repos?page=1>; rel="first"
@@ -118,7 +123,7 @@ public abstract class PagedForm extends GHForm {
 			addCommand(GH.gotoPageCmd);
 		}
 		
-		return r;
+		return (JSONArray) r;
 	}
 	
 

@@ -88,7 +88,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// threading
 	private static int run;
 	private static Object runParam;
-	private static int running;
+//	private static int running;
 	
 	// bookmarks
 	private static JSONArray bookmarks;
@@ -100,6 +100,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Command settingsCmd;
 	private static Command aboutCmd;
 	private static Command bookmarksCmd;
+	private static Command searchCmd;
+	private static Command searchSubmitCmd;
 	
 	private static Command goCmd;
 	static Command downloadCmd;
@@ -149,6 +151,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// ui
 	private static Form mainForm;
 	private static Form settingsForm;
+	private static Form searchForm;
 	private static List bookmarksList;
 	private static Vector formHistory = new Vector();
 
@@ -159,6 +162,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static TextField proxyField;
 	private static TextField browseProxyField;
 	private static ChoiceGroup proxyChoice;
+	
+	// search items
+	private static TextField searchField;
+	private static ChoiceGroup searchChoice;
 
 	protected void destroyApp(boolean unconditional)  {}
 
@@ -187,9 +194,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		exitCmd = new Command("Exit", Command.EXIT, 2);
 		backCmd = new Command("Back", Command.BACK, 2);
-		bookmarksCmd = new Command("Bookmarks", Command.SCREEN, 4);
+		bookmarksCmd = new Command("Bookmarks", Command.ITEM, 1);
 		settingsCmd = new Command("Settings", Command.SCREEN, 5);
 		aboutCmd = new Command("About", Command.SCREEN, 6);
+		searchCmd = new Command("Search", Command.ITEM, 1);
+		searchSubmitCmd = new Command("Search", Command.OK, 1);
 		
 		goCmd = new Command("Go", Command.ITEM, 1);
 		downloadCmd = new Command("Download", Command.ITEM, 1);
@@ -244,7 +253,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		f.setCommandListener(this);
 		f.setItemStateListener(this);
 		
-		mainField = new TextField("user or user/repo", "", 200, TextField.NON_PREDICTIVE);
+		mainField = new TextField("URL (user or user/repo)", "", 200, TextField.NON_PREDICTIVE);
 		mainField.addCommand(goCmd);
 		mainField.setItemCommandListener(this);
 		mainField.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
@@ -254,6 +263,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		s = new StringItem(null, "Go", StringItem.BUTTON);
 		s.setDefaultCommand(goCmd);
+		s.setItemCommandListener(this);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		f.append(s);
+		
+		s = new StringItem(null, "Search", StringItem.BUTTON);
+		s.setDefaultCommand(searchCmd);
 		s.setItemCommandListener(this);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		f.append(s);
@@ -271,11 +286,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// mainForm commands
 		if (d == mainForm) {
 			if (c == goCmd) {
-				String url = mainField.getString().trim().toLowerCase();
-				if (url.startsWith("https://github.com/")) {
-					url = url.substring(19);
-				}
-				openUrl(url);
+				openUrl(mainField.getString().trim().toLowerCase());
 				return;
 			}
 			if (c == settingsCmd) {
@@ -342,9 +353,41 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == bookmarksCmd) {
-				if (running != 0) return;
+				if (bookmarksList != null) {
+					display(bookmarksList);
+					return;
+				}
 				display(loadingAlert());
 				start(RUN_BOOKMARKS_SCREEN, null);
+				return;
+			}
+			if (c == searchCmd) {
+				if (searchForm == null) {
+					Form f = new Form("Search");
+					f.addCommand(backCmd);
+					f.setCommandListener(this);
+					f.setItemStateListener(this);
+					
+					searchField = new TextField("", "", 200, TextField.ANY);
+					f.append(searchField);
+					
+					searchChoice = new ChoiceGroup("Type", Choice.POPUP, new String[] {
+							"Repositories",
+							"Issues",
+							"Commits",
+							"Users",
+					}, null);
+					f.append(searchChoice);
+					
+					StringItem s = new StringItem(null, "Search", Item.BUTTON);
+					s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+					s.setDefaultCommand(searchCmd);
+					s.setItemCommandListener(this);
+					f.append(s);
+				}
+				
+				searchField.setString(mainField.getString());
+				display(searchForm);
 				return;
 			}
 		}
@@ -441,6 +484,33 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 		}
+		// searchForm commands
+		if (d == searchForm) {
+			if (c == searchCmd || c == searchSubmitCmd) {
+				int type = searchChoice.getSelectedIndex();
+				String q = searchField.getString();
+				
+				Form f;
+				switch (type) {
+				case 0: // repositories
+					f = new ReposForm("/search/repos?q=".concat(url(q)), "Search", null, true);
+					break;
+				case 1: // issues
+					f = new IssuesForm(q, 2);
+					break;
+//				case 2: // commits
+//					break;
+				case 3: // users
+					f = new UsersForm("/search/users?q=".concat(url(q)), "Search");
+					break;
+				default:
+					return;
+				}
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
+		}
 		// RepoForm commands
 		if (d instanceof RepoForm) {
 			if (c == ownerCmd) {
@@ -464,17 +534,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} else if (c == tagsCmd) {
 					f = new ReleasesForm(url, true);
 				} else if (c == forksCmd) {
-					f = new ReposForm("repos/".concat(url).concat("/forks"), url.concat(" - Forks"), null, true);
+					f = new ReposForm("repos/".concat(url).concat("/forks?"), url.concat(" - Forks"), null, true);
 				} else if (c == contribsCmd) {
-					f = new UsersForm("repos/".concat(url).concat("/contributors"), url.concat(" - Contributors"));
+					f = new UsersForm("repos/".concat(url).concat("/contributors?"), url.concat(" - Contributors"));
 				} else if (c == stargazersCmd) {
-					 f = new UsersForm("repos/".concat(url).concat("/stargazers"), url.concat(" - Stargazers"));
+					 f = new UsersForm("repos/".concat(url).concat("/stargazers?"), url.concat(" - Stargazers"));
 				} else if (c == watchersCmd) {
-					f = new UsersForm("repos/".concat(url).concat("/subscribers"), url.concat(" - Watchers"));
+					f = new UsersForm("repos/".concat(url).concat("/subscribers?"), url.concat(" - Watchers"));
 				} else if (c == issuesCmd) {
-					f = new IssuesForm(url);
+					f = new IssuesForm(url, 0);
 				} else if (c == pullsCmd) {
-					f = new PullsForm(url);
+					f = new IssuesForm(url, 1);
 				} else if (c == commitsCmd) {
 					f = new CommitsForm(url, ((RepoForm) d).selectedBranch);
 				} else if (c == selectBranchCmd) {
@@ -490,7 +560,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (d instanceof UserForm) {
 			if (c == reposCmd) {
 				String url = ((UserForm) d).user;
-				ReposForm f = new ReposForm("users/".concat(url).concat("/repos"), url + " - Repositories", "pushed", false);
+				ReposForm f = new ReposForm("users/".concat(url).concat("/repos?"), url + " - Repositories", "pushed", false);
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -499,7 +569,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if ((b = c == followersCmd) || c == followingCmd) {
 				String url = ((UserForm) d).user;
 				UsersForm f = new UsersForm(
-						"users/".concat(url).concat(b ? "/followers" : "/following"),
+						"users/".concat(url).concat(b ? "/followers?" : "/following?"),
 						url.concat(b ? " - Followers" : " - Following")
 						);
 				display(f);
@@ -533,11 +603,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //				((PagedForm) d).gotoPage(1);
 //			}
 		}
-		// DiscussionsForm commands
-		if (d instanceof DiscussionsForm) {
+		// IssuesForm commands
+		if (d instanceof IssuesForm) {
 			if (c == showOpenCmd || c == showClosedCmd || c == showAllCmd) {
-				((DiscussionsForm) d).state = c == showOpenCmd ? "open" : c == showClosedCmd ? "closed" : "all";
-				((DiscussionsForm) d).cancel();
+				((IssuesForm) d).state = c == showOpenCmd ? "open" : c == showClosedCmd ? "closed" : "all";
+				((IssuesForm) d).cancel();
 				GH.midlet.start(GH.RUN_LOAD_FORM, d);
 				return;
 			}
@@ -564,9 +634,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else if (d instanceof ReleasesForm) {
 				s = ((ReleasesForm) d).url.concat("/releases");
 			} else if (d instanceof IssuesForm) {
-				s = ((IssuesForm) d).url.concat("/issues");
-			} else if (d instanceof PullsForm) {
-				s = ((PullsForm) d).url.concat("/pulls");
+				s = ((IssuesForm) d).url.concat(((IssuesForm) d).mode == 1 ? "/pulls" : "/issues");
 			} else if (d instanceof CommitsForm) {
 				s = ((CommitsForm) d).url.concat("/commits");
 			} else if (d instanceof IssueForm) {
@@ -639,10 +707,25 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				commandAction(goCmd, item);
 				((TextField) item).setString(t.trim());
 			}
+			return;
+		}
+		if (item == searchField) {
+			String t;
+			if ((t = ((TextField) item).getString()).endsWith("\n")) {
+				commandAction(searchCmd, item);
+				((TextField) item).setString(t.trim());
+			}
+			return;
 		}
 	}
 	
 	static void openUrl(String url) {
+		if (url.startsWith("https://github.com/")) {
+			url = url.substring(19);
+		} else if (url.startsWith("https://api.github.com/repos/")
+				|| url.startsWith("https://api.github.com/users/")) {
+			url = url.substring(29);
+		}
 		if (url.indexOf('/') == -1) {
 			// user
 			openUser(url);
@@ -656,7 +739,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				GHForm f;
 				switch (split[2].charAt(0)) {
 				case 'f': // forks
-					f = new ReposForm(repo.concat("/forks"), url.concat(" - Forks"), null, true);
+					f = new ReposForm(repo.concat("/forks?"), url.concat(" - Forks"), null, true);
 					break;
 				case 'r': // releases
 					f = new ReleasesForm(repo, false);
@@ -665,24 +748,24 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new ReleasesForm(repo, true);
 					break;
 				case 's': // stargazers
-					f = new UsersForm("repos/".concat(url).concat("/stargazers"), url.concat(" - Stargazers"));
+					f = new UsersForm("repos/".concat(url).concat("/stargazers?"), url.concat(" - Stargazers"));
 					break;
 				case 'w': // watchers
-					f = new UsersForm("repos/".concat(url).concat("/subscribers"), url.concat(" - Watchers"));
+					f = new UsersForm("repos/".concat(url).concat("/subscribers?"), url.concat(" - Watchers"));
 					break;
 				case 'i': // issues
 					if (split.length == 4) {
 						f = new IssueForm(repo, split[3]);
 						break;
 					}
-					f = new IssuesForm(repo);
+					f = new IssuesForm(repo, 0);
 					break;
 				case 'p': // pulls
 					if (split.length == 4) {
 						f = new PullForm(repo, split[3]);
 						break;
 					}
-					f = new PullsForm(repo);
+					f = new IssuesForm(repo, 1);
 					break;
 				case 'c': // commits
 					if (split.length == 4) {
@@ -770,7 +853,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			notify();
 		}
 		System.out.println("run " + run + " " + param);
-		running++;
+//		running++;
 		switch (run) {
 		case RUN_LOAD_FORM: { // load GHForm contents
 			try {
@@ -812,7 +895,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			break;
 		}
 		}
-		running--;
+//		running--;
 	}
 
 	// start task thread

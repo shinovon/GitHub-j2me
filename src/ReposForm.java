@@ -48,7 +48,7 @@ public class ReposForm extends PagedForm implements ItemCommandListener  {
 	void loadInternal(Thread thread) throws Exception {
 		deleteAll();
 		
-		JSONArray r = pagedApi(thread, sort != null ? url.concat("?sort=").concat(sort) : url.concat("?"));
+		JSONArray r = pagedApi(thread, sort != null ? url.concat("sort=").concat(sort) : url);
 		int l = r.size();
 		
 		if (urls == null) {
