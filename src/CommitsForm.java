@@ -100,7 +100,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 			s.setFont(GH.smallfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
-			safeAppend(thread, new Spacer(10, 4));
+			safeAppend(thread, new Spacer(10, 8));
 		}
 	}
 

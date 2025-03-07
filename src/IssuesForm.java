@@ -112,7 +112,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			s.setFont(GH.smallfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			safeAppend(thread, s);
-			safeAppend(thread, new Spacer(10, 4));
+			safeAppend(thread, new Spacer(10, 8));
 		}
 	}
 
