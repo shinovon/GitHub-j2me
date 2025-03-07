@@ -38,7 +38,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 
 	// 0 - issues, 1 - pulls, 2 - search issues and pulls
 	public IssuesForm(String url, int mode) {
-		super(mode == 2 ? "Search" : url.concat(mode == 1 ? " - Pulls" : " - Issues"));
+		super(mode == 2 ? "Search" : (mode == 1 ? "Pulls - " : "Issues - ").concat(url));
 		this.url = url;
 		this.mode = mode;
 		if (mode != 2) addCommand(GH.saveBookmarkCmd);

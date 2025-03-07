@@ -26,8 +26,6 @@ import cc.nnproject.json.JSONObject;
 
 public class UserForm extends GHForm {
 
-	String url;
-
 	public UserForm(String user) {
 		super(user);
 		this.url = user;

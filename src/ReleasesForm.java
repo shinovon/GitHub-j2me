@@ -35,7 +35,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 	private boolean tags;
 
 	public ReleasesForm(String repo, boolean tags) {
-		super(repo.concat(tags ? " - Tags" : " - Releases"));
+		super((tags ? "Tags - " : "Releases - ").concat(repo));
 		this.perPage = tags ? 30 : 10;
 		this.url = repo;
 		this.tags = tags;
@@ -212,7 +212,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		
 		tags = !tags;
 		perPage = tags ? 30 : 10;
-		setTitle(url.concat(tags ? " - Tags" : " - Releases"));
+		setTitle((tags ? "Tags - " : "Releases - ").concat(url));
 		removeCommand(tags ? GH.tagsCmd : GH.releasesCmd);
 		addCommand(tags ? GH.releasesCmd : GH.tagsCmd);
 
