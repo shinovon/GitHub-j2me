@@ -48,9 +48,14 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 	void loadInternal(Thread thread) throws Exception {
 		deleteAll();
 
-		StringBuffer sb = new StringBuffer(mode == 2 ? "search/issues?" : "repos/");
+		StringBuffer sb = new StringBuffer(mode == 2 || mode == 0 ? "search/issues?" : "repos/");
 		if (mode == 2) {
 			sb.append("q=").append(GH.url(url));
+		} else if (mode == 0) {
+			sb.append("q=").append(GH.url("is:issue repo:".concat(url)));
+			if (!"all".equals(state)) {
+				sb.append(GH.url(" is:")).append("closed".equals(state) ? "closed" : "open");
+			}
 		} else {
 			sb.append(url).append(mode == 1 ? "/pulls?" : "/issues?");
 			if (state != null) sb.append("state=").append(state);
@@ -89,8 +94,11 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			s.setFont(GH.medfont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.openCmd);
+			s.setItemCommandListener(this);
 			safeAppend(thread, s);
-			urls.put(s, t = j.getString("number"));
+			
+			t = j.getString("number");
+			urls.put(s, mode == 2 ? j.getString("url") : t);
 
 			sb.setLength(0);
 			sb.append('#').append(t);
@@ -119,7 +127,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 	public void commandAction(Command c, Item item) {
 		if (urls == null) return;
 		String s = (String) urls.get(item);
-		GH.openUrl(mode == 2 ? s : url.concat(mode == 1 ? "/pulls" : "/issues").concat(s));
+		GH.openUrl(mode == 2 ? s : url.concat(mode == 1 ? "/pulls/" : "/issues/").concat(s));
 	}
 
 }
