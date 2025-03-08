@@ -157,5 +157,12 @@ public interface LangConstants {
 	Stars = 156,
 	Star = 157,
 	Starred = 158,
+	ChooseAuthMethod = 159,
+	AutoOAuth = 160,
+	ManualOAuth = 161,
+	PersonalToken = 162,
+	Authorized = 163,
+	BookmarkSaved = 164,
+	AuthFailed = 165,
 	gh2me = 0;
 }
