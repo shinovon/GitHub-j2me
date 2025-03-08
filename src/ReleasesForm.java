@@ -35,7 +35,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 	private boolean tags;
 
 	public ReleasesForm(String repo, boolean tags) {
-		super((tags ? "Tags - " : "Releases - ").concat(repo));
+		super(GH.L[tags ? Tags : Releases].concat(" - ").concat(repo));
 		this.perPage = tags ? 30 : 10;
 		this.url = repo;
 		this.tags = tags;
@@ -75,7 +75,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				if (t.length() < 100 || i == 0) {
 					GH.parseMarkdown(thread, this, t, -1);
 				} else {
-					s = new StringItem(null, "Show text", Item.HYPERLINK);
+					s = new StringItem(null, GH.L[ShowText], Item.HYPERLINK);
 					s.setFont(GH.medfont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 					s.setDefaultCommand(GH.spoilerCmd);
@@ -90,7 +90,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				JSONArray assets = j.getArray("assets");
 				int l2 = assets.size();
 						
-				s = new StringItem(null, "Assets (" + (l2 + 1) + "):");
+				s = new StringItem(null, GH.L[Assets] + " (" + (l2 + 1) + "):");
 				s.setFont(GH.smallboldfont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 				safeAppend(thread, s);
@@ -98,7 +98,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				if (i == 0 || l2 == 0) {
 					parseAssets(thread, assets, j.getString("zipball_url"), -1);
 				} else {
-					s = new StringItem(null, "Show assets", Item.HYPERLINK);
+					s = new StringItem(null, GH.L[ShowAssets], Item.HYPERLINK);
 					s.setFont(GH.medfont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 					s.setDefaultCommand(GH.spoilerCmd);
@@ -108,7 +108,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 					safeAppend(thread, s);
 				}
 			} else {
-				s = new StringItem(null, "Source code (zip)");
+				s = new StringItem(null, GH.L[SourceCodeZip]);
 				s.setFont(GH.medfont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 				s.addCommand(GH.downloadCmd);
@@ -134,13 +134,13 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			sb.append(asset.getString("name")).append(" (");
 			int size = asset.getInt("size");
 			if (size < 1024) {
-				sb.append(size).append(" B");
+				sb.append(size).append(GH.L[_Bytes]);
 			} else if (size < 1024*1024) {
-				sb.append(((int) ((size / (1024D)) * 100)) / 100D).append(" KB");
+				sb.append(((int) ((size / (1024D)) * 100)) / 100D).append(GH.L[_KBytes]);
 			} else if (size < 1024*1024*1024) {
-				sb.append(((int) ((size / (1024D * 1024D) * 100))) / 100D).append(" MB");
+				sb.append(((int) ((size / (1024D * 1024D) * 100))) / 100D).append(GH.L[_MBytes]);
 			} else {
-				sb.append(((int) ((size / (1024D * 1024D * 1024D)) * 100)) / 100D).append(" GB");
+				sb.append(((int) ((size / (1024D * 1024D * 1024D)) * 100)) / 100D).append(GH.L[_GBytes]);
 			}
 			sb.append(')');
 			
@@ -162,7 +162,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			}
 		}
 		
-		s = new StringItem(null, "Source code (zip)");
+		s = new StringItem(null, GH.L[SourceCodeZip]);
 		s.setFont(GH.medfont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		s.addCommand(GH.downloadCmd);
@@ -212,7 +212,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		
 		tags = !tags;
 		perPage = tags ? 30 : 10;
-		setTitle((tags ? "Tags - " : "Releases - ").concat(url));
+		setTitle(GH.L[tags ? Tags : Releases].concat(" - ").concat(url));
 		removeCommand(tags ? GH.tagsCmd : GH.releasesCmd);
 		addCommand(tags ? GH.releasesCmd : GH.tagsCmd);
 

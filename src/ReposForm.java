@@ -87,7 +87,7 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 				if (j.getBoolean("fork", false)) {
 					s.setLayout(Item.LAYOUT_LEFT);
 					
-					s = new StringItem(null, " (Fork)"/*"Forked from " + j.getObject("parent").getString("full_name")*/);
+					s = new StringItem(null, GH.L[_fork_]/*"Forked from " + j.getObject("parent").getString("full_name")*/);
 					s.setFont(GH.smallfont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 					safeAppend(thread, s);
@@ -108,7 +108,7 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 					safeAppend(thread, s);
 				}
 				
-				s = new StringItem(null, (b ? " Updated " : "Updated ")
+				s = new StringItem(null, (b ? " " : "").concat(GH.L[Updated])
 						.concat(GH.localizeDate((t = j.getString("pushed_at", null)) != null ? t : j.getString("updated_at"), 1)));
 				s.setFont(GH.smallfont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);

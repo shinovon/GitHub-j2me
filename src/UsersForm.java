@@ -53,7 +53,7 @@ public class UsersForm extends PagedForm {
 			safeAppend(thread, s);
 			
 			if (j.has("contributions")) {
-				s = new StringItem(null, j.getString("contributions") + " contributions");
+				s = new StringItem(null, j.getString("contributions").concat(GH.L[_contributions]));
 				s.setFont(GH.medfont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 				safeAppend(thread, s);

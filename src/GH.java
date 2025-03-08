@@ -21,7 +21,7 @@ SOFTWARE.
 */
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Calendar;
 import java.util.Date;
@@ -58,7 +58,7 @@ import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 import cc.nnproject.json.JSONStream;
 
-public class GH extends MIDlet implements CommandListener, ItemCommandListener, ItemStateListener, Runnable {
+public class GH extends MIDlet implements CommandListener, ItemCommandListener, ItemStateListener, Runnable, LangConstants {
 	
 	// threading tasks
 	static final int RUN_LOAD_FORM = 1;
@@ -101,7 +101,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	static final IllegalStateException cancelException = new IllegalStateException("cancel");
 	
-	private static final byte[] CRLF = "\r\n".getBytes();
+	private static final byte[] CRLF = {(byte)'\r', (byte)'\n'};
+	private static final String OAUTH_REDIRECT_BODY =
+		"<html><head><script type=\"text/javascript\">window.close();</script></head><body></body></html>";
 
 	// midp lifecycle
 	static Display display;
@@ -109,6 +111,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Displayable current;
 
 	private static String version;
+
+	// localization
+	static String[] L;
 	
 	// settings
 	private static String proxyUrl = "http://nnp.nnchan.ru/hproxy.php?";
@@ -116,6 +121,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static boolean useProxy = false;
 	static int apiMode = API_GITHUB;
 	private static String customApiUrl = GITEA_DEFAULT_API_URL;
+	private static String lang = "ru";
 
 	// threading
 	private static int run;
@@ -240,7 +246,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		midlet = this;
 		
 		version = getAppProperty("MIDlet-Version");
-		display = Display.getDisplay(this);
+		(display = Display.getDisplay(this))
+		.setCurrent(current = new Form("gh2me"));
 		
 		// load settings
 		
@@ -254,6 +261,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			browseProxyUrl = j.getString("browseProxy", browseProxyUrl);
 			apiMode = j.getInt("apiMode", apiMode);
 			customApiUrl = j.getString("customApiUrl", customApiUrl);
+			lang = j.getString("lang", lang);
 		} catch (Exception ignored) {}
 
 		try {
@@ -282,77 +290,91 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception ignored) {}
 		
+		(L = new String[150])[0] = "gh2me";
+		try {
+			loadLocale(lang);
+		} catch (Exception e) {
+			try {
+				loadLocale(lang = "en");
+			} catch (Exception e2) {
+				// crash on fail
+				throw new RuntimeException(e2.toString());
+			}
+		}
+		
 		if ((apiMode == API_GITHUB && githubAccessToken != null)
 				|| (apiMode == API_GITEA && giteaRefreshToken != null)) {
-			start(RUN_VALIDATE_AUTH, null);
+//			start(RUN_VALIDATE_AUTH, null);
+			run = RUN_VALIDATE_AUTH;
+			run();
 		}
 		
 		// commands
 		
-		exitCmd = new Command("Exit", Command.EXIT, 2);
-		backCmd = new Command("Back", Command.BACK, 2);
-		bookmarksCmd = new Command("Bookmarks", Command.ITEM, 1);
-		settingsCmd = new Command("Settings", Command.SCREEN, 5);
-		aboutCmd = new Command("About", Command.SCREEN, 7);
-		searchCmd = new Command("Search", Command.ITEM, 1);
-		searchSubmitCmd = new Command("Search", Command.OK, 1);
-		authCmd = new Command("Authorization", Command.SCREEN, 6);
+		exitCmd = new Command(L[Exit], Command.EXIT, 2);
+		backCmd = new Command(L[Back], Command.BACK, 2);
+		settingsCmd = new Command(L[Settings], Command.SCREEN, 5);
+		aboutCmd = new Command(L[About], Command.SCREEN, 7);
+		bookmarksCmd = new Command(L[Bookmarks], Command.ITEM, 1);
+		searchCmd = new Command(L[Search], Command.ITEM, 1);
+		searchSubmitCmd = new Command(L[Search], Command.OK, 1);
+		authCmd = new Command(L[Accounts], Command.SCREEN, 6);
 		
-		goCmd = new Command("Go", Command.ITEM, 1);
-		downloadCmd = new Command("Download", Command.ITEM, 1);
-		openCmd = new Command("Open", Command.ITEM, 1);
-		linkCmd = new Command("Open", Command.ITEM, 1);
-		userCmd = new Command("View user", Command.ITEM, 1);
-		spoilerCmd = new Command("Show", Command.ITEM, 1);
-		branchItemCmd = new Command("Select branch", Command.ITEM, 1);
-		repoCmd = new Command("View repository", Command.ITEM, 1);
+		goCmd = new Command(L[Go], Command.ITEM, 1);
+		downloadCmd = new Command(L[Download], Command.ITEM, 1);
+		openCmd = new Command(L[Open], Command.ITEM, 1);
+		linkCmd = new Command(L[Open], Command.ITEM, 1);
+		userCmd = new Command(L[ViewUser], Command.ITEM, 1);
+		spoilerCmd = new Command(L[Show_Spoiler], Command.ITEM, 1);
+		branchItemCmd = new Command(L[SelectBranch], Command.ITEM, 1);
+		repoCmd = new Command(L[ViewRepository], Command.ITEM, 1);
 
-		followersCmd = new Command("Followers", Command.ITEM, 1);
-		followingCmd = new Command("Following", Command.ITEM, 1);
-		reposCmd = new Command("Repositories", Command.ITEM, 1);
+		followersCmd = new Command(L[Followers], Command.ITEM, 1);
+		followingCmd = new Command(L[Following], Command.ITEM, 1);
+		reposCmd = new Command(L[Repositories], Command.ITEM, 1);
 		
-		ownerCmd = new Command("Owner", Command.SCREEN, 5);
-		releasesCmd = new Command("Releases", Command.SCREEN, 3);
-		tagsCmd = new Command("Tags", Command.SCREEN, 4);
-		forksCmd = new Command("Forks", Command.ITEM, 1);
-		contribsCmd = new Command("Contributors", Command.ITEM, 1);
-		stargazersCmd = new Command("Stargazers", Command.ITEM, 1);
-		watchersCmd = new Command("Watchers", Command.ITEM, 1);
-		forkCmd = new Command("Open parent", Command.ITEM, 1);
-		issuesCmd = new Command("Issues", Command.ITEM, 1);
-		pullsCmd = new Command("Pulls", Command.ITEM, 1);
-		commitsCmd = new Command("Commits", Command.ITEM, 1);
-		selectBranchCmd = new Command("Select branch", Command.ITEM, 1);
+		ownerCmd = new Command(L[Owner], Command.SCREEN, 5);
+		releasesCmd = new Command(L[Releases], Command.SCREEN, 3);
+		tagsCmd = new Command(L[Tags], Command.SCREEN, 4);
+		forksCmd = new Command(L[Forks], Command.ITEM, 1);
+		contribsCmd = new Command(L[Contributors], Command.ITEM, 1);
+		stargazersCmd = new Command(L[Stargazers], Command.ITEM, 1);
+		watchersCmd = new Command(L[Watchers], Command.ITEM, 1);
+		forkCmd = new Command(L[OpenParent], Command.ITEM, 1);
+		issuesCmd = new Command(L[Issues], Command.ITEM, 1);
+		pullsCmd = new Command(L[Pulls], Command.ITEM, 1);
+		commitsCmd = new Command(L[Commits], Command.ITEM, 1);
+		selectBranchCmd = new Command(L[SelectBranch], Command.ITEM, 1);
 		
-		showOpenCmd = new Command("Show open", Command.SCREEN, 4);
-		showClosedCmd = new Command("Show closed", Command.SCREEN, 5);
-		showAllCmd = new Command("Show all", Command.SCREEN, 6);
+		showOpenCmd = new Command(L[ShowOpen], Command.SCREEN, 4);
+		showClosedCmd = new Command(L[ShowClosed], Command.SCREEN, 5);
+		showAllCmd = new Command(L[ShowAll], Command.SCREEN, 6);
 		
-		nextPageCmd = new Command("Next page", Command.SCREEN, 7);
-		prevPageCmd = new Command("Prev. page", Command.SCREEN, 8);
-		gotoPageCmd = new Command("Go to page...", Command.SCREEN, 9);
-		gotoPageOkCmd = new Command("Go", Command.OK, 1);
+		nextPageCmd = new Command(L[NextPage], Command.SCREEN, 7);
+		prevPageCmd = new Command(L[PrevPage], Command.SCREEN, 8);
+		gotoPageCmd = new Command(L[GoToPage_Cmd], Command.SCREEN, 9);
+		gotoPageOkCmd = new Command(L[Go], Command.OK, 1);
 
-		saveBookmarkCmd = new Command("Save to bookmarks", Command.OK, 1);
+		saveBookmarkCmd = new Command(L[SaveToBookmarks], Command.SCREEN, 10);
 
-		addBookmarkCmd = new Command("New...", Command.SCREEN, 5);
-		removeBookmarkCmd = new Command("Delete", Command.ITEM, 3);
-		moveBookmarkCmd = new Command("Move", Command.ITEM, 4);
+		addBookmarkCmd = new Command(L[New_Bookmark], Command.SCREEN, 5);
+		removeBookmarkCmd = new Command(L[Delete], Command.ITEM, 3);
+		moveBookmarkCmd = new Command(L[Move], Command.ITEM, 4);
 		
 		authGithubCmd = new Command("GitHub", Command.ITEM, 1);
 		authGiteaCmd = new Command("Gitea", Command.ITEM, 1);
-		logoutGithubCmd = new Command("Logout", Command.ITEM, 1);
-		logoutGiteaCmd = new Command("Logout", Command.ITEM, 1);
-		authBrowserCmd = new Command("Open in browser", Command.ITEM, 1);
-		authDoneCmd = new Command("Done", Command.ITEM, 1);
-		authRegenCmd = new Command("Regenerate", Command.ITEM, 1);
+		logoutGithubCmd = new Command(L[Logout], Command.ITEM, 1);
+		logoutGiteaCmd = new Command(L[Logout], Command.ITEM, 1);
+		authBrowserCmd = new Command(L[OpenInBrowser], Command.ITEM, 1);
+		authDoneCmd = new Command(L[Done], Command.ITEM, 1);
+		authRegenCmd = new Command(L[Regenerate], Command.ITEM, 1);
 
-		okCmd = new Command("Ok", Command.OK, 1);
-		cancelCmd = new Command("Cancel", Command.CANCEL, 2);
+		okCmd = new Command(L[Ok], Command.OK, 1);
+		cancelCmd = new Command(L[Cancel], Command.CANCEL, 2);
 		
 		// init main form
 		
-		Form f = new Form("gh2me");
+		Form f = new Form(L[0]);
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
 		f.addCommand(aboutCmd);
@@ -361,7 +383,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		f.setCommandListener(this);
 		f.setItemStateListener(this);
 		
-		mainField = new TextField("URL (user or user/repo)", "", 200, TextField.NON_PREDICTIVE);
+		mainField = new TextField(L[URL_Main], "", 200, TextField.NON_PREDICTIVE);
 		mainField.addCommand(goCmd);
 		mainField.setItemCommandListener(this);
 		mainField.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
@@ -369,19 +391,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		StringItem s;
 		
-		s = new StringItem(null, "Go", StringItem.BUTTON);
+		s = new StringItem(null, L[Go], StringItem.BUTTON);
 		s.setDefaultCommand(goCmd);
 		s.setItemCommandListener(this);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		f.append(s);
 		
-		s = new StringItem(null, "Search", StringItem.BUTTON);
+		s = new StringItem(null, L[Search], StringItem.BUTTON);
 		s.setDefaultCommand(searchCmd);
 		s.setItemCommandListener(this);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		f.append(s);
 		
-		s = new StringItem(null, "Bookmarks", StringItem.BUTTON);
+		s = new StringItem(null, L[Bookmarks], StringItem.BUTTON);
 		s.setDefaultCommand(bookmarksCmd);
 		s.setItemCommandListener(this);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
@@ -399,27 +421,27 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			if (c == settingsCmd) {
 				if (settingsForm == null) {
-					Form f = new Form("Settings");
+					Form f = new Form(L[Settings]);
 					f.addCommand(backCmd);
 					f.setCommandListener(this);
 					
-					modeChoice = new ChoiceGroup("Mode", ChoiceGroup.POPUP, new String[] {
+					modeChoice = new ChoiceGroup(L[Mode_API], ChoiceGroup.POPUP, new String[] {
 							"GitHub", "Gitea", /* "GitLab" */
 							}, null);
 					modeChoice.setSelectedIndex(apiMode, true);
 					f.append(modeChoice);
 					
-					customApiField = new TextField("Gitea API URL",
+					customApiField = new TextField(L[GiteaAPIURL],
 							customApiUrl == null ? GITEA_DEFAULT_API_URL : customApiUrl, 200, TextField.URL);
 					f.append(customApiField);
 					
-					proxyField = new TextField("Proxy URL", proxyUrl, 200, TextField.NON_PREDICTIVE);
+					proxyField = new TextField(L[APIProxyURL], proxyUrl, 200, TextField.NON_PREDICTIVE);
 					f.append(proxyField);
 					
-					browseProxyField = new TextField("Browser Proxy URL", browseProxyUrl, 200, TextField.NON_PREDICTIVE);
+					browseProxyField = new TextField(L[BrowserProxyURL], browseProxyUrl, 200, TextField.NON_PREDICTIVE);
 					f.append(browseProxyField);
 					
-					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] { "Use proxy" }, null);
+					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] { L[UseProxy] }, null);
 					proxyChoice.setSelectedIndex(0, useProxy);
 					f.append(proxyChoice);
 					
@@ -434,17 +456,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f.setCommandListener(this);
 				
 				StringItem s;
-				s = new StringItem(null, "unnamed github j2me client v" + version);
+				s = new StringItem(null, "GH2ME v" + version);
 				s.setFont(largefont);
 				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_VCENTER | Item.LAYOUT_LEFT);
 				f.append(s);
 				
-				s = new StringItem(null, "Unofficial GitHub browser client");
+				s = new StringItem(null, L[About_Text]);
 				s.setFont(Font.getDefaultFont());
 				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 				f.append(s);
 
-				s = new StringItem("Developer", "shinovon");
+				s = new StringItem(L[Developer], "shinovon");
 				s.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_LEFT);
 				f.append(s);
 
@@ -475,13 +497,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					display(bookmarksList);
 					return;
 				}
-				display(loadingAlert());
+				display(loadingAlert(L[Loading]));
 				start(RUN_BOOKMARKS_SCREEN, null);
 				return;
 			}
 			if (c == searchCmd) {
 				if (searchForm == null) {
-					Form f = new Form("Search");
+					Form f = new Form(L[Search]);
 					f.addCommand(backCmd);
 					f.setCommandListener(this);
 					f.setItemStateListener(this);
@@ -489,11 +511,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					searchField = new TextField("", "", 200, TextField.ANY);
 					f.append(searchField);
 					
-					searchChoice = new ChoiceGroup("Type", Choice.POPUP, new String[] {
-							"Repositories",
-							"Issues",
-							"Users",
-							"Commits",
+					searchChoice = new ChoiceGroup(L[Type_Search], Choice.POPUP, new String[] {
+							L[Repositories],
+							L[Issues],
+							L[Users],
+							L[Commits],
 					}, null);
 					f.append(searchChoice);
 					
@@ -511,7 +533,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == authCmd) {
-				Form f = new Form("Authorization");
+				Form f = new Form(L[Accounts]);
 				f.addCommand(backCmd);
 				f.setCommandListener(this);
 				
@@ -522,10 +544,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f.append(s);
 				
 				if (githubAccessToken == null) {
-					s = new StringItem(null, "Authorize", Item.BUTTON);
+					s = new StringItem(null, L[Authorize], Item.BUTTON);
 					s.setDefaultCommand(authGithubCmd);
 				} else {
-					s = new StringItem(null, "Logout", Item.BUTTON);
+					s = new StringItem(null, L[Logout], Item.BUTTON);
 					s.setDefaultCommand(logoutGithubCmd);
 				}
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
@@ -537,10 +559,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f.append(s);
 				
 				if (giteaRefreshToken == null) {
-					s = new StringItem(null, "Authorize", Item.BUTTON);
+					s = new StringItem(null, L[Authorize], Item.BUTTON);
 					s.setDefaultCommand(authGiteaCmd);
 				} else {
-					s = new StringItem(null, "Logout", Item.BUTTON);
+					s = new StringItem(null, L[Logout], Item.BUTTON);
 					s.setDefaultCommand(logoutGiteaCmd);
 				}
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
@@ -586,7 +608,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// bookmarksList commands
 		if (d == bookmarksList && c != backCmd) {
 			if (c == addBookmarkCmd) {
-				TextBox t = new TextBox("user or user/repo", "", 100, TextField.NON_PREDICTIVE);
+				TextBox t = new TextBox(L[URL_Main], "", 100, TextField.NON_PREDICTIVE);
 				t.addCommand(okCmd);
 				t.addCommand(cancelCmd);
 				t.setCommandListener(this);
@@ -684,7 +706,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (c == authGithubCmd || c == authGiteaCmd) {
 			String url = oauthUrl = getOauthUrl(oauthMode = c == authGithubCmd ? 0 : 1);
 			
-			Form f = new Form("Authorization");
+			Form f = new Form(L[Authorization]);
 			f.addCommand(backCmd);
 			f.setCommandListener(this);
 
@@ -701,7 +723,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			f.append(s);
 			
 			
-			s = new StringItem(null, "Open in browser", Item.BUTTON);
+			s = new StringItem(null, L[OpenInBrowser], Item.BUTTON);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			s.setDefaultCommand(authBrowserCmd);
 			s.setItemCommandListener(this);
@@ -719,7 +741,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			
 			f.append("\n");
 			
-			s = new StringItem(null, "Done", Item.BUTTON);
+			s = new StringItem(null, L[Done], Item.BUTTON);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			s.setDefaultCommand(authDoneCmd);
 			s.setItemCommandListener(this);
@@ -794,13 +816,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} else if (c == tagsCmd) {
 					f = new ReleasesForm(url, true);
 				} else if (c == forksCmd) {
-					f = new ReposForm("repos/".concat(url).concat("/forks?"), "Forks - ".concat(url), null, true);
+					f = new ReposForm("repos/".concat(url).concat("/forks?"), L[Forks].concat(" - ").concat(url), null, true);
 				} else if (c == contribsCmd) {
-					f = new UsersForm("repos/".concat(url).concat("/contributors?"), "Contributors - ".concat(url));
+					f = new UsersForm("repos/".concat(url).concat("/contributors?"), L[Contributors].concat(" - ").concat(url));
 				} else if (c == stargazersCmd) {
-					 f = new UsersForm("repos/".concat(url).concat("/stargazers?"), "Stargazers - ".concat(url));
+					 f = new UsersForm("repos/".concat(url).concat("/stargazers?"), L[Stargazers].concat(" - ").concat(url));
 				} else if (c == watchersCmd) {
-					f = new UsersForm("repos/".concat(url).concat("/subscribers?"), "Watchers - ".concat(url));
+					f = new UsersForm("repos/".concat(url).concat("/subscribers?"), L[Watchers].concat(" - ").concat(url));
 				} else if (c == issuesCmd) {
 					f = new IssuesForm(url, 0);
 				} else if (c == pullsCmd) {
@@ -821,7 +843,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (c == reposCmd) {
 				String url = ((UserForm) d).url;
 				ReposForm f = new ReposForm("users/".concat(url).concat("/repos?"),
-						"Repositories - ".concat(url), GH.apiMode == GH.API_GITEA ? "updated" : "pushed", false);
+						L[Repositories].concat(" - ").concat(url), GH.apiMode == GH.API_GITEA ? "updated" : "pushed", false);
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -831,7 +853,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				String url = ((UserForm) d).url;
 				UsersForm f = new UsersForm(
 						"users/".concat(url).concat(b ? "/followers?" : "/following?"),
-						(b ? "Followers - " : "Following - ").concat(url)
+						L[b ? Followers : Following].concat(" - ").concat(url)
 						);
 				display(f);
 				start(RUN_LOAD_FORM, f);
@@ -853,7 +875,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == gotoPageCmd) {
-				TextBox t = new TextBox("Go to page".concat(((PagedForm) d).pageText), "", 10, TextField.NUMERIC);
+				TextBox t = new TextBox(L[GoToPage].concat(((PagedForm) d).pageText), "", 10, TextField.NUMERIC);
 				t.addCommand(gotoPageOkCmd);
 				t.addCommand(cancelCmd);
 				t.setCommandListener(this);
@@ -1004,7 +1026,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				char c;
 				switch (c = split[2].charAt(0)) {
 				case 'f': // forks
-					f = new ReposForm("repos/".concat(repo).concat("/forks?"), "Forks - ".concat(repo), null, true);
+					f = new ReposForm("repos/".concat(repo).concat("/forks?"), L[Forks].concat(" - ").concat(repo), null, true);
 					break;
 				case 'r': // releases
 					f = new ReleasesForm(repo, false);
@@ -1013,10 +1035,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new ReleasesForm(repo, true);
 					break;
 				case 's': // stargazers
-					f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), "Stargazers - ".concat(repo));
+					f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), L[Stargazers].concat(" - ").concat(repo));
 					break;
 				case 'w': // watchers
-					f = new UsersForm("repos/".concat(repo).concat("/subscribers?"), "Watchers - ".concat(repo));
+					f = new UsersForm("repos/".concat(repo).concat("/subscribers?"), L[Watchers].concat(" - ").concat(repo));
 					break;
 				case 'i': // issues
 				case 'p': // pulls
@@ -1115,15 +1137,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //		running++;
 		switch (run) {
 		case RUN_LOAD_FORM: { // load GHForm contents
-			try {
-				((GHForm) param).load();
-			} catch (InterruptedException e) {
-			} catch (InterruptedIOException e) {
-			} catch (Exception e) {
-				if (e == cancelException) break;
-				display(errorAlert(e.toString()), (Displayable) param);
-				e.printStackTrace();
-			}
+			((GHForm) param).load();
 			break;
 		}
 		case RUN_BOOKMARKS_SCREEN: { // load bookmarks
@@ -1240,7 +1254,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 								out.write("Content-Type: text/html; charset=utf8".getBytes());
 								out.write(CRLF);
 								out.write(CRLF);
-								out.write("<html><head><script type=\"text/javascript\">window.close();</script></head><body></body></html>".toString().getBytes("UTF-8"));
+								out.write(OAUTH_REDIRECT_BODY.getBytes("UTF-8"));
 							}
 						}
 					} catch (Exception e) {
@@ -1270,7 +1284,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			break;
 		}
-		case RUN_VALIDATE_AUTH: {
+		case RUN_VALIDATE_AUTH: { // validate and refresh auth
+			display(loadingAlert("Authorizing"), null);
+			
 			if (apiMode == API_GITHUB && githubAccessToken != null) {
 				try {
 					api("user");
@@ -1294,6 +1310,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						giteaAccessToken = null;
 					}
 				}
+				
 				try {
 					JSONObject j = new JSONObject();
 					j.put("grant_type", "refresh_token");
@@ -1315,6 +1332,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					// token revoked
 					giteaRefreshToken = null;
 				}
+				display(current);
 				writeGiteaAuth();
 				break;
 			}
@@ -1364,14 +1382,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		String state = sb.toString();
 		sb.setLength(0);
 		
-		if (mode == 0) { // github
+		if (mode == API_GITHUB) {
 			sb.append("https://github.com/login/oauth/authorize?client_id=")
 			.append(GITHUB_OAUTH_CLIENT_ID).append("&scope=").append(url(GITHUB_OAUTH_SCOPE))
 			.append("&state=").append(state)
 			.append("&redirect_uri=").append(url(GITHUB_OAUTH_REDIRECT_URI))
 			;
-		}
-		if (mode == 1) { // gitea
+		} else if (mode == API_GITEA) {
 			String inst = customApiUrl != null ? customApiUrl : GITEA_DEFAULT_API_URL;
 			inst = inst.substring(0, inst.indexOf("/api"));
 			sb.append(inst)
@@ -1386,28 +1403,20 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static boolean acceptOauthToken(String query, int mode) {
 		Displayable d = current;
 		
+		String code = null;
 		int i = query.indexOf("code=");
 		if (i == -1) {
-			i = query.indexOf("error=");
-			if (i != -1) {
-				display(errorAlert(query), d);
-			} else {
-				display(errorAlert("Invalid url"), d);
-			}
-			return false;
+			if (query.indexOf('=') != -1) {
+				display(errorAlert(query.indexOf("error") != -1 ? query : "Invalid url"), d);
+				return false;
+			} else code = query;
 		}
 		
-		Alert a = new Alert("", "", null, null);
-		a.setString("Authorizing...");
-		a.setIndicator(new Gauge(null, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));
-		a.addCommand(Alert.DISMISS_COMMAND);
-		a.setCommandListener(midlet);
-		a.setTimeout(-2);
-		display(a, d);
+		display(loadingAlert("Authorizing"), d);
 		
 		try {
-			String code = query.substring(i + 5,
-					(i = query.indexOf('&', i + 5)) != -1 ? i : query.length());
+			if (code == null)
+				code = query.substring(i + 5, (i = query.indexOf('&', i + 5)) != -1 ? i : query.length());
 	
 			JSONObject j = new JSONObject();
 			j.put("code", code);
@@ -1516,6 +1525,27 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		else form.safeInsert(thread, i, s);
 	}
 	
+	private void loadLocale(String lang) throws IOException {
+		InputStreamReader r = new InputStreamReader(getClass().getResourceAsStream("/l/" + lang), "UTF-8");
+		StringBuffer s = new StringBuffer();
+		int c;
+		int i = 1;
+		while ((c = r.read()) > 0) {
+			if (c == '\r') continue;
+			if (c == '\\') {
+				s.append((c = r.read()) == 'n' ? '\n' : (char) c);
+				continue;
+			}
+			if (c == '\n') {
+				L[i++] = s.toString();
+				s.setLength(0);
+				continue;
+			}
+			s.append((char) c);
+		}
+		r.close();
+	}
+	
 	static void display(Alert a, Displayable d) {
 		if (d == null) {
 			display.setCurrent(a);
@@ -1558,7 +1588,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
-	private static Alert errorAlert(String text) {
+	static Alert errorAlert(String text) {
 		Alert a = new Alert("");
 		a.setType(AlertType.ERROR);
 		a.setString(text);
@@ -1574,12 +1604,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return a;
 	}
 	
-	private static Alert loadingAlert() {
-		Alert a = new Alert("", "Loading", null, null);
+	private static Alert loadingAlert(String s) {
+		Alert a = new Alert("", s, null, null);
 		a.setCommandListener(midlet);
 		a.addCommand(Alert.DISMISS_COMMAND);
 		a.setIndicator(new Gauge(null, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));
-		a.setTimeout(30000);
+		a.setTimeout(Alert.FOREVER);
 		return a;
 	}
 
@@ -1751,81 +1781,87 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return "%".concat(s.length() < 2 ? "0" : "").concat(s);
 	}
 	
+	static String count(int n, int i) {
+		boolean ru = "ru".equals(lang);
+		return Integer.toString(n).concat(L[n == 1 || (ru && n % 10 == 1 && n % 100 != 11) ?
+				i : (ru && (n % 10 > 4 || n % 10 < 2) ? (i + 2) : (i + 1))]);
+	}
+	
 	// detailMode: 0 - date, 1 - offset or date, 2 - offset only
 	static String localizeDate(String date, int detailMode) {
 		long now = System.currentTimeMillis();
 		long t = parseDateGMT(date);
 		long d = (now - t) / 1000L;
-		boolean ru = false;
+		boolean ru = "ru".equals(lang);
 		
 		if (detailMode != 0) {
 			if (d < 5) {
-				return "now";
+				return L[Now];
 			}
 			
 			if (d < 60) {
 				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
-					return Integer.toString((int) d).concat(" second ago");
-//				if (ru && (d % 10 > 4 || d % 10 < 2))
-//					return Integer.toString((int) d).concat(L[SecondsAgo2]);
-				return Integer.toString((int) d).concat(" seconds ago");
+					return Integer.toString((int) d).concat(L[_secondAgo]);
+				if (ru && (d % 10 > 4 || d % 10 < 2))
+					return Integer.toString((int) d).concat(L[_secondsAgo2]);
+				return Integer.toString((int) d).concat(L[_secondsAgo]);
 			}
 			
 			if (d < 60 * 60) {
 				d /= 60L;
 				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
-					return Integer.toString((int) d).concat(" minute ago");
-//				if (ru && (d % 10 > 4 || d % 10 < 2))
-//					return Integer.toString((int) d).concat(L[MinutesAgo2]);
-				return Integer.toString((int) d).concat(" minutes ago");
+					return Integer.toString((int) d).concat(L[_minuteAgo]);
+				if (ru && (d % 10 > 4 || d % 10 < 2))
+					return Integer.toString((int) d).concat(L[_minutesAgo2]);
+				return Integer.toString((int) d).concat(L[_minutesAgo]);
 			}
 			
 			if (d < 24 * 60 * 60) {
 				d /= 60 * 60L;
 				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
-					return Integer.toString((int) d).concat(" hour ago");
-//				if (ru && (d % 10 > 4 || d % 10 < 2))
-//					return Integer.toString((int) d).concat(L[HoursAgo2]);
-				return Integer.toString((int) d).concat(" hours ago");
+					return Integer.toString((int) d).concat(L[_hourAgo]);
+				if (ru && (d % 10 > 4 || d % 10 < 2))
+					return Integer.toString((int) d).concat(L[_hoursAgo2]);
+				return Integer.toString((int) d).concat(L[_hoursAgo]);
 			}
 			
 			if (d < 7 * 24 * 60 * 60) {
 				d /= 24 * 60 * 60L;
 				if (d == 1)
-					return "yesterday";
-//				if (ru && d % 10 == 1 && d % 100 != 11)
-//					return Integer.toString((int) d).concat(" day ago");
-//				if (ru && (d % 10 > 4 || d % 10 < 2))
-//					return Integer.toString((int) d).concat(L[DaysAgo2]);
-				return Integer.toString((int) d).concat(" days ago");
+					return L[Yesterday];
+				if (ru && d % 10 == 1 && d % 100 != 11)
+					return Integer.toString((int) d).concat(L[_dayAgo]);
+				if (ru && (d % 10 > 4 || d % 10 < 2))
+					return Integer.toString((int) d).concat(L[_daysAgo2]);
+				return Integer.toString((int) d).concat(L[_daysAgo]);
 			}
 
 			if (d < 28 * 24 * 60 * 60) {
 				d /= 7 * 24 * 60 * 60L;
 				if (d == 1)
-					return "last week";
-//				if (ru && d % 10 == 1 && d % 100 != 11)
-//					return Integer.toString((int) d).concat(" week ago");
-//				if (ru && (d % 10 > 4 || d % 10 < 2))
-//					return Integer.toString((int) d).concat(L[DaysAgo2]);
-				return Integer.toString((int) d).concat(" weeks ago");
+					return L[LastWeek];
+				if (ru && d % 10 == 1 && d % 100 != 11)
+					return Integer.toString((int) d).concat(L[_weekAgo]);
+				if (ru && (d % 10 > 4 || d % 10 < 2))
+					return Integer.toString((int) d).concat(L[_weeksAgo2]);
+				return Integer.toString((int) d).concat(L[_weeksAgo]);
 			}
 			
 			if (detailMode != 1) {
 				if (d < 365 * 24 * 60 * 60) {
 					d /= 30 * 24 * 60 * 60L;
 					if (d == 1)
-						return Integer.toString((int) d).concat(" month ago");
-	//				if (ru && (d % 10 > 4 || d % 10 < 2))
-	//					return Integer.toString((int) d).concat(L[MonthsAgo2]);
-					return Integer.toString((int) d).concat(" months ago");
+						return Integer.toString((int) d).concat(L[_monthAgo]);
+					if (ru && (d % 10 > 4 || d % 10 < 2))
+						return Integer.toString((int) d).concat(L[_monthsAgo2]);
+					return Integer.toString((int) d).concat(L[_monthsAgo]);
 				}
 				
 				d /= 365 * 24 * 60 * 60L;
-				if (d == 1) return Integer.toString((int) d).concat(" year ago");
-//				if (ru && (d % 10 > 4 || d % 10 < 2))
-//					return Integer.toString((int) d).concat(L[YearsAgo2]);
-				return Integer.toString((int) d).concat(" years ago");
+				if (d == 1) return Integer.toString((int) d).concat(L[_yearAgo]);
+				if (ru && (d % 10 > 4 || d % 10 < 2))
+					return Integer.toString((int) d).concat(L[_yearsAgo2]);
+				return Integer.toString((int) d).concat(L[_yearsAgo]);
 			}
 		}
 		
@@ -1834,8 +1870,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		c.setTime(new Date(t));
 		
 		StringBuffer sb = new StringBuffer();
-		if (detailMode != 0) sb.append("on ");
-		sb.append(localizeMonth(c.get(Calendar.MONTH))).append(' ').append(c.get(Calendar.DAY_OF_MONTH));
+		if (detailMode != 0) sb.append(L[on_Date]);
+		
+		if (!ru) sb.append(L[Jan + c.get(Calendar.MONTH)]).append(' ');
+		sb.append(c.get(Calendar.DAY_OF_MONTH));
+		if (ru) sb.append(' ').append(L[Jan + c.get(Calendar.MONTH)]);
+		
 		int year = c.get(Calendar.YEAR);
 		if (year != currentYear) {
 			sb.append(", ").append(year);
@@ -1926,37 +1966,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					(Integer.parseInt(date.substring(offset + 1)) * 60000);
 		}
 		return m ? -offset : offset;
-	}
-	
-	static String localizeMonth(int month) {
-		switch(month) {
-		case Calendar.JANUARY:
-			return "Jan";
-		case Calendar.FEBRUARY:
-			return "Feb";
-		case Calendar.MARCH:
-			return "Mar";
-		case Calendar.APRIL:
-			return "Apr";
-		case Calendar.MAY:
-			return "May";
-		case Calendar.JUNE:
-			return "Jun";
-		case Calendar.JULY:
-			return "Jul";
-		case Calendar.AUGUST:
-			return "Aug";
-		case Calendar.SEPTEMBER:
-			return "Sep";
-		case Calendar.OCTOBER:
-			return "Oct";
-		case Calendar.NOVEMBER:
-			return "Nov";
-		case Calendar.DECEMBER:
-			return "Dec";
-		default:
-			return "";
-		}
 	}
 	
 	static String n(int n) {

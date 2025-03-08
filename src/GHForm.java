@@ -19,11 +19,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+import java.io.InterruptedIOException;
+
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.Ticker;
 
-public abstract class GHForm extends Form {
+public abstract class GHForm extends Form implements LangConstants {
 
 	String url;
 	
@@ -36,18 +38,30 @@ public abstract class GHForm extends Form {
 		setCommandListener(GH.midlet);
 	}
 	
-	void load() throws Exception {
+	void load() {
 		if (loaded) return;
 		loaded = true;
 		canceled = finished = false;
 		
 		setTicker(new Ticker("Loading.."));
+		Thread thread = this.thread = Thread.currentThread();
 		try {
-			loadInternal(thread = Thread.currentThread());
+			loadInternal(thread);
 			finished = true;
+		} catch (InterruptedException e) {
+		} catch (InterruptedIOException e) {
+		} catch (Exception e) {
+			if (e == GH.cancelException || canceled || this.thread != thread) {
+				// ignore exception if cancel detected
+				return;
+			}
+			GH.display(GH.errorAlert(e.toString()), this);
+			e.printStackTrace();
 		} finally {
 			setTicker(null);
-			thread = null;
+			if (this.thread == thread) {
+				this.thread = null;
+			}
 		}
 	}
 	
