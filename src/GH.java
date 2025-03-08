@@ -781,11 +781,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			s.setFont(medfont);
 			f.append(s);
 			
-			s = new StringItem(null, L[AutoOAuth], Item.BUTTON);
-			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
-			s.setDefaultCommand(authBrowserCmd);
-			s.setItemCommandListener(this);
-			f.append(s);
+			if (!useProxy) {
+				s = new StringItem(null, L[AutoOAuth], Item.BUTTON);
+				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+				s.setDefaultCommand(authBrowserCmd);
+				s.setItemCommandListener(this);
+				f.append(s);
+			}
 			
 			s = new StringItem(null, L[ManualOAuth], Item.BUTTON);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
@@ -838,11 +840,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			f.append(s);
 			
 			
-			s = new StringItem(null, L[OpenInBrowser], Item.BUTTON);
-			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
-			s.setDefaultCommand(authBrowserCmd);
-			s.setItemCommandListener(this);
-			f.append(s);
+			if (!useProxy) {
+				s = new StringItem(null, L[OpenInBrowser], Item.BUTTON);
+				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+				s.setDefaultCommand(authBrowserCmd);
+				s.setItemCommandListener(this);
+				f.append(s);
+			}
 			
 			f.append("\n");
 			
