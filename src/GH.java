@@ -22,12 +22,17 @@ SOFTWARE.
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Random;
 import java.util.Vector;
 
+import javax.microedition.io.Connection;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
+import javax.microedition.io.ServerSocketConnection;
+import javax.microedition.io.StreamConnection;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Choice;
@@ -58,6 +63,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// threading tasks
 	static final int RUN_LOAD_FORM = 1;
 	static final int RUN_BOOKMARKS_SCREEN = 2;
+	static final int RUN_OAUTH_SERVER = 3;
+	static final int RUN_OAUTH_SERVER_CLIENT = 4;
+	static final int RUN_VALIDATE_AUTH = 5;
+	static final int RUN_CHECK_OAUTH_CODE = 6;
 	
 	// api modes
 	static final int API_GITHUB = 0;
@@ -66,10 +75,22 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// constants
 	private static final String SETTINGS_RECORDNAME = "ghsets";
 	private static final String BOOKMARKS_RECORDNAME = "ghbm";
+	private static final String GITHUB_AUTH_RECORDNAME = "ghauth";
+	private static final String GITEA_AUTH_RECORDNAME = "giteaauth";
 	
 	private static final String GITHUB_API_URL = "https://api.github.com/";
 	private static final String GITHUB_API_VERSION = "2022-11-28";
+	
+	private static final String GITHUB_OAUTH_CLIENT_ID = "Ov23liQSkThpLmVHIxsC";
+	private static final String GITHUB_OAUTH_CLIENT_SECRET = "f41d31e17a8cd437e05f6423d5977615a9706505";
+	private static final String GITHUB_OAUTH_REDIRECT_URI = "http://localhost:8082/oauth_github";
+	private static final String GITHUB_OAUTH_SCOPE = "user, repo";
+	
 	private static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
+	private static final String GITEA_DEFAULT_CLIENT_ID = "4fce904c-9a87-4dfd-ab58-991cd496ac93";
+	private static final String GITEA_DEFAULT_CLIENT_SECRET = "gto_qxo2fawh6dugu4u2rbkon6cwnywqfnp6od5ga3kw7opiwkg42xda";
+	private static final String GITEA_OAUTH_REDIRECT_URI = "http://localhost:8082/oauth_gitea";
+	private static final String GITEA_OAUTH_PORT = "8082";
 
 	// fonts
 	static final Font largefont = Font.getFont(0, 0, Font.SIZE_LARGE);
@@ -79,6 +100,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final Font smallfont = Font.getFont(0, 0, Font.SIZE_SMALL);
 
 	static final IllegalStateException cancelException = new IllegalStateException("cancel");
+	
+	private static final byte[] CRLF = "\r\n".getBytes();
 
 	// midp lifecycle
 	static Display display;
@@ -99,6 +122,24 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Object runParam;
 //	private static int running;
 	
+	// oauth
+	private static Connection oauthSocket;
+	private static boolean oauthStarted;
+	private static Thread oauthThread;
+	
+	private static int oauthMode;
+	private static String oauthUrl;
+	
+	private static String githubAccessToken;
+	private static long githubAccessTokenTime;
+
+	private static String giteaClientId = GITEA_DEFAULT_CLIENT_ID;
+	private static String giteaClientSecret = GITEA_DEFAULT_CLIENT_SECRET;
+	private static String giteaAccessToken;
+	private static String giteaRefreshToken;
+	private static long giteaAccessTokenTime;
+	private static long giteaRefreshTokenTime;
+	
 	// bookmarks
 	private static JSONArray bookmarks;
 	private static int movingBookmark = -1;
@@ -111,6 +152,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Command bookmarksCmd;
 	private static Command searchCmd;
 	private static Command searchSubmitCmd;
+	private static Command authCmd;
 	
 	private static Command goCmd;
 	static Command downloadCmd;
@@ -154,6 +196,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Command addBookmarkCmd;
 	private static Command removeBookmarkCmd;
 	private static Command moveBookmarkCmd;
+	
+	private static Command authGithubCmd;
+	private static Command authGiteaCmd;
+	private static Command logoutGithubCmd;
+	private static Command logoutGiteaCmd;
+	private static Command authBrowserCmd;
+	private static Command authDoneCmd;
+	private static Command authRegenCmd;
 
 	static Command okCmd;
 	static Command cancelCmd;
@@ -178,6 +228,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// search items
 	private static TextField searchField;
 	private static ChoiceGroup searchChoice;
+	
+	private static TextField authField;
 
 	protected void destroyApp(boolean unconditional)  {}
 
@@ -202,7 +254,38 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			browseProxyUrl = j.getString("browseProxy", browseProxyUrl);
 			apiMode = j.getInt("apiMode", apiMode);
 			customApiUrl = j.getString("customApiUrl", customApiUrl);
-		} catch (Exception e) {}
+		} catch (Exception ignored) {}
+
+		try {
+			RecordStore r = RecordStore.openRecordStore(GITHUB_AUTH_RECORDNAME, false);
+			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
+			r.closeRecordStore();
+
+			githubAccessToken = j.getString("accessToken", null);
+			githubAccessTokenTime = j.getLong("accessTime", 0);
+		} catch (Exception ignored) {}
+		
+		try {
+			RecordStore r = RecordStore.openRecordStore(GITEA_AUTH_RECORDNAME, false);
+			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
+			r.closeRecordStore();
+
+			String apiUrl = j.getString("apiUrl", null);
+			if (customApiUrl == apiUrl
+					|| apiUrl == null ? (GITEA_DEFAULT_API_URL.equals(customApiUrl)) : apiUrl.equals(customApiUrl)) {
+				giteaAccessToken = j.getString("accessToken", null);
+				giteaRefreshToken = j.getString("refreshToken", null);
+				giteaClientId = j.getString("clientId", null);
+				giteaClientSecret = j.getString("clientSecret", null);
+				giteaAccessTokenTime = j.getLong("accessTime", 0);
+				giteaRefreshTokenTime = j.getLong("refreshTime", 0);
+			}
+		} catch (Exception ignored) {}
+		
+		if ((apiMode == 0 && githubAccessToken != null)
+				|| (apiMode == 1 && giteaRefreshToken != null)) {
+			start(RUN_VALIDATE_AUTH, null);
+		}
 		
 		// commands
 		
@@ -210,9 +293,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		backCmd = new Command("Back", Command.BACK, 2);
 		bookmarksCmd = new Command("Bookmarks", Command.ITEM, 1);
 		settingsCmd = new Command("Settings", Command.SCREEN, 5);
-		aboutCmd = new Command("About", Command.SCREEN, 6);
+		aboutCmd = new Command("About", Command.SCREEN, 7);
 		searchCmd = new Command("Search", Command.ITEM, 1);
 		searchSubmitCmd = new Command("Search", Command.OK, 1);
+		authCmd = new Command("Authorization", Command.SCREEN, 6);
 		
 		goCmd = new Command("Go", Command.ITEM, 1);
 		downloadCmd = new Command("Download", Command.ITEM, 1);
@@ -254,6 +338,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		addBookmarkCmd = new Command("New...", Command.SCREEN, 5);
 		removeBookmarkCmd = new Command("Delete", Command.ITEM, 3);
 		moveBookmarkCmd = new Command("Move", Command.ITEM, 4);
+		
+		authGithubCmd = new Command("GitHub", Command.ITEM, 1);
+		authGiteaCmd = new Command("Gitea", Command.ITEM, 1);
+		logoutGithubCmd = new Command("Logout", Command.ITEM, 1);
+		logoutGiteaCmd = new Command("Logout", Command.ITEM, 1);
+		authBrowserCmd = new Command("Open in browser", Command.ITEM, 1);
+		authDoneCmd = new Command("Done", Command.ITEM, 1);
+		authRegenCmd = new Command("Regenerate", Command.ITEM, 1);
 
 		okCmd = new Command("Ok", Command.OK, 1);
 		cancelCmd = new Command("Cancel", Command.CANCEL, 2);
@@ -265,6 +357,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		f.addCommand(settingsCmd);
 		f.addCommand(aboutCmd);
 //		f.addCommand(bookmarksCmd);
+		f.addCommand(authCmd);
 		f.setCommandListener(this);
 		f.setItemStateListener(this);
 		
@@ -399,8 +492,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					searchChoice = new ChoiceGroup("Type", Choice.POPUP, new String[] {
 							"Repositories",
 							"Issues",
-							"Commits",
 							"Users",
+							"Commits",
 					}, null);
 					f.append(searchChoice);
 					
@@ -415,6 +508,46 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				searchField.setString(mainField.getString());
 				display(searchForm);
+				return;
+			}
+			if (c == authCmd) {
+				Form f = new Form("Authorization");
+				f.addCommand(backCmd);
+				f.setCommandListener(this);
+				
+				StringItem s;
+				
+				s = new StringItem(null, "GitHub:");
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+				f.append(s);
+				
+				if (githubAccessToken == null) {
+					s = new StringItem(null, "Authorize", Item.BUTTON);
+					s.setDefaultCommand(authGithubCmd);
+				} else {
+					s = new StringItem(null, "Logout", Item.BUTTON);
+					s.setDefaultCommand(logoutGithubCmd);
+				}
+				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+				s.setItemCommandListener(this);
+				f.append(s);
+				
+				s = new StringItem(null, "Gitea:");
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+				f.append(s);
+				
+				if (giteaRefreshToken == null) {
+					s = new StringItem(null, "Authorize", Item.BUTTON);
+					s.setDefaultCommand(authGiteaCmd);
+				} else {
+					s = new StringItem(null, "Logout", Item.BUTTON);
+					s.setDefaultCommand(logoutGiteaCmd);
+				}
+				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+				s.setItemCommandListener(this);
+				f.append(s);
+					
+				display(f);
 				return;
 			}
 		}
@@ -531,12 +664,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				case 1: // issues
 					f = new IssuesForm(q, 2);
 					break;
-				case 2: // commits
-					f = new CommitsForm(q, null, true);
-					break;
-				case 3: // users
+				case 2: // users
 					f = new UsersForm((GH.apiMode == GH.API_GITEA ? "users/search?q=" : "search/users?q=").concat(url(q)),
 							"Search");
+					break;
+				case 3: // commits
+					if (GH.apiMode == GH.API_GITEA) return;
+					f = new CommitsForm(q, null, true);
 					break;
 				default:
 					return;
@@ -545,6 +679,87 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				start(RUN_LOAD_FORM, f);
 				return;
 			}
+		}
+		// Auth commands
+		if (c == authGithubCmd || c == authGiteaCmd) {
+			String url = oauthUrl = getOauthUrl(oauthMode = c == authGithubCmd ? 0 : 1);
+			
+			Form f = new Form("Authorization");
+			f.addCommand(backCmd);
+			f.setCommandListener(this);
+
+			StringItem s;
+			
+			TextField t = new TextField("OAuth URL", url, 400, TextField.URL | TextField.UNEDITABLE);
+			t.addCommand(authRegenCmd);
+			f.append(t);
+
+
+			s = new StringItem(null, "Copy this address to supported browser");
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+			s.setFont(smallfont);
+			f.append(s);
+			
+			
+			s = new StringItem(null, "Open in browser", Item.BUTTON);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+			s.setDefaultCommand(authBrowserCmd);
+			s.setItemCommandListener(this);
+			f.append(s);
+			
+			f.append("\n");
+			
+			authField = new TextField("Result URL", "", 400, TextField.URL);
+			f.append(authField);
+
+			s = new StringItem(null, "After authorization, copy resulted URL with code to this field");
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+			s.setFont(smallfont);
+			f.append(s);
+			
+			f.append("\n");
+			
+			s = new StringItem(null, "Done", Item.BUTTON);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+			s.setDefaultCommand(authDoneCmd);
+			s.setItemCommandListener(this);
+			f.append(s);
+			
+			display(f);
+			return;
+		}
+		if (c == logoutGithubCmd) {
+			githubAccessToken = githubAccessToken = null;
+			writeGithubAuth();
+			commandAction(backCmd, d);
+			return;
+		}
+		if (c == logoutGiteaCmd) {
+			giteaRefreshToken = giteaAccessToken = null;
+			writeGiteaAuth();
+			commandAction(backCmd, d);
+			return;
+		}
+		if (c == authBrowserCmd) {
+			if (!oauthStarted) {
+				oauthThread = start(RUN_OAUTH_SERVER, null);
+			}
+			try {
+				platformRequest(oauthUrl);
+			} catch (Exception e) {
+				display(errorAlert(e.toString()), d);
+				e.printStackTrace();
+				stopOauthServer();
+			}
+			return;
+		}
+		if (c == authDoneCmd) {
+			if (oauthMode < 0) {
+//				display(null);
+				return;
+			} 
+			start(RUN_CHECK_OAUTH_CODE, authField.getString().trim());
+			return;
 		}
 		// RepoForm commands
 		if (d instanceof RepoForm) {
@@ -741,6 +956,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			commandAction(backCmd, current);
 			return;
 		}
+		if (c == authRegenCmd) {
+			((TextField) item).setString(oauthUrl = getOauthUrl(oauthMode));
+			return;
+		}
 		commandAction(c, display.getCurrent());
 	}
 
@@ -907,7 +1126,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			break;
 		}
-		case RUN_BOOKMARKS_SCREEN: {
+		case RUN_BOOKMARKS_SCREEN: { // load bookmarks
 			if (bookmarksList == null) {
 				List list = new List("Bookmarks", List.IMPLICIT);
 				list.setFitPolicy(Choice.TEXT_WRAP_ON);
@@ -934,6 +1153,144 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			display(bookmarksList);
 			break;
 		}
+		case RUN_OAUTH_SERVER: { // start http server for oauth callback
+			try {
+				oauthSocket = Connector.open("socket://:".concat(GITEA_OAUTH_PORT));
+				oauthStarted = true;
+				try {
+					while (oauthThread != null) {
+						start(RUN_OAUTH_SERVER_CLIENT, ((ServerSocketConnection) oauthSocket).acceptAndOpen());
+					}
+				} finally {
+					oauthSocket.close();
+				}
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+			oauthStarted = false;
+			break;
+		}
+		case RUN_OAUTH_SERVER_CLIENT: { // handle http request
+			StreamConnection s = (StreamConnection) param;
+			try {
+				InputStream in = s.openDataInputStream();
+				OutputStream out = s.openDataOutputStream();
+				
+				Vector headers = new Vector();
+				StringBuffer sb = new StringBuffer();
+				
+				boolean responded = false;
+				try {
+					for (int c, l = 0; (c = in.read()) != -1;) {
+						if (c == '\n') {
+//									sb.append((char) c);
+							headers.addElement(sb.toString());
+							sb.setLength(0);
+							if (++l == 2) break;
+							continue;
+						}
+						if (c != '\r') {
+							l = 0;
+							sb.append((char) c);
+						}
+					}
+					
+					boolean handled = false;
+					try {
+						res: {
+							String req;
+							if (headers.size() == 0 ||
+									(req = (String) headers.elementAt(0)).length() == 0) {
+								break res;
+							}
+							int i = req.indexOf(' ');
+							if (i == -1 || req.indexOf(' ', i + 1) == -1)
+								break res;
+							
+							String method = req.substring(0, i),
+									path = req.substring(i + 1, req.indexOf(' ', i + 1)),
+									protocol = req.substring(req.indexOf(' ', i + 1) + 1);
+							if (!protocol.startsWith("HTTP/1.") ||
+									!path.startsWith("/")) {
+								break res;
+							}
+							
+							if (!"GET".equals(method) || path.length() == 1) {
+								handled = true;
+								responded = true;
+								writeHttpHeader(out, 404, "Not Found");
+								out.write(CRLF);
+								break res;
+							}
+							String query = null;
+							if ((i = path.indexOf('?')) != -1) {
+								query = path.substring(i + 1);
+								path = path.substring(0, i);
+							}
+							
+							boolean b;
+							if ((b = "/oauth_github".equals(path)) || "/oauth_gitea".equals(path)) {
+								handled = true;
+								oauthMode = -oauthMode;
+								display(current);
+								b = acceptOauthToken(query, b ? 0 : 1);
+								
+								responded = true;
+								writeHttpHeader(out, 200, "OK");
+								out.write("Content-Type: text/html; charset=utf8".getBytes());
+								out.write(CRLF);
+								out.write(CRLF);
+								out.write("<html><head><script type=\"text/javascript\">window.close();</script></head><body></body></html>".toString().getBytes("UTF-8"));
+							}
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+						if (!responded) {
+							responded = true;
+							writeHttpHeader(out, 500, "Internal Server Error");
+							out.write(CRLF);
+							out.write(e.toString().getBytes("UTF-8"));
+						}
+					}
+					if (!handled && !responded) {
+						writeHttpHeader(out, 400, "Bad Request");
+						out.write(CRLF);
+					}
+					out.flush();
+				} finally {
+					in.close();
+					out.close();
+				}
+			} catch (Throwable e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					s.close();
+				} catch (Exception ignored) {}
+			}
+			break;
+		}
+		case RUN_VALIDATE_AUTH: {
+			if (apiMode == 0 && githubAccessToken != null) {
+				try {
+					api("user");
+				} catch (Exception e) {
+					// token revoked
+					githubAccessToken = null;
+					writeGithubAuth();
+				}
+				break;
+			}
+			if (apiMode == 1 && giteaRefreshToken != null) {
+				// TODO
+				break;
+			}
+			break;
+		}
+		case RUN_CHECK_OAUTH_CODE: {
+			acceptOauthToken((String) param, oauthMode);
+			break;
+		}
 		}
 //		running--;
 	}
@@ -950,6 +1307,180 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception e) {}
 		return t;
+	}
+
+	private static void writeHttpHeader(OutputStream out, int code, String message) throws IOException {
+		out.write("HTTP/1.1 ".getBytes());
+		out.write(Integer.toString(code).getBytes());
+		out.write(' ');
+		if (message != null) out.write(message.getBytes());
+		out.write(CRLF);
+		out.write("Connection: close".getBytes());
+		out.write(CRLF);
+	}
+	
+	private static String getOauthUrl(int mode) {
+		StringBuffer sb = new StringBuffer();
+		Random rng = new Random();
+		for (int i = 0; i < 16; i++) {
+			byte b = (byte) (rng.nextInt() & 0xff);
+			sb.append(Integer.toHexString(b >> 4 & 0xf));
+			sb.append(Integer.toHexString(b & 0xf));
+		}
+		
+		String state = sb.toString();
+		sb.setLength(0);
+		
+		if (mode == 0) { // github
+			sb.append("https://github.com/login/oauth/authorize?client_id=")
+			.append(GITHUB_OAUTH_CLIENT_ID).append("&scope=").append(url(GITHUB_OAUTH_SCOPE))
+			.append("&state=").append(state)
+			.append("&redirect_uri=").append(url(GITHUB_OAUTH_REDIRECT_URI))
+			;
+		}
+		if (mode == 1) { // gitea
+			String inst = customApiUrl != null ? customApiUrl : GITEA_DEFAULT_API_URL;
+			inst = inst.substring(0, inst.indexOf("/api"));
+			sb.append(inst)
+			.append("/login/oauth/authorize?client_id=").append(giteaClientId)
+			.append("&response_type=code&state=").append(state)
+			.append("&redirect_uri=").append(url(GITEA_OAUTH_REDIRECT_URI))
+			;
+		}
+		return sb.toString();
+	}
+	
+	private static boolean acceptOauthToken(String query, int mode) {
+		Displayable d = current;
+		
+		int i = query.indexOf("code=");
+		if (i == -1) {
+			i = query.indexOf("error=");
+			if (i != -1) {
+				display(errorAlert(query), d);
+			} else {
+				display(errorAlert("Invalid url"), d);
+			}
+			return false;
+		}
+		
+		Alert a = new Alert("", "", null, null);
+		a.setString("Authorizing...");
+		a.setIndicator(new Gauge(null, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));
+		a.addCommand(Alert.DISMISS_COMMAND);
+		a.setCommandListener(midlet);
+		a.setTimeout(-2);
+		display(a, d);
+		
+		try {
+			String code = query.substring(i + 5,
+					(i = query.indexOf('&', i + 5)) != -1 ? i : query.length());
+	
+			JSONObject j = new JSONObject();
+			j.put("code", code);
+			j.put("grant_type", "authorization_code");
+			
+			if (mode == 0) { // github
+				j.put("client_id", GITHUB_OAUTH_CLIENT_ID);
+				j.put("redirect_uri", GITHUB_OAUTH_REDIRECT_URI);
+				j.put("client_secret", GITHUB_OAUTH_CLIENT_SECRET);
+				
+				j = (JSONObject) apiPost("https://github.com/login/oauth/access_token",
+						j.toString().getBytes(), "application/json");
+				
+				githubAccessToken = j.getString("access_token");
+				
+				githubAccessTokenTime = System.currentTimeMillis();
+				
+				writeGithubAuth();
+			} else if (mode == 1) { // gitea
+				j.put("client_id", giteaClientId);
+				j.put("redirect_uri", GITEA_OAUTH_REDIRECT_URI);
+				j.put("client_secret", giteaClientSecret);
+
+				String inst = customApiUrl != null ? customApiUrl : GITEA_DEFAULT_API_URL;
+				inst = inst.substring(0, inst.indexOf("/api"));
+				
+				j = (JSONObject) apiPost(inst.concat("/login/oauth/access_token"),
+						j.toString().getBytes(), "application/json");
+				
+				giteaAccessToken = j.getString("access_token");
+				giteaRefreshToken = j.getString("refresh_token");
+				
+				giteaRefreshTokenTime = giteaAccessTokenTime = System.currentTimeMillis();
+				
+				writeGiteaAuth();
+			}
+			display(mainForm);
+			display(infoAlert("Authorized"), mainForm);
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			display(errorAlert(e.toString()), d);
+		}
+		return false;
+	}
+	
+	private static void stopOauthServer() {
+		if (!oauthStarted || oauthThread == null) return;
+		if (oauthSocket != null) {
+			try {
+				oauthSocket.close();
+			} catch (Exception e) {}
+		}
+		oauthThread.interrupt();
+		oauthThread = null;
+	}
+	
+	private static void writeGithubAuth() {
+		try {
+			RecordStore.deleteRecordStore(GITHUB_AUTH_RECORDNAME);
+		} catch (Exception e) {}
+		try {
+			JSONObject j = new JSONObject();
+			
+			j.put("accessToken", githubAccessToken);
+			j.put("accessTime", githubAccessTokenTime);
+			
+			byte[] b = j.toString().getBytes("UTF-8");
+			RecordStore r = RecordStore.openRecordStore(GITHUB_AUTH_RECORDNAME, true);
+			r.addRecord(b, 0, b.length);
+			r.closeRecordStore();
+		} catch (Exception e) {}
+	}
+	
+	private static void writeGiteaAuth() {
+		try {
+			RecordStore.deleteRecordStore(GITEA_AUTH_RECORDNAME);
+		} catch (Exception e) {}
+		try {
+			JSONObject j = new JSONObject();
+
+			j.put("apiUrl", customApiUrl);
+			j.put("accessToken", giteaAccessToken);
+			j.put("refreshToken", giteaRefreshToken);
+			j.put("clientId", giteaClientId);
+			j.put("clientSecret", giteaClientSecret);
+			j.put("accessTime", giteaAccessTokenTime);
+			j.put("refreshTime", giteaRefreshTokenTime);
+			
+			byte[] b = j.toString().getBytes("UTF-8");
+			RecordStore r = RecordStore.openRecordStore(GITEA_AUTH_RECORDNAME, true);
+			r.addRecord(b, 0, b.length);
+			r.closeRecordStore();
+		} catch (Exception e) {}
+	}
+
+	public static void parseMarkdown(Thread thread, GHForm form, String body, int i) {
+		// TODO
+		if (body.trim().length() == 0) return;
+		
+		StringItem s = new StringItem(null, body);
+		s.setFont(GH.medfont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		
+		if (i == -1) form.safeAppend(thread, s);
+		else form.safeInsert(thread, i, s);
 	}
 	
 	static void display(Alert a, Displayable d) {
@@ -977,6 +1508,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		if (d == mainForm) {
 			formHistory.removeAllElements();
+			if (oauthStarted) {
+				stopOauthServer();
+			}
 		}
 		Displayable p = display.getCurrent();
 		display.setCurrent(current = d);
@@ -1015,6 +1549,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		a.setTimeout(30000);
 		return a;
 	}
+
+	void browse(String url) {
+		try {
+			if (url.indexOf(':') == -1) {
+				url = "http://".concat(url);
+			} else if (useProxy && (url.startsWith("https://github.com") || url.startsWith(GITHUB_API_URL))) {
+				url = browseProxyUrl.concat(url(url));
+			}
+			if (platformRequest(url)) notifyDestroyed();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 	
 	static Object api(String url) throws IOException {
 		return api(url, null);
@@ -1034,15 +1581,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else if (apiMode == API_GITEA) {
 				inst = GITEA_DEFAULT_API_URL;
 			} else {
-				throw new RuntimeException("Invalid API mode");
+				throw new IllegalStateException("Invalid API mode");
 			}
 			hc = openHttpConnection(proxyUrl(inst.concat(url)));
 			hc.setRequestMethod("GET");
 			if (apiMode == API_GITHUB) {
 				hc.setRequestProperty("Accept", "application/vnd.github+json");
 				hc.setRequestProperty("X-Github-Api-Version", GITHUB_API_VERSION);
+				if (githubAccessToken != null)
+					hc.setRequestProperty("Authorization", "Bearer ".concat(githubAccessToken));
 			} else {
 				hc.setRequestProperty("Accept", "application/json");
+				if (giteaAccessToken != null)
+					hc.setRequestProperty("Authorization", "Bearer ".concat(giteaAccessToken));
 			}
 			
 			int c = hc.getResponseCode();
@@ -1069,6 +1620,50 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} catch (IOException e) {}
 		}
 //		System.out.println(res);
+		return res;
+	}
+	
+	private static Object apiPost(String url, byte[] body, String type) throws IOException {
+		Object res;
+
+		HttpConnection hc = null;
+		InputStream in = null;
+		try {
+			String inst;
+			if (apiMode == API_GITHUB) {
+				inst = GITHUB_API_URL;
+			} else if (customApiUrl != null) {
+				inst = customApiUrl;
+			} else if (apiMode == API_GITEA) {
+				inst = GITEA_DEFAULT_API_URL;
+			} else {
+				throw new IllegalStateException("Invalid API mode");
+			}
+			hc = openHttpConnection(proxyUrl(url.startsWith("http") ? url : inst.concat(url)));
+			hc.setRequestMethod("POST");
+			hc.setRequestProperty("Content-Length", body == null ? "0" : Integer.toString(body.length));
+			hc.setRequestProperty("Accept", "application/json");
+			if (type != null) hc.setRequestProperty("Content-Type", type);
+			if (body != null) {
+				OutputStream out = hc.openOutputStream();
+				out.write(body);
+				out.flush();
+				out.close();
+			}
+
+			int c = hc.getResponseCode();
+			res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+			if (c >= 400 || (res instanceof JSONObject && ((JSONObject) res).has("error"))) {
+				throw new APIException(url, c, res);
+			}
+		} finally {
+			if (in != null) try {
+				in.close();
+			} catch (IOException e) {}
+			if (hc != null) try {
+				hc.close();
+			} catch (IOException e) {}
+		}
 		return res;
 	}
 	
@@ -1353,31 +1948,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		String[] r = new String[v.size()];
 		v.copyInto(r);
 		return r;
-	}
-
-	void browse(String url) {
-		try {
-			if (url.indexOf(':') == -1) {
-				url = "http://".concat(url);
-			} else if (useProxy && (url.startsWith("https://github.com") || url.startsWith(GITHUB_API_URL))) {
-				url = browseProxyUrl.concat(url(url));
-			}
-			if (platformRequest(url)) notifyDestroyed();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public static void parseMarkdown(Thread thread, GHForm form, String body, int i) {
-		// TODO
-		if (body.trim().length() == 0) return;
-		
-		StringItem s = new StringItem(null, body);
-		s.setFont(GH.medfont);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		
-		if (i == -1) form.safeAppend(thread, s);
-		else form.safeInsert(thread, i, s);
 	}
 
 }
