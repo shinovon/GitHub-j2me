@@ -272,7 +272,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 			String apiUrl = j.getString("apiUrl", null);
 			if (customApiUrl == apiUrl
-					|| apiUrl == null ? (GITEA_DEFAULT_API_URL.equals(customApiUrl)) : apiUrl.equals(customApiUrl)) {
+					|| (apiUrl == null ? GITEA_DEFAULT_API_URL.equals(customApiUrl) : apiUrl.equals(customApiUrl))) {
 				giteaAccessToken = j.getString("accessToken", null);
 				giteaRefreshToken = j.getString("refreshToken", null);
 				giteaClientId = j.getString("clientId", null);
@@ -282,8 +282,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception ignored) {}
 		
-		if ((apiMode == 0 && githubAccessToken != null)
-				|| (apiMode == 1 && giteaRefreshToken != null)) {
+		if ((apiMode == API_GITHUB && githubAccessToken != null)
+				|| (apiMode == API_GITEA && giteaRefreshToken != null)) {
 			start(RUN_VALIDATE_AUTH, null);
 		}
 		
@@ -729,7 +729,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		if (c == logoutGithubCmd) {
-			githubAccessToken = githubAccessToken = null;
+			githubAccessToken = null;
 			writeGithubAuth();
 			commandAction(backCmd, d);
 			return;
@@ -1271,7 +1271,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			break;
 		}
 		case RUN_VALIDATE_AUTH: {
-			if (apiMode == 0 && githubAccessToken != null) {
+			if (apiMode == API_GITHUB && githubAccessToken != null) {
 				try {
 					api("user");
 				} catch (Exception e) {
@@ -1281,8 +1281,41 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				}
 				break;
 			}
-			if (apiMode == 1 && giteaRefreshToken != null) {
-				// TODO
+			if (apiMode == API_GITEA && giteaRefreshToken != null) {
+				if (giteaAccessToken != null && System.currentTimeMillis() - giteaAccessTokenTime > 3600000L) {
+					giteaAccessToken = null;
+				}
+				if (giteaAccessToken != null) {
+					try {
+						api("user");
+						break;
+					} catch (Exception e) {
+						// token revoked
+						giteaAccessToken = null;
+					}
+				}
+				try {
+					JSONObject j = new JSONObject();
+					j.put("grant_type", "refresh_token");
+					j.put("refresh_token", giteaRefreshToken);
+					j.put("client_id", giteaClientId);
+					j.put("client_secret", giteaClientSecret);
+
+					String inst = customApiUrl != null ? customApiUrl : GITEA_DEFAULT_API_URL;
+					inst = inst.substring(0, inst.indexOf("/api"));
+					
+					j = (JSONObject) apiPost(inst.concat("/login/oauth/access_token"),
+							j.toString().getBytes(), "application/json");
+					
+					giteaAccessToken = j.getString("access_token");
+					giteaRefreshToken = j.getString("refresh_token", giteaRefreshToken);
+					
+					giteaRefreshTokenTime = giteaAccessTokenTime = System.currentTimeMillis();
+				} catch (Exception e) {
+					// token revoked
+					giteaRefreshToken = null;
+				}
+				writeGiteaAuth();
 				break;
 			}
 			break;
