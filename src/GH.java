@@ -44,6 +44,8 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Gauge;
+import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.ImageItem;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.ItemStateListener;
@@ -490,8 +492,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f.addCommand(backCmd);
 				f.setCommandListener(this);
 				
+				try {
+					f.append(new ImageItem(null, Image.createImage("/g.png"), Item.LAYOUT_LEFT, null));
+				} catch (Exception ignored) {}
+				
 				StringItem s;
-				s = new StringItem(null, "GH2ME v" + version);
+				s = new StringItem(null, "GH2ME v".concat(version));
 				s.setFont(largefont);
 				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_VCENTER | Item.LAYOUT_LEFT);
 				f.append(s);
