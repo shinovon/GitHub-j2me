@@ -154,5 +154,8 @@ public interface LangConstants {
 	_archive_ = 153,
 	_privateFork_ = 154,
 	_privateArchive_ = 155,
+	Stars = 156,
+	Star = 157,
+	Starred = 158,
 	gh2me = 0;
 }

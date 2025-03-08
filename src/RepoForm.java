@@ -29,6 +29,8 @@ public class RepoForm extends GHForm {
 	String parent;
 	String selectedBranch;
 	StringItem branchItem;
+	boolean starred;
+	StringItem starBtn;
 
 	public RepoForm(String name) {
 		super(name);
@@ -183,6 +185,21 @@ public class RepoForm extends GHForm {
 			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
+		}
+		
+		if (GH.login != null) {
+			s = starBtn = new StringItem(null, GH.L[Star], Item.BUTTON);
+			s.setDefaultCommand(GH.starCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			append(s);
+			
+			starred = false;
+			try {
+				GH.api("user/starred/".concat(url));
+				starred = true;
+				s.setText(GH.L[Starred]);
+			} catch (Exception ignored) {}
 		}
 	}
 

@@ -101,6 +101,13 @@ public class UserForm extends GHForm {
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
+		
+		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.count(r.getInt("starred_repos_count"), _star) : GH.L[Stars], Item.BUTTON);
+		s.setFont(GH.medfont);
+		s.setDefaultCommand(GH.starsCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
 	}
 
 }

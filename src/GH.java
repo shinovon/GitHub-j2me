@@ -67,6 +67,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final int RUN_OAUTH_SERVER_CLIENT = 4;
 	static final int RUN_VALIDATE_AUTH = 5;
 	static final int RUN_CHECK_OAUTH_CODE = 6;
+	static final int RUN_TOGGLE_STAR = 7;
 	
 	// api modes
 	static final int API_GITHUB = 0;
@@ -177,6 +178,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command followersCmd;
 	static Command followingCmd;
 	static Command reposCmd;
+	static Command starsCmd;
 	
 	static Command ownerCmd;
 	static Command releasesCmd;
@@ -190,6 +192,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command pullsCmd;
 	static Command commitsCmd;
 	static Command selectBranchCmd;
+	static Command starCmd;
 	
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -340,6 +343,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		followersCmd = new Command(L[Followers], Command.ITEM, 1);
 		followingCmd = new Command(L[Following], Command.ITEM, 1);
 		reposCmd = new Command(L[Repositories], Command.ITEM, 1);
+		starsCmd = new Command(L[Stars], Command.ITEM, 1);
+		starCmd = new Command(L[Star], Command.ITEM, 1);
 		
 		ownerCmd = new Command(L[Owner], Command.SCREEN, 5);
 		releasesCmd = new Command(L[Releases], Command.SCREEN, 3);
@@ -607,9 +612,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (c == yourProfileCmd) {
 					f = new UserForm("user");
 				} else if (c == yourReposCmd) {
-					f = new ReposForm("user/repos?", L[YourRepositories], "pushed", false);
+					f = new ReposForm("user/repos?", L[YourRepositories], "pushed", true);
 				} else if (c == yourStarsCmd) {
-					f = new ReposForm("user/stars?", L[YourStars], null, false);
+					f = new ReposForm("user/starred?", L[YourStars], null, true);
 				} else break a;
 				display(f);
 				start(RUN_LOAD_FORM, f);
@@ -852,6 +857,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				openRepo(((RepoForm) d).parent);
 				return;
 			}
+			if (c == starCmd) {
+				if (!((GHForm) d).finished) return;
+				start(RUN_TOGGLE_STAR, d);
+				return;
+			}
 			a: {
 				String url = ((RepoForm) d).url;
 				Form f;
@@ -884,21 +894,23 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		// UserForm commands
 		if (d instanceof UserForm) {
-			if (c == reposCmd) {
+			a: {
 				String url = ((UserForm) d).url;
-				ReposForm f = new ReposForm("users/".concat(url).concat("/repos?"),
-						L[Repositories].concat(" - ").concat(url), GH.apiMode == GH.API_GITEA ? "updated" : "pushed", false);
-				display(f);
-				start(RUN_LOAD_FORM, f);
-				return;
-			}
-			boolean b;
-			if ((b = c == followersCmd) || c == followingCmd) {
-				String url = ((UserForm) d).url;
-				UsersForm f = new UsersForm(
-						"users/".concat(url).concat(b ? "/followers?" : "/following?"),
-						L[b ? Followers : Following].concat(" - ").concat(url)
-						);
+				GHForm f;
+				if (c == reposCmd) {
+					f = new ReposForm("users/".concat(url).concat("/repos?"),
+							L[Repositories].concat(" - ").concat(url), GH.apiMode == GH.API_GITEA ? "updated" : "pushed", false);
+				} else if (c == starsCmd) {
+					f = new ReposForm("users/".concat(url).concat("/starred?"),
+							L[Stars].concat(" - ").concat(url), null, true);
+				} else if (c == followersCmd) {
+					f = new UsersForm("users/".concat(url).concat("/followers?"),
+							L[Followers].concat(" - ").concat(url));
+				} else if (c == followingCmd) {
+					f = new UsersForm("users/".concat(url).concat("/following?"),
+							L[Following].concat(" - ").concat(url));
+				} else break a;
+	
 				display(f);
 				start(RUN_LOAD_FORM, f);
 				return;
@@ -1046,128 +1058,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			return;
 		}
-	}
-	
-	static void openUrl(String url) {
-//		System.out.println("openUrl:".concat(url));
-		if (url.startsWith("https://github.com/")) {
-			url = url.substring(19);
-		} else if (url.startsWith("https://api.github.com/repos/")
-				|| url.startsWith("https://api.github.com/users/")) {
-			url = url.substring(29);
-		}
-		if (url.indexOf('/') == -1) {
-			// user
-			openUser(url);
-		} else {
-			// repo
-			String[] split = split(url, '/');
-			if (split.length == 2 || split[2].length() == 0) {
-				openRepo(url);
-			} else {
-				String repo = split[0].concat("/").concat(split[1]);
-				GHForm f;
-				char c;
-				switch (c = split[2].charAt(0)) {
-				case 'f': // forks
-					f = new ReposForm("repos/".concat(repo).concat("/forks?"), L[Forks].concat(" - ").concat(repo), null, true);
-					break;
-				case 'r': // releases
-					f = new ReleasesForm(repo, false);
-					break;
-				case 't': // tags
-					f = new ReleasesForm(repo, true);
-					break;
-				case 's': // stargazers
-					f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), L[Stargazers].concat(" - ").concat(repo));
-					break;
-				case 'w': // watchers
-					f = new UsersForm("repos/".concat(repo).concat("/subscribers?"), L[Watchers].concat(" - ").concat(repo));
-					break;
-				case 'i': // issues
-				case 'p': // pulls
-					if (split.length == 4) {
-						f = new IssueForm(url);
-						break;
-					}
-					f = new IssuesForm(repo, c == 'p' ? 1 : 0);
-					break;
-				case 'c': // commits
-					if (split.length == 4) {
-						f = new CommitsForm(repo, split[3], false);
-						break;
-					}
-					f = new CommitsForm(repo, null, false);
-					break;
-				case 'b': // branches
-					f = new BranchesForm(repo);
-					break;
-				default:
-					return;
-				}
-				display(f);
-				midlet.start(RUN_LOAD_FORM, f);
-			}
-		}
-	}
-	
-	static void openRepo(String url) {
-		RepoForm f = new RepoForm(url);
-		display(f);
-		midlet.start(RUN_LOAD_FORM, f);
-	}
-	
-	static void openUser(String url) {
-		url = "users/".concat(url);
-		
-		UserForm f = null;
-		// search in previous screens
-		synchronized (formHistory) {
-			int l = formHistory.size();
-			for (int i = 0; i < l; ++i) {
-				Object o = formHistory.elementAt(i);
-				if (!(o instanceof UserForm) || !url.equals(((UserForm) o).url)) {
-					break;
-				}
-				f = (UserForm) o;
-			}
-		}
-		if (f == null) {
-			f = new UserForm(url);
-		}
-		display(f);
-		midlet.start(RUN_LOAD_FORM, f);
-	}
-	
-	static void addBookmark(String url, Displayable d) {
-		if (bookmarks == null) {
-			try {
-				RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
-				bookmarks = JSONObject.parseArray(new String(r.getRecord(1), "UTF-8"));
-				r.closeRecordStore();
-			} catch (Exception e) {
-				bookmarks = new JSONArray(10);
-			}
-		} else {
-			// check if this bookmark already exists
-			if (bookmarks.has(url)) return;
-		}
-		bookmarks.add(url);
-		if (bookmarksList != null) {
-			bookmarksList.append(url, null);
-		}
-		
-		try {
-			RecordStore.deleteRecordStore(BOOKMARKS_RECORDNAME);
-		} catch (Exception ignored) {}
-		try {
-			RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, true);
-			byte[] b = bookmarks.toString().getBytes("UTF-8");
-			r.addRecord(b, 0, b.length);
-			r.closeRecordStore();
-		} catch (Exception ignored) {}
-		
-		display(infoAlert("Bookmark saved"), d);
 	}
 	
 	// threading
@@ -1386,8 +1276,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			display(/*current*/ mainForm, true);
 			break;
 		}
-		case RUN_CHECK_OAUTH_CODE: {
+		case RUN_CHECK_OAUTH_CODE: { // finish oauth manually
 			acceptOauthToken((String) param, oauthMode);
+			break;
+		}
+		case RUN_TOGGLE_STAR: { // toggle repo starred state
+			if (!useProxy || login == null) break;
+			try {
+				apiPost("user/starred/".concat(((RepoForm) param).url)
+						.concat(";method=").concat(((RepoForm) param).starred ? "DELETE" : "PUT"), null, null);
+				((RepoForm) param).starBtn.setText(L[((RepoForm) param).starred ? Star : Starred]);
+			} catch (Exception ignored) {
+				ignored.printStackTrace();
+			}
 			break;
 		}
 		}
@@ -1406,6 +1307,128 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception e) {}
 		return t;
+	}
+	
+	static void openUrl(String url) {
+//		System.out.println("openUrl:".concat(url));
+		if (url.startsWith("https://github.com/")) {
+			url = url.substring(19);
+		} else if (url.startsWith("https://api.github.com/repos/")
+				|| url.startsWith("https://api.github.com/users/")) {
+			url = url.substring(29);
+		}
+		if (url.indexOf('/') == -1) {
+			// user
+			openUser(url);
+		} else {
+			// repo
+			String[] split = split(url, '/');
+			if (split.length == 2 || split[2].length() == 0) {
+				openRepo(url);
+			} else {
+				String repo = split[0].concat("/").concat(split[1]);
+				GHForm f;
+				char c;
+				switch (c = split[2].charAt(0)) {
+				case 'f': // forks
+					f = new ReposForm("repos/".concat(repo).concat("/forks?"), L[Forks].concat(" - ").concat(repo), null, true);
+					break;
+				case 'r': // releases
+					f = new ReleasesForm(repo, false);
+					break;
+				case 't': // tags
+					f = new ReleasesForm(repo, true);
+					break;
+				case 's': // stargazers
+					f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), L[Stargazers].concat(" - ").concat(repo));
+					break;
+				case 'w': // watchers
+					f = new UsersForm("repos/".concat(repo).concat("/subscribers?"), L[Watchers].concat(" - ").concat(repo));
+					break;
+				case 'i': // issues
+				case 'p': // pulls
+					if (split.length == 4) {
+						f = new IssueForm(url);
+						break;
+					}
+					f = new IssuesForm(repo, c == 'p' ? 1 : 0);
+					break;
+				case 'c': // commits
+					if (split.length == 4) {
+						f = new CommitsForm(repo, split[3], false);
+						break;
+					}
+					f = new CommitsForm(repo, null, false);
+					break;
+				case 'b': // branches
+					f = new BranchesForm(repo);
+					break;
+				default:
+					return;
+				}
+				display(f);
+				midlet.start(RUN_LOAD_FORM, f);
+			}
+		}
+	}
+	
+	static void openRepo(String url) {
+		RepoForm f = new RepoForm(url);
+		display(f);
+		midlet.start(RUN_LOAD_FORM, f);
+	}
+	
+	static void openUser(String url) {
+		url = "users/".concat(url);
+		
+		UserForm f = null;
+		// search in previous screens
+		synchronized (formHistory) {
+			int l = formHistory.size();
+			for (int i = 0; i < l; ++i) {
+				Object o = formHistory.elementAt(i);
+				if (!(o instanceof UserForm) || !url.equals(((UserForm) o).url)) {
+					break;
+				}
+				f = (UserForm) o;
+			}
+		}
+		if (f == null) {
+			f = new UserForm(url);
+		}
+		display(f);
+		midlet.start(RUN_LOAD_FORM, f);
+	}
+	
+	static void addBookmark(String url, Displayable d) {
+		if (bookmarks == null) {
+			try {
+				RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
+				bookmarks = JSONObject.parseArray(new String(r.getRecord(1), "UTF-8"));
+				r.closeRecordStore();
+			} catch (Exception e) {
+				bookmarks = new JSONArray(10);
+			}
+		} else {
+			// check if this bookmark already exists
+			if (bookmarks.has(url)) return;
+		}
+		bookmarks.add(url);
+		if (bookmarksList != null) {
+			bookmarksList.append(url, null);
+		}
+		
+		try {
+			RecordStore.deleteRecordStore(BOOKMARKS_RECORDNAME);
+		} catch (Exception ignored) {}
+		try {
+			RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, true);
+			byte[] b = bookmarks.toString().getBytes("UTF-8");
+			r.addRecord(b, 0, b.length);
+			r.closeRecordStore();
+		} catch (Exception ignored) {}
+		
+		display(infoAlert("Bookmark saved"), d);
 	}
 
 	private static void writeHttpHeader(OutputStream out, int code, String message) throws IOException {
@@ -1754,8 +1777,18 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			hc = openHttpConnection(proxyUrl(url.startsWith("http") ? url : inst.concat(url)));
 			hc.setRequestMethod("POST");
-			hc.setRequestProperty("Content-Length", body == null ? "0" : Integer.toString(body.length));
 			hc.setRequestProperty("Accept", "application/json");
+			if (!url.startsWith("http")) {
+				if (apiMode == API_GITHUB) {
+					hc.setRequestProperty("X-Github-Api-Version", GITHUB_API_VERSION);
+					if (githubAccessToken != null)
+						hc.setRequestProperty("Authorization", "Bearer ".concat(githubAccessToken));
+				} else {
+					if (giteaAccessToken != null)
+						hc.setRequestProperty("Authorization", "Bearer ".concat(giteaAccessToken));
+				}
+			}
+			hc.setRequestProperty("Content-Length", body == null ? "0" : Integer.toString(body.length));
 			if (type != null) hc.setRequestProperty("Content-Type", type);
 			if (body != null) {
 				OutputStream out = hc.openOutputStream();
@@ -1777,6 +1810,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				hc.close();
 			} catch (IOException e) {}
 		}
+//		System.out.println(res instanceof JSONObject ?
+//				((JSONObject) res).format(0) : res instanceof JSONArray ?
+//						((JSONArray) res).format(0) : res);
 		return res;
 	}
 	
