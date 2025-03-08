@@ -62,16 +62,15 @@ public abstract class PagedForm extends GHForm {
 	}
 	
 	// wrapped api request
-	JSONArray pagedApi(Thread thread, String url) throws IOException {
-		StringBuffer sb = new StringBuffer(url);
-		if (sb.charAt(url.length() - 1) != '?') {
-			sb.append('&');
+	JSONArray pagedApi(Thread thread, StringBuffer url) throws IOException {
+		if (url.charAt(url.length() - 1) != '?') {
+			url.append('&');
 		}
-		sb.append(GH.apiMode == GH.API_GITEA ? "limit=" : "per_page=").append(perPage)
+		url.append(GH.apiMode == GH.API_GITEA ? "limit=" : "per_page=").append(perPage)
 		.append("&page=").append(page);
 		
 		String[] s = new String[1];
-		Object r = GH.api(sb.toString(), s);
+		Object r = GH.api(url.toString(), s);
 		
 		if (r instanceof JSONObject) {
 			r = ((JSONObject) r).getArray(GH.apiMode == GH.API_GITEA ? "data" : "items");
@@ -99,12 +98,12 @@ public abstract class PagedForm extends GHForm {
 		if (thread != this.thread) throw GH.cancelException;
 		
 		// add page number to title
-		sb.setLength(0);
+		url.setLength(0);
 		if (!(page == 1 && page == last)) {
-			sb.append(" (").append(page).append('/').append(last).append(')');
+			url.append(" (").append(page).append('/').append(last).append(')');
 		}
 		
-		super.setTitle(title.concat(pageText = sb.toString()));
+		super.setTitle(title.concat(pageText = url.toString()));
 		
 		// pagination commands
 		if (page != 1) {

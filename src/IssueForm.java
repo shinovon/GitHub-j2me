@@ -32,8 +32,6 @@ public class IssueForm extends PagedForm {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		deleteAll();
-
 		append("TODO");
 	}
 

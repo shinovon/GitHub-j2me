@@ -36,9 +36,7 @@ public class UsersForm extends PagedForm {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		deleteAll();
-		
-		JSONArray r = pagedApi(thread, url);
+		JSONArray r = pagedApi(thread, new StringBuffer(url));
 		int l = r.size();
 		
 		StringItem s;

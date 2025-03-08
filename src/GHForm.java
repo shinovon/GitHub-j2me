@@ -46,6 +46,8 @@ public abstract class GHForm extends Form implements LangConstants {
 		setTicker(new Ticker("Loading.."));
 		Thread thread = this.thread = Thread.currentThread();
 		try {
+			deleteAll();
+			
 			loadInternal(thread);
 			finished = true;
 		} catch (InterruptedException e) {

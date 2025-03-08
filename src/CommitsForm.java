@@ -44,8 +44,6 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		deleteAll();
-		
 		StringBuffer sb = new StringBuffer(search ? "search/commits?" : "repos/");
 		if (search) {
 			sb.append("q=").append(GH.url(url));
@@ -54,7 +52,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 			if (sha != null) sb.append("sha=").append(sha);
 		}
 		
-		JSONArray r = pagedApi(thread, sb.toString());
+		JSONArray r = pagedApi(thread, sb);
 		int l = r.size();
 		
 		if (urls == null) {

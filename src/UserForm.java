@@ -27,14 +27,14 @@ import cc.nnproject.json.JSONObject;
 public class UserForm extends GHForm {
 
 	public UserForm(String user) {
-		super(user);
+		super(user.startsWith("/users/") ? user.substring(7) : user);
 		this.url = user;
 //		addCommand(GH.reposCmd);
 		addCommand(GH.saveBookmarkCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		JSONObject r = (JSONObject) GH.api("users/".concat(url));
+		JSONObject r = (JSONObject) GH.api(url);
 
 		// cancel check
 		if (thread != this.thread) return;
@@ -49,10 +49,12 @@ public class UserForm extends GHForm {
 			append(s);
 		}
 		
-		s = new StringItem(null, r.getString("login"));
+		s = new StringItem(null, url = t = r.getString("login"));
 		s.setFont(GH.medfont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
+		
+		setTitle(t);
 
 		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "description" : "bio")) != null && t.length() != 0) {
 			s = new StringItem(null, t);
@@ -69,6 +71,13 @@ public class UserForm extends GHForm {
 			s.setItemCommandListener(GH.midlet);
 			append(s);
 		}
+
+		if ((t = r.getString("location", null)) != null && t.length() != 0) {
+			s = new StringItem(GH.L[Location], t);
+			s.setFont(GH.medfont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			append(s);
+		}
 		
 		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "followers_count" : "followers"), _follower), Item.BUTTON);
 		s.setFont(GH.smallfont);
@@ -77,14 +86,16 @@ public class UserForm extends GHForm {
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
-		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "followeing_count" : "following"), _following), Item.BUTTON);
+		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "following_count" : "following"), _following), Item.BUTTON);
 		s.setFont(GH.smallfont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 		s.setDefaultCommand(GH.followingCmd);
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
-		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[Repositories] : GH.count(r.getInt("public_repos"), _repository), Item.BUTTON);
+		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[Repositories] :
+			GH.count(r.getInt("public_repos") + r.getInt("total_private_repos", 0), _repository),
+			Item.BUTTON);
 		s.setFont(GH.medfont);
 		s.setDefaultCommand(GH.reposCmd);
 		s.setItemCommandListener(GH.midlet);

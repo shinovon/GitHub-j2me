@@ -45,9 +45,8 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		deleteAll();
-		
-		JSONArray r = pagedApi(thread, sort != null ? url.concat("sort=").concat(sort) : url);
+		StringBuffer sb = new StringBuffer(url);
+		JSONArray r = pagedApi(thread, sort != null ? sb.append("sort=").append(sort) : sb);
 		int l = r.size();
 		
 		if (urls == null) {
@@ -84,10 +83,13 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 			safeAppend(thread, s);
 			
 			if (!mini) {
-				if (j.getBoolean("fork", false)) {
+				boolean b, fork = j.getBoolean("fork", false), arch = j.getBoolean("archived", false);
+				if ((b = j.getBoolean("private", false)) || fork || arch) {
 					s.setLayout(Item.LAYOUT_LEFT);
 					
-					s = new StringItem(null, GH.L[_fork_]/*"Forked from " + j.getObject("parent").getString("full_name")*/);
+					s = new StringItem(null, GH.L[b ?
+							(arch ? _privateArchive_ : (fork ? _privateFork_ : _private_)) :
+								(arch ? _archive_ : _fork_)]);
 					s.setFont(GH.smallfont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 					safeAppend(thread, s);
@@ -100,7 +102,6 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 					safeAppend(thread, s);
 				}
 				
-				boolean b;
 				if (b = ((t = j.getString("language")) != null && t.length() != 0)) {
 					s = new StringItem(null, t);
 					s.setFont(GH.smallfont);

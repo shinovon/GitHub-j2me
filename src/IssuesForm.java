@@ -45,8 +45,6 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		deleteAll();
-
 		StringBuffer sb = new StringBuffer(
 				mode == 2 || (mode == 0 && GH.apiMode != GH.API_GITEA) ?
 						(GH.apiMode == GH.API_GITEA ? "repos/issues/search?" : "search/issues?") : "repos/");
@@ -63,7 +61,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			if (state != null) sb.append("state=").append(state);
 		}
 		
-		JSONArray r = pagedApi(thread, sb.toString());
+		JSONArray r = pagedApi(thread, sb);
 		int l = r.size();
 
 		if (mode != 2 || GH.apiMode == GH.API_GITEA) {

@@ -146,5 +146,13 @@ public interface LangConstants {
 	Branches = 145,
 	_fork_ = 146,
 	Updated = 147,
+	YourProfile = 148,
+	YourRepositories = 149,
+	YourStars = 150,
+	Location = 151,
+	_private_ = 152,
+	_archive_ = 153,
+	_privateFork_ = 154,
+	_privateArchive_ = 155,
 	gh2me = 0;
 }

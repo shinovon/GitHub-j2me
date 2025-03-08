@@ -40,9 +40,7 @@ public class BranchesForm extends PagedForm {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		deleteAll();
-		
-		JSONArray r = pagedApi(thread, "repos/".concat(url).concat("/branches?"));
+		JSONArray r = pagedApi(thread, new StringBuffer("repos/").append(url).append("/branches?"));
 		int l = r.size();
 		
 		StringItem s;

@@ -44,9 +44,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		deleteAll();
-		
-		JSONArray r = pagedApi(thread, "repos/".concat(url).concat(tags ? "/tags?" : "/releases?"));
+		JSONArray r = pagedApi(thread, new StringBuffer("repos/").append(url).append(tags ? "/tags?" : "/releases?"));
 		int l = r.size();
 		
 		if (urls == null) {

@@ -121,7 +121,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static boolean useProxy = false;
 	static int apiMode = API_GITHUB;
 	private static String customApiUrl = GITEA_DEFAULT_API_URL;
-	private static String lang = "ru";
+	private static String lang = "en";
 
 	// threading
 	private static int run;
@@ -146,6 +146,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static long giteaAccessTokenTime;
 	private static long giteaRefreshTokenTime;
 	
+	static String login;
+	
 	// bookmarks
 	private static JSONArray bookmarks;
 	private static int movingBookmark = -1;
@@ -159,6 +161,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Command searchCmd;
 	private static Command searchSubmitCmd;
 	private static Command authCmd;
+	private static Command yourProfileCmd;
+	private static Command yourReposCmd;
+	private static Command yourStarsCmd;
 	
 	private static Command goCmd;
 	static Command downloadCmd;
@@ -237,7 +242,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	private static TextField authField;
 
-	protected void destroyApp(boolean unconditional)  {}
+	protected void destroyApp(boolean unconditional) {}
 
 	protected void pauseApp() {}
 
@@ -290,7 +295,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception ignored) {}
 		
-		(L = new String[150])[0] = "gh2me";
+		(L = new String[170])[0] = "gh2me";
 		try {
 			loadLocale(lang);
 		} catch (Exception e) {
@@ -319,6 +324,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		searchCmd = new Command(L[Search], Command.ITEM, 1);
 		searchSubmitCmd = new Command(L[Search], Command.OK, 1);
 		authCmd = new Command(L[Accounts], Command.SCREEN, 6);
+		yourProfileCmd = new Command(L[YourProfile], Command.ITEM, 1);
+		yourReposCmd = new Command(L[YourRepositories], Command.ITEM, 1);
+		yourStarsCmd = new Command(L[YourStars], Command.ITEM, 1);
 		
 		goCmd = new Command(L[Go], Command.ITEM, 1);
 		downloadCmd = new Command(L[Download], Command.ITEM, 1);
@@ -408,6 +416,28 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		s.setItemCommandListener(this);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		f.append(s);
+		
+		if (login != null) { // authorized
+			f.append("\n");
+			
+			s = new StringItem(null, L[YourProfile], StringItem.BUTTON);
+			s.setDefaultCommand(yourProfileCmd);
+			s.setItemCommandListener(this);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			f.append(s);
+
+			s = new StringItem(null, L[YourRepositories], StringItem.BUTTON);
+			s.setDefaultCommand(yourReposCmd);
+			s.setItemCommandListener(this);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			f.append(s);
+
+			s = new StringItem(null, L[YourStars], StringItem.BUTTON);
+			s.setDefaultCommand(yourStarsCmd);
+			s.setItemCommandListener(this);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			f.append(s);
+		}
 		
 		display.setCurrent(current = mainForm = f);
 	}
@@ -572,10 +602,25 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				display(f);
 				return;
 			}
+			a: {
+				GHForm f;
+				if (c == yourProfileCmd) {
+					f = new UserForm("user");
+				} else if (c == yourReposCmd) {
+					f = new ReposForm("user/repos?", L[YourRepositories], "pushed", false);
+				} else if (c == yourStarsCmd) {
+					f = new ReposForm("user/stars?", L[YourStars], null, false);
+				} else break a;
+				display(f);
+				start(RUN_LOAD_FORM, f);
+				return;
+			}
 		}
 		// settingsForm commands
 		if (d == settingsForm) {
 			if (c == backCmd) {
+				int prevApiMode = apiMode;
+				
 				// save settings
 				proxyUrl = proxyField.getString();
 				useProxy = proxyChoice.isSelected(0);
@@ -600,7 +645,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					r.closeRecordStore();
 				} catch (Exception e) {}
 				
-				display(mainForm, true);
+				if (prevApiMode != apiMode) {
+					start(RUN_VALIDATE_AUTH, null);
+				} else display(mainForm, true);
 				return;
 			}
 			return;
@@ -776,10 +823,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		if (c == authDoneCmd) {
-			if (oauthMode < 0) {
-//				display(null);
-				return;
-			} 
+			if (oauthMode < 0) return; // TODO double click check
 			start(RUN_CHECK_OAUTH_CODE, authField.getString().trim());
 			return;
 		}
@@ -1074,6 +1118,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 	
 	static void openUser(String url) {
+		url = "users/".concat(url);
+		
 		UserForm f = null;
 		// search in previous screens
 		synchronized (formHistory) {
@@ -1104,7 +1150,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} else {
 			// check if this bookmark already exists
-			if (bookmarks.has(url)) return;  
+			if (bookmarks.has(url)) return;
 		}
 		bookmarks.add(url);
 		if (bookmarksList != null) {
@@ -1285,11 +1331,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			break;
 		}
 		case RUN_VALIDATE_AUTH: { // validate and refresh auth
-			display(loadingAlert("Authorizing"), null);
+			display(loadingAlert(L[Authorizing]), null);
+			login = null;
 			
 			if (apiMode == API_GITHUB && githubAccessToken != null) {
 				try {
-					api("user");
+					login = ((JSONObject) api("user")).getString("login");
 				} catch (Exception e) {
 					// token revoked
 					githubAccessToken = null;
@@ -1303,7 +1350,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				}
 				if (giteaAccessToken != null) {
 					try {
-						api("user");
+						login = ((JSONObject) api("user")).getString("login");
 						break;
 					} catch (Exception e) {
 						// token revoked
@@ -1332,7 +1379,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					// token revoked
 					giteaRefreshToken = null;
 				}
-				display(current);
+				display(/*current*/ mainForm, true);
 				writeGiteaAuth();
 				break;
 			}
@@ -1412,7 +1459,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else code = query;
 		}
 		
-		display(loadingAlert("Authorizing"), d);
+		display(loadingAlert(L[Authorizing]), d);
 		
 		try {
 			if (code == null)
@@ -1453,7 +1500,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				writeGiteaAuth();
 			}
-			display(mainForm);
+			display(mainForm, true);
 			display(infoAlert("Authorized"), mainForm);
 			return true;
 		} catch (Exception e) {
@@ -1682,7 +1729,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				hc.close();
 			} catch (IOException e) {}
 		}
-//		System.out.println(res);
+		// FIXME debug
+		System.out.println(res instanceof JSONObject ?
+				((JSONObject) res).format(0) : res instanceof JSONArray ?
+						((JSONArray) res).format(0) : res);
 		return res;
 	}
 	
