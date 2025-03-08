@@ -1729,10 +1729,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				hc.close();
 			} catch (IOException e) {}
 		}
-		// FIXME debug
-		System.out.println(res instanceof JSONObject ?
-				((JSONObject) res).format(0) : res instanceof JSONArray ?
-						((JSONArray) res).format(0) : res);
+//		System.out.println(res instanceof JSONObject ?
+//				((JSONObject) res).format(0) : res instanceof JSONArray ?
+//						((JSONArray) res).format(0) : res);
 		return res;
 	}
 	
