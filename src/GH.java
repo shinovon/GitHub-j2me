@@ -1342,47 +1342,48 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					githubAccessToken = null;
 					writeGithubAuth();
 				}
-				break;
-			}
-			if (apiMode == API_GITEA && giteaRefreshToken != null) {
+			} else if (apiMode == API_GITEA && giteaRefreshToken != null) {
 				if (giteaAccessToken != null && System.currentTimeMillis() - giteaAccessTokenTime > 3600000L) {
 					giteaAccessToken = null;
 				}
 				if (giteaAccessToken != null) {
 					try {
 						login = ((JSONObject) api("user")).getString("login");
-						break;
 					} catch (Exception e) {
-						// token revoked
+						// token expired
 						giteaAccessToken = null;
 					}
+				} else {
+					try {
+						JSONObject j = new JSONObject();
+						j.put("grant_type", "refresh_token");
+						j.put("refresh_token", giteaRefreshToken);
+						j.put("client_id", giteaClientId);
+						j.put("client_secret", giteaClientSecret);
+	
+						String inst = customApiUrl != null ? customApiUrl : GITEA_DEFAULT_API_URL;
+						inst = inst.substring(0, inst.indexOf("/api"));
+						
+						j = (JSONObject) apiPost(inst.concat("/login/oauth/access_token"),
+								j.toString().getBytes(), "application/json");
+						
+						giteaAccessToken = j.getString("access_token");
+						giteaRefreshToken = j.getString("refresh_token", giteaRefreshToken);
+						
+						giteaRefreshTokenTime = giteaAccessTokenTime = System.currentTimeMillis();
+						try {
+							login = ((JSONObject) api("user")).getString("login");
+						} catch (Exception e) {
+							// ???
+						}
+					} catch (Exception e) {
+						// token revoked
+						giteaRefreshToken = null;
+					}
+					writeGiteaAuth();
 				}
-				
-				try {
-					JSONObject j = new JSONObject();
-					j.put("grant_type", "refresh_token");
-					j.put("refresh_token", giteaRefreshToken);
-					j.put("client_id", giteaClientId);
-					j.put("client_secret", giteaClientSecret);
-
-					String inst = customApiUrl != null ? customApiUrl : GITEA_DEFAULT_API_URL;
-					inst = inst.substring(0, inst.indexOf("/api"));
-					
-					j = (JSONObject) apiPost(inst.concat("/login/oauth/access_token"),
-							j.toString().getBytes(), "application/json");
-					
-					giteaAccessToken = j.getString("access_token");
-					giteaRefreshToken = j.getString("refresh_token", giteaRefreshToken);
-					
-					giteaRefreshTokenTime = giteaAccessTokenTime = System.currentTimeMillis();
-				} catch (Exception e) {
-					// token revoked
-					giteaRefreshToken = null;
-				}
-				display(/*current*/ mainForm, true);
-				writeGiteaAuth();
-				break;
 			}
+			display(/*current*/ mainForm, true);
 			break;
 		}
 		case RUN_CHECK_OAUTH_CODE: {
