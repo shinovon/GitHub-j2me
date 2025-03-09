@@ -153,8 +153,7 @@ public class RepoForm extends GHForm {
 		
 		append("\n");
 		
-		boolean b;
-		if (b = r.getBoolean("has_issues")) {
+		if (r.getBoolean("has_issues")) {
 			s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[Issues] : GH.L[Issues].concat(" (")
 				.concat(GH.count(r.getInt("open_issues"), _open).concat(")")), Item.BUTTON);
 			s.setDefaultCommand(GH.issuesCmd);
@@ -163,7 +162,7 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 
-		if (r.getBoolean("has_pull_requests", b)) {
+		if (r.getBoolean("has_pull_requests", true)) {
 			s = new StringItem(null, GH.L[PullRequests], Item.BUTTON);
 			s.setDefaultCommand(GH.pullsCmd);
 			s.setItemCommandListener(GH.midlet);
