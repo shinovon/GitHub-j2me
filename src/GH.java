@@ -95,7 +95,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static final String GITHUB_OAUTH_REDIRECT_URI = "http://localhost:8082/oauth_github";
 	private static final String GITHUB_OAUTH_SCOPE = "user, repo";
 	
-	private static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
+	static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
 	private static final String GITEA_DEFAULT_CLIENT_ID = "4fce904c-9a87-4dfd-ab58-991cd496ac93";
 	private static final String GITEA_DEFAULT_CLIENT_SECRET = "gto_qxo2fawh6dugu4u2rbkon6cwnywqfnp6od5ga3kw7opiwkg42xda";
 	private static final String GITEA_OAUTH_REDIRECT_URI = "http://localhost:8082/oauth_gitea";
@@ -131,7 +131,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static String browseProxyUrl = "http://nnp.nnchan.ru/glype/browse.php?u=";
 	private static boolean useProxy = false;
 	static int apiMode = API_GITHUB;
-	private static String customApiUrl = GITEA_DEFAULT_API_URL;
+	static String customApiUrl = GITEA_DEFAULT_API_URL;
 	private static String lang = "en";
 	private static boolean noFormat;
 	private static boolean onlineResize = false;

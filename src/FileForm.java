@@ -74,8 +74,9 @@ public class FileForm extends GHForm {
 				ext = ext.substring(i + 1);
 			} else ext = null;
 
-			if (size > 10240 ||
-					(!"md".equals(ext) && !"txt".equals(ext) && !GH.previewFiles)) {
+			if (size > 10240
+					|| (!"md".equals(ext) && !"txt".equals(ext) && !GH.previewFiles)
+					|| !r.jumpToKey("content")) {
 				StringItem s;
 				
 				s = new StringItem(null, name);
@@ -91,7 +92,6 @@ public class FileForm extends GHForm {
 				return;
 			}
 			
-			if (!r.jumpToKey("content")) throw new Exception();
 			String content = r.nextString();
 
 			if (!r.jumpToKey("encoding")) throw new Exception();
@@ -139,8 +139,16 @@ public class FileForm extends GHForm {
 			StringBuffer sb = new StringBuffer(repo);
 			
 			if (!privateAccess) {
-				sb.insert(0, GH.GITHUB_RAW_URL).append('/').append(ref)
-				.append('/').append(url == null ? path : url);
+				if (GH.apiMode == GH.API_GITEA) {
+					String inst = GH.customApiUrl != null ? GH.customApiUrl : GH.GITEA_DEFAULT_API_URL;
+					inst = inst.substring(0, inst.indexOf("/api"));
+				
+					sb.insert(0, inst).append("/raw/").append(ref)
+					.append('/').append(url);
+				} else {
+					sb.insert(0, GH.GITHUB_RAW_URL).append('/').append(ref)
+					.append('/').append(url);
+				}
 				return sb.toString();
 			}
 			
