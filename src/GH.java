@@ -72,6 +72,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final int RUN_VALIDATE_AUTH = 5;
 	static final int RUN_CHECK_OAUTH_CODE = 6;
 	static final int RUN_TOGGLE_STAR = 7;
+	static final int RUN_THUMBNAILS = 8;
 	
 	// api modes
 	static final int API_GITHUB = 0;
@@ -133,6 +134,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static boolean noFormat;
 	private static int fontSize = 1;
 	private static boolean loadImages;
+	private static boolean onlineResize = false;
+	private static int thumbLoading;
 
 	// threading
 	private static int run;
@@ -158,6 +161,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static long giteaRefreshTokenTime;
 	
 	static String login;
+	
+	private static Object thumbLoadLock = new Object();
+	private static Vector thumbsToLoad = new Vector();
 	
 	// bookmarks
 	private static JSONArray bookmarks;
@@ -1413,6 +1419,56 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			break;
 		}
+		case RUN_THUMBNAILS: { // background thumbnails loader thread
+			try {
+				while (true) {
+					synchronized (thumbLoadLock) {
+						thumbLoadLock.wait();
+					}
+					Thread.sleep(200);
+					while (thumbsToLoad.size() > 0) {
+						int i = 0;
+						Object[] o = null;
+						
+						try {
+							synchronized (thumbLoadLock) {
+								o = (Object[]) thumbsToLoad.elementAt(i);
+								thumbsToLoad.removeElementAt(i);
+							}
+						} catch (Exception e) {
+							continue;
+						}
+						
+						if (o == null) continue;
+						
+						String url = (String) o[0];
+						ImageItem item = (ImageItem) o[1];
+						
+						if (url == null) continue;
+						
+						try {
+							Image img;
+							if (onlineResize) {
+								img = getImage(proxyUrl(url + ";th=" + (getHeight() / 3)));
+							} else {
+								img = getImage(proxyUrl(url));
+	
+								int h = getHeight() / 3;
+								int w = (int) (((float) h / img.getHeight()) * img.getWidth());
+								img = resize(img, w, h);
+							}
+							
+							item.setImage(img);
+						} catch (Exception e) {
+							e.printStackTrace();
+						} 
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return;
+		}
 		}
 //		running--;
 	}
@@ -1429,6 +1485,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception e) {}
 		return t;
+	}
+	
+	private static void scheduleThumb(ImageItem item, String url) {
+		if (thumbLoading == 3 || item == null || url == null) return;
+		synchronized (thumbLoadLock) {
+			thumbsToLoad.addElement(new Object[] { url, item });
+			thumbLoadLock.notifyAll();
+		}
 	}
 	
 	static void openUrl(String url) {
@@ -1727,6 +1791,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		r.close();
 	}
 	
+	private static int getHeight() {
+		return mainForm.getHeight();
+	}
+	
 	static void display(Alert a, Displayable d) {
 		if (d == null) {
 			display.setCurrent(a);
@@ -1927,6 +1995,58 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //				((JSONObject) res).format(0) : res instanceof JSONArray ?
 //						((JSONArray) res).format(0) : res);
 		return res;
+	}
+
+	private static Image getImage(String url) throws IOException {
+		byte[] b = get(url);
+		return Image.createImage(b, 0, b.length);
+	}
+	
+	private static byte[] readBytes(InputStream inputStream, int initialSize, int bufferSize, int expandSize) throws IOException {
+		if (initialSize <= 0) initialSize = bufferSize;
+		byte[] buf = new byte[initialSize];
+		int count = 0;
+		byte[] readBuf = new byte[bufferSize];
+		int readLen;
+		while ((readLen = inputStream.read(readBuf)) != -1) {
+			if (count + readLen > buf.length) {
+				byte[] newbuf = new byte[count + expandSize];
+				System.arraycopy(buf, 0, newbuf, 0, count);
+				buf = newbuf;
+			}
+			System.arraycopy(readBuf, 0, buf, count, readLen);
+			count += readLen;
+		}
+		if (buf.length == count) {
+			return buf;
+		}
+		byte[] res = new byte[count];
+		System.arraycopy(buf, 0, res, 0, count);
+		return res;
+	}
+	
+	private static byte[] get(String url) throws IOException {
+		HttpConnection hc = null;
+		InputStream in = null;
+		try {
+			hc = openHttpConnection(url);
+			hc.setRequestMethod("GET");
+			int r;
+			if ((r = hc.getResponseCode()) >= 400) {
+				throw new IOException("HTTP " + r);
+			}
+			in = hc.openInputStream();
+			return readBytes(in, (int) hc.getLength(), 8*1024, 16*1024);
+		} finally {
+			try {
+				if (in != null) in.close();
+			} catch (IOException e) {
+			}
+			try {
+				if (hc != null) hc.close();
+			} catch (IOException e) {
+			}
+		}
 	}
 	
 	private static String proxyUrl(String url) {
@@ -2189,6 +2309,120 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		String[] r = new String[v.size()];
 		v.copyInto(r);
 		return r;
+	}
+	
+	// tube42 imagelib
+
+	static Image resize(Image src_i, int size_w, int size_h) {
+		// set source size
+		int w = src_i.getWidth();
+		int h = src_i.getHeight();
+
+		// no change??
+		if (size_w == w && size_h == h)
+			return src_i;
+		
+//		if (MangaApp.mipmap) {
+//			while (w > size_w * 3 && h > size_h * 3) {
+//				src_i = halve(src_i);
+//				w /= 2;
+//				h /= 2;
+//			}
+//		}
+
+		int[] dst = new int[size_w * size_h];
+
+		resize_rgb_filtered(src_i, dst, w, h, size_w, size_h);
+
+		// not needed anymore
+		src_i = null;
+
+		return Image.createRGBImage(dst, size_w, size_h, true);
+	}
+	
+	private static final void resize_rgb_filtered(Image src_i, int[] dst, int w0, int h0, int w1, int h1) {
+		int[] buffer1 = new int[w0];
+		int[] buffer2 = new int[w0];
+
+		// UNOPTIMIZED bilinear filtering:
+		//
+		// The pixel position is defined by y_a and y_b,
+		// which are 24.8 fixed point numbers
+		// 
+		// for bilinear interpolation, we use y_a1 <= y_a <= y_b1
+		// and x_a1 <= x_a <= x_b1, with y_d and x_d defining how long
+		// from x/y_b1 we are.
+		//
+		// since we are resizing one line at a time, we will at most 
+		// need two lines from the source image (y_a1 and y_b1).
+		// this will save us some memory but will make the algorithm 
+		// noticeably slower
+
+		for (int index1 = 0, y = 0; y < h1; y++) {
+
+			final int y_a = ((y * h0) << 8) / h1;
+			final int y_a1 = y_a >> 8;
+			int y_d = y_a & 0xFF;
+
+			int y_b1 = y_a1 + 1;
+			if (y_b1 >= h0) {
+				y_b1 = h0 - 1;
+				y_d = 0;
+			}
+
+			// get the two affected lines:
+			src_i.getRGB(buffer1, 0, w0, 0, y_a1, w0, 1);
+			if (y_d != 0)
+				src_i.getRGB(buffer2, 0, w0, 0, y_b1, w0, 1);
+
+			for (int x = 0; x < w1; x++) {
+				// get this and the next point
+				int x_a = ((x * w0) << 8) / w1;
+				int x_a1 = x_a >> 8;
+				int x_d = x_a & 0xFF;
+
+				int x_b1 = x_a1 + 1;
+				if (x_b1 >= w0) {
+					x_b1 = w0 - 1;
+					x_d = 0;
+				}
+
+				// interpolate in x
+				int c12, c34;
+				int c1 = buffer1[x_a1];
+				int c3 = buffer1[x_b1];
+
+				// interpolate in y:
+				if (y_d == 0) {
+					c12 = c1;
+					c34 = c3;
+				} else {
+					int c2 = buffer2[x_a1];
+					int c4 = buffer2[x_b1];
+
+					final int v1 = y_d & 0xFF;
+					final int a_c2_RB = c1 & 0x00FF00FF;
+					final int a_c2_AG_org = c1 & 0xFF00FF00;
+
+					final int b_c2_RB = c3 & 0x00FF00FF;
+					final int b_c2_AG_org = c3 & 0xFF00FF00;
+
+					c12 = (a_c2_AG_org + ((((c2 >>> 8) & 0x00FF00FF) - (a_c2_AG_org >>> 8)) * v1)) & 0xFF00FF00
+							| (a_c2_RB + ((((c2 & 0x00FF00FF) - a_c2_RB) * v1) >> 8)) & 0x00FF00FF;
+					c34 = (b_c2_AG_org + ((((c4 >>> 8) & 0x00FF00FF) - (b_c2_AG_org >>> 8)) * v1)) & 0xFF00FF00
+							| (b_c2_RB + ((((c4 & 0x00FF00FF) - b_c2_RB) * v1) >> 8)) & 0x00FF00FF;
+				}
+
+				// final result
+
+				final int v1 = x_d & 0xFF;
+				final int c2_RB = c12 & 0x00FF00FF;
+
+				final int c2_AG_org = c12 & 0xFF00FF00;
+				dst[index1++] = (c2_AG_org + ((((c34 >>> 8) & 0x00FF00FF) - (c2_AG_org >>> 8)) * v1)) & 0xFF00FF00
+						| (c2_RB + ((((c34 & 0x00FF00FF) - c2_RB) * v1) >> 8)) & 0x00FF00FF;
+			}
+		}
 	}
 	
 	// Markdown parser
@@ -2644,9 +2878,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 									String s = sb.toString();
 									if (item instanceof ImageItem && loadImages) {
-										// TODO
 										((ImageItem) item).setAltText(s);
-//										loadThumb(item, s);
+										scheduleThumb((ImageItem) item, s);
 									}
 									if (urls != null) urls.put(item, s);
 									form.safeInsert(thread, insert++, item);
@@ -2785,9 +3018,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									if (url.charAt(0) == '"')
 										url = url.substring(1, url.length() - 1);
 									
-									// TODO
 									img.setAltText(url);
-//									scheduleThumb(img, url);
+									scheduleThumb(img, url);
 								}
 							}
 							
