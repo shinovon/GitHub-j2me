@@ -30,11 +30,10 @@ import javax.microedition.lcdui.StringItem;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
-public class CommitsForm extends PagedForm implements ItemCommandListener {
+public class CommitsForm extends PagedForm {
 
 	String sha;
 	boolean search;
-	Hashtable urls;
 	
 	public CommitsForm(String repo, String sha, boolean search) {
 		super(search ? GH.L[Search] : GH.L[Commits].concat(" - ").concat(repo));
@@ -75,8 +74,8 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			if (search && j.has("repository")) {
 				urls.put(s, t = j.getObject("repository").getString("full_name"));
-				s.addCommand(GH.repoCmd);
-				s.setItemCommandListener(this);
+				s.addCommand(GH.mdLinkCmd);
+				s.setItemCommandListener(GH.midlet);
 			}
 			safeAppend(thread, s);
 			
@@ -99,12 +98,6 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 			safeAppend(thread, s);
 			safeAppend(thread, new Spacer(10, 8));
 		}
-	}
-
-	public void commandAction(Command c, Item item) {
-		if (urls == null) return;
-		String s = (String) urls.get(item);
-		GH.openUrl(s);
 	}
 
 }

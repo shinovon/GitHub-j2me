@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 import java.io.InterruptedIOException;
+import java.util.Hashtable;
 
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Item;
@@ -28,6 +29,7 @@ import javax.microedition.lcdui.Ticker;
 public abstract class GHForm extends Form implements LangConstants {
 
 	String url;
+	Hashtable urls;
 	
 	boolean loaded, finished, canceled;
 	Thread thread;

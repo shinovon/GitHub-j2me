@@ -5,8 +5,6 @@ import javax.microedition.lcdui.StringItem;
 import cc.nnproject.json.JSONObject;
 
 public class FileForm extends GHForm {
-	
-	Hashtable urls;
 
 	public FileForm(String url, String title) {
 		super(title);

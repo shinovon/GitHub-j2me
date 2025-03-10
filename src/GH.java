@@ -1152,6 +1152,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		if (c == mdLinkCmd) {
 			// TODO
+			String url = (String) ((GHForm) current).urls.get(item);
+			if (url == null) return;
+			browse(url);
 			return;
 		}
 		commandAction(c, display.getCurrent());

@@ -30,9 +30,8 @@ import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
 // list of repositories (forks, etc)
-public class ReposForm extends PagedForm implements ItemCommandListener {
+public class ReposForm extends PagedForm {
 
-	Hashtable urls;
 	boolean users;
 	String sort;
 	boolean mini;
@@ -77,8 +76,8 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 			s.addCommand(GH.openCmd);
-			s.setDefaultCommand(GH.openCmd);
-			s.setItemCommandListener(this);
+			s.setDefaultCommand(GH.mdLinkCmd);
+			s.setItemCommandListener(GH.midlet);
 			urls.put(s, j.getString("full_name"));
 			safeAppend(thread, s);
 			
@@ -117,11 +116,6 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 				safeAppend(thread, "\n");
 			}
 		}
-	}
-
-	public void commandAction(Command c, Item item) {
-		if (urls == null) return;
-		GH.openRepo((String) urls.get(item));
 	}
 
 }

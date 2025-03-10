@@ -31,7 +31,6 @@ import cc.nnproject.json.JSONObject;
 
 public class ReleasesForm extends PagedForm implements ItemCommandListener {
 
-	private Hashtable urls;
 	private boolean tags;
 
 	public ReleasesForm(String repo, boolean tags) {
@@ -175,8 +174,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 	public void commandAction(Command c, Item item) {
 		if (urls == null) return;
 		if (c == GH.downloadCmd) {
-			String url = (String) urls.get(item);
-			GH.midlet.browse(url);
+			GH.midlet.browse((String) urls.get(item));
 			return;
 		}
 		if (c == GH.spoilerCmd) {
