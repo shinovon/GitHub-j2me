@@ -1520,20 +1520,32 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						
 						try {
 							if (url.startsWith("!")) {
-								if (!(current instanceof FileForm)) continue;
-								
-								url = ((FileForm) current).fetchBlobUrl(url.substring(1));
+								url = url.substring(1);
+								if (!url.startsWith("http")) {
+									if (!(current instanceof FileForm)) continue;
+									
+									url = ((FileForm) current).fetchBlobUrl(url);
+								}
 							}
-							
+
+							int sw = getWidth();
+							int sh = getHeight() / 3;
 							Image img;
 							if (onlineResize) {
-								img = getImage(proxyUrl(url + ";th=" + (getHeight() / 3)));
+								img = getImage(proxyUrl(url + ";wh=" + (getWidth()) + ";th=" + (getHeight() / 3)));
 							} else {
 								img = getImage(proxyUrl(url));
-	
-								int h = getHeight() / 3;
-								int w = (int) (((float) h / img.getHeight()) * img.getWidth());
-								img = resize(img, w, h);
+								
+								int ow = img.getWidth(), oh = img.getHeight();
+								if (ow > sw || oh > sh) {
+									int h = sh;
+									int w = (int) (((float) h / oh) * ow);
+									if (w > sw) {
+										w = sw;
+										h = (int) (((float) w / ow) * oh);
+									}
+									img = resize(img, w, h);
+								}
 							}
 							
 							item.setImage(img);
@@ -1919,6 +1931,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			s.append((char) c);
 		}
 		r.close();
+	}
+	
+	private static int getWidth() {
+		return mainForm.getWidth();
 	}
 	
 	private static int getHeight() {
@@ -2720,7 +2736,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			MD_LINK = 26,
 			MD_IMAGE = 27,
 			MD_PARENTHESIS = 28,
-			MD_PARAGRAPH = 29;
+			MD_PARAGRAPH = 29,
+			MD_BREAKS = 30;
 	
 	public static void parseMarkdown(Thread thread, GHForm form, String body, int insert, Hashtable urls) {
 		if (body == null) return;
@@ -2739,7 +2756,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		int len = body.length();
 		if (len == 0) return;
 		int o = 0;
-		int[] state = new int[30];
+		int[] state = new int[32];
 		state[MD_FONT_SIZE] = Font.SIZE_SMALL;
 		
 		Item item = null;
@@ -2775,6 +2792,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										= state[MD_GRAVE] = state[MD_STRIKE] = state[MD_ASTERISK]
 										= state[MD_BRACKET] = state[MD_LINK]
 										= state[MD_IMAGE] = state[MD_PARENTHESIS] = 0;
+								state[MD_BREAKS] ++;
 	
 								if (!b) {
 									sb.append('\n');
@@ -3066,6 +3084,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 											} else if (c <= ' ' && state[MD_GRAVE] != 3) {
 												if (l == ' ') continue;
 												c = ' ';
+											} else if (c == '\t') {
+												l = c;
+												sb.append("    ");
+												continue;
 											}
 											l = c;
 											sb.append(c);
@@ -3077,16 +3099,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									}
 									continue;
 								}
-								case '!':
+								case '!': {
 									if (i + 1 == len || chars[i + 1] != '[') {
 										break;
 									}
-									state[MD_IMAGE] = 1;
-									i++;
+									state[MD_IMAGE] ++;
+									continue;
+								}
 								case '[': {
-									if (state[MD_BRACKET] != 0) {
-										break;
-									}
+//									if (state[MD_BRACKET] != 0) {
+//										break;
+//									}
 									
 									int k = i; // line length
 									while (++k < len && chars[k] != '\n' && chars[k] != '\r');
@@ -3103,18 +3126,18 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									
 									if (state[MD_IMAGE] != 0) {
 										item = new ImageItem("Image", null, 0, null);
-										item.addCommand(mdLinkCmd);
+										item.setDefaultCommand(mdLinkCmd);
 										item.setItemCommandListener(midlet);
 									} else {
 										item = new StringItem(null, "");
 										((StringItem) item).setFont(getFont(state));
-										item.addCommand(mdLinkCmd);
+										item.setDefaultCommand(mdLinkCmd);
 										item.setItemCommandListener(midlet);
 									}
 									
 									l = c;
-									state[MD_BRACKET] = 1;
-									state[MD_LINK] = 1;
+									state[MD_BRACKET] ++;
+									state[MD_LINK] ++;
 									state[MD_LENGTH] ++;
 									continue;
 								}
@@ -3132,12 +3155,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									sb.setLength(0);
 									
 									l = c;
-									state[MD_BRACKET] = 0;
+									state[MD_BRACKET] --;
 //									i++;
 									continue;
 								}
 								case '(': {
-									if (state[MD_LINK] == 0) {
+									if (state[MD_LINK] == 0 || chars[i - 1] != ']') {
 										break;
 									}
 									
@@ -3153,15 +3176,28 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									sb.insert(0, '!');
 									String s = sb.toString();
 									if (item instanceof ImageItem && loadImages) {
-										((ImageItem) item).setAltText(s);
-										scheduleThumb((ImageItem) item, s);
+										if (((ImageItem) item).getAltText() == null) {
+											((ImageItem) item).setAltText(s);
+											scheduleThumb((ImageItem) item, s);
+										}
 									}
 									if (urls != null) urls.put(item, s);
-									form.safeInsert(thread, insert++, item);
+									try {
+										System.out.println("link " + item);
+										form.safeInsert(thread, insert, item);
+										insert++;
+									} catch (RuntimeException e) {
+										// nested links
+										if (e == cancelException) throw e;
+									}
 									sb.setLength(0);
 									
 									l = c;
-									state[MD_PARENTHESIS] = state[MD_LINK] = state[MD_IMAGE] = 0;
+									state[MD_PARENTHESIS] --;
+									if (state[MD_IMAGE] != 0) state[MD_IMAGE] --;
+									if (-- state[MD_LINK] == 0) {
+										item = null;
+									}
 									continue;
 								}
 								default:
@@ -3272,10 +3308,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							// <br>
 							sb.append('\n');
 	//						lineBreak(state);
-						} else if (chars[d + 1] == 'p' && chars[d + 2] == '>') {
+						} else if (chars[d + 1] == 'p' && (chars[d + 2] == ' ' || chars[d + 2] == '>')) {
 							// <p>
 							state[MD_HTML_PARAGRAPH] ++;
-							sb.append('\n');
+							if (state[MD_BREAKS] != 0) sb.append('\n');
 						} else if (chars[d + 1] == 'i' && chars[d + 2] == 'm' && chars[d + 3] == 'g') {
 							// <img>
 							
@@ -3307,20 +3343,21 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							form.safeInsert(thread, insert++, img);
 						} else if (chars[d + 1] == 's' && chars[d + 2] == 'm') {
 							// <small>
-						} else if (chars[d + 1] == 'a') {
+						} else if (chars[d + 1] == 'a'
+								&& (chars[d + 2] == ' ' || chars[d + 2] == '>')) {
 							// <a>
 							insert = flush(thread, form, sb, insert, state);
 							state[MD_HTML_LINK] ++;
 
 							item = new StringItem(null, "");
 							((StringItem) item).setFont(getFont(state));
-							item.addCommand(mdLinkCmd);
+							item.setDefaultCommand(mdLinkCmd);
 							item.setItemCommandListener(midlet);
 							
 							String url = body.substring(d + 2, e);
 							int i;
 							if ((i = url.indexOf("href=")) != -1) {
-								url = url.substring(i +54);
+								url = url.substring(i + 5);
 								if ((i = url.indexOf(' ')) != -1) {
 									url = url.substring(0, i);
 								}
@@ -3355,8 +3392,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			spacer.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			form.safeInsert(thread, insert++, spacer);
 		}
+		boolean b = false;
+		while (sb.charAt(sb.length() - 1) == ' ') {
+			sb.setLength(sb.length() - 1);
+			b = true;
+		}
 		StringItem s = new StringItem(null, sb.toString());
-		s.setFont(getFont(state));
+		Font f;
+		s.setFont(f = getFont(state));
 		form.safeInsert(thread, insert++, s);
 		if (state[MD_HEADER] != 0 || state[MD_LINE] != 0) {
 			Spacer spacer = new Spacer(10, 10);
@@ -3364,6 +3407,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			form.safeInsert(thread, insert++, spacer);
 			state[MD_LINE] = 0;
 			state[MD_PARAGRAPH] = 1;
+		} else if (b) {
+			form.safeInsert(thread, insert++, new Spacer(f.charWidth(' '), f.getBaselinePosition()));
 		}
 		sb.setLength(0);
 		return insert;
@@ -3373,7 +3418,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		int face = 0, style = 0, size = 0;
 		if (state[MD_GRAVE] != 0) {
 			face = Font.FACE_MONOSPACE;
-			style = Font.STYLE_PLAIN;
+			style = Font.STYLE_BOLD;
 			size = Font.SIZE_SMALL;
 		} else {
 			face = state[MD_FONT_FACE];
