@@ -3178,7 +3178,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									continue;
 								}
 								case ')': {
-									if (state[MD_LINK] == 0) {
+									if (state[MD_LINK] == 0 || state[MD_PARENTHESIS] == 0) {
 										break;
 									}
 
@@ -3192,7 +3192,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									}
 									if (urls != null) urls.put(item, s);
 									try {
-										System.out.println("link " + item);
 										form.safeInsert(thread, insert, item);
 										insert++;
 									} catch (RuntimeException e) {
