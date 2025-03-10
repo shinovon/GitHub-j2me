@@ -37,6 +37,7 @@ public abstract class GHForm extends Form implements LangConstants {
 	public GHForm(String title) {
 		super(title);
 		addCommand(GH.backCmd);
+		addCommand(GH.homeCmd);
 		setCommandListener(GH.midlet);
 	}
 	

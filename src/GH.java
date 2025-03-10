@@ -177,6 +177,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// ui commands
 	private static Command exitCmd;
 	static Command backCmd;
+	static Command homeCmd;
 	private static Command settingsCmd;
 	private static Command aboutCmd;
 	private static Command bookmarksCmd;
@@ -356,6 +357,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		exitCmd = new Command(L[Exit], Command.EXIT, 2);
 		backCmd = new Command(L[Back], Command.BACK, 2);
+		homeCmd = new Command(L[Home], Command.SCREEN, 10);
 		settingsCmd = new Command(L[Settings], Command.SCREEN, 5);
 		aboutCmd = new Command(L[About], Command.SCREEN, 7);
 		bookmarksCmd = new Command(L[Bookmarks], Command.ITEM, 1);
@@ -1147,7 +1149,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		if (c == backCmd || c == cancelCmd) {
 			if (formHistory.size() == 0) {
-				display(mainForm, true);
+				display(null, true);
 				return;
 			}
 			Displayable p = null;
@@ -1164,6 +1166,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				}
 			}
 			display(p, true);
+			return;
+		}
+		if (c == homeCmd) {
+			display(null, true);
 			return;
 		}
 		if (c == exitCmd) {
@@ -1961,10 +1967,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			display.setCurrent((Alert) d, mainForm);
 			return;
 		}
-		if (d == null) {
+		if (d == null || d == mainForm) {
 			d = mainForm;
-		}
-		if (d == mainForm) {
+			
 			formHistory.removeAllElements();
 			
 			clientIdField = null;

@@ -168,5 +168,6 @@ public interface LangConstants {
 	Readme = 167,
 	OnlineResize = 168,
 	LoadImages = 169,
+	Home = 170,
 	gh2me = 0;
 }
