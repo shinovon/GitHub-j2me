@@ -1116,9 +1116,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			boolean dir = ((List) d).getImage(i) == folderImg;
 			String name = ((List) d).getString(i);
 			String path = d.getTitle();
-			if (path != null && path.length() != 0)
-				path = path.concat("/");
-			path = path.concat(url(name));
+
+			path = path.substring(0, path.lastIndexOf(' ') - 2);
+			if ("/".equals(path)) path = "";
+			path = path.concat("/").concat(url(name));
 			if (dir) {
 				start(RUN_OPEN_PATH, path);
 			} else {
@@ -1222,7 +1223,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					return;
 				}
 			}
-			if (!openUrl(url)) {
+			if (!(url.startsWith("/") || url.startsWith(GITHUB_URL) || url.startsWith(GITHUB_API_URL))
+					|| !openUrl(url)) {
 				browse(url);
 			}
 			return;
@@ -1567,6 +1569,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		case RUN_OPEN_PATH: {
 			String path = (String) param;
+			if (path.length() == 0) path = "/";
 			display(loadingAlert(L[Loading]), current);
 			try {
 				if (fileImg == null) {
@@ -1576,7 +1579,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				Object r = api("repos/".concat(repo).concat("/contents").concat(path).concat("?ref=").concat(ref));
 				
 				if (r instanceof JSONArray) {
-					List list = new List(path, List.IMPLICIT);
+					List list = new List(path.concat(" - ").concat(repo), List.IMPLICIT);
 					list.addCommand(backCmd);
 					list.addCommand(List.SELECT_COMMAND);
 					list.setCommandListener(this);
