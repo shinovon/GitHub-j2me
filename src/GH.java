@@ -1223,7 +1223,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					return;
 				}
 			}
-			if (!(url.startsWith("/") || url.startsWith(GITHUB_URL) || url.startsWith(GITHUB_API_URL))
+			if (!(url.startsWith("/") || !url.startsWith("http")
+					|| url.startsWith(GITHUB_URL) || url.startsWith(GITHUB_API_URL))
 					|| !openUrl(url)) {
 				browse(url);
 			}
