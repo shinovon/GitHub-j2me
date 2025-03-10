@@ -368,12 +368,15 @@ public class JSONStream extends Reader {
 		JSONObject r = new JSONObject();
 		object: {
 		while (true) {
+			char c = nextTrim();
+			if (c == '}') break object;
+			back();
 			String key = nextString(true);
 			if (nextTrim() != ':')
 				throw new RuntimeException("JSON: nextObject: malformed object at ".concat(Integer.toString(index)));
 			Object val = null;
-			char c = nextTrim();
-			switch(c) {
+			c = nextTrim();
+			switch (c) {
 			case '}':
 				break object;
 			case '{':
@@ -470,9 +473,10 @@ public class JSONStream extends Reader {
 	}
 	
 	private String nextString(boolean check) throws IOException {
-		if (check && nextTrim() != '"') {
+		char t;
+		if (check && (t = nextTrim()) != '"') {
 			back();
-			throw new RuntimeException("JSON: nextString: not string at ".concat(Integer.toString(index)));
+			throw new RuntimeException("JSON: nextString: not string at ".concat(Integer.toString(index)) + " " + t);
 		}
 		StringBuffer sb = new StringBuffer();
 		char l = 0;

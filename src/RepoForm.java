@@ -53,39 +53,39 @@ public class RepoForm extends GHForm {
 		String t;
 		
 		s = new StringItem(null, r.getObject("owner").getString("login"));
-		s.setFont(GH.medfont);
+		s.setFont(GH.medPlainFont);
 		s.setDefaultCommand(GH.userCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_BOTTOM | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 		
 		s = new StringItem(null, "/");
-		s.setFont(GH.medfont);
+		s.setFont(GH.medPlainFont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_BOTTOM);
 		append(s);
 		
 		s = new StringItem(null, r.getString("name"));
-		s.setFont(GH.largefont);
+		s.setFont(GH.largePlainFont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_BOTTOM);
 		append(s);
 		
 		if (r.getBoolean("private", false)) {
 			s = new StringItem(null, GH.L[_private_]);
-			s.setFont(GH.smallfont);
+			s.setFont(GH.smallPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_BOTTOM);
 			append(s);
 		}
 
 		if ((t = r.getString("description")) != null && t.length() != 0) {
 			s = new StringItem(GH.L[About_Repo], t);
-			s.setFont(GH.medfont);
+			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
 
 		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "website" : "homepage")) != null && t.length() != 0) {
 			s = new StringItem(GH.L[Homepage_Repo], t);
-			s.setFont(GH.smallfont);
+			s.setFont(GH.smallPlainFont);
 			s.setDefaultCommand(GH.linkCmd);
 			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
@@ -95,7 +95,7 @@ public class RepoForm extends GHForm {
 		if (GH.apiMode != GH.API_GITEA && !r.isNull("license")
 				&& (t = r.getObject("license").getString("name")) != null && t.length() != 0) {
 			s = new StringItem(GH.L[License], t);
-			s.setFont(GH.smallfont);
+			s.setFont(GH.smallPlainFont);
 			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
@@ -103,7 +103,7 @@ public class RepoForm extends GHForm {
 
 		if (r.getBoolean("fork", false)) {
 			s = new StringItem(null, GH.L[ForkedFrom].concat(parent = r.getObject("parent").getString("full_name")));
-			s.setFont(GH.smallfont);
+			s.setFont(GH.smallPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.forkCmd);
 			s.setItemCommandListener(GH.midlet);
@@ -112,7 +112,7 @@ public class RepoForm extends GHForm {
 		
 		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "stars_count" : "stargazers_count"), _star),
 				Item.BUTTON);
-		s.setFont(GH.smallfont);
+		s.setFont(GH.smallPlainFont);
 		s.setDefaultCommand(GH.stargazersCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
@@ -120,14 +120,14 @@ public class RepoForm extends GHForm {
 		
 		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "watchers_count" : "subscribers_count"),
 				_watching), Item.BUTTON);
-		s.setFont(GH.smallfont);
+		s.setFont(GH.smallPlainFont);
 		s.setDefaultCommand(GH.watchersCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT);
 		append(s);
 		
 		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "forks_count" : "forks"), _fork), Item.BUTTON);
-		s.setFont(GH.smallfont);
+		s.setFont(GH.smallPlainFont);
 		s.setDefaultCommand(GH.forksCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_LEFT);

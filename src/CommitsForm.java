@@ -71,7 +71,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 			if ((k = t.indexOf('\n')) != -1) t = t.substring(0, k);
 			
 			s = new StringItem(null, t);
-			s.setFont(GH.medboldfont);
+			s.setFont(GH.medBoldFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			if (search && j.has("repository")) {
 				urls.put(s, t = j.getObject("repository").getString("full_name"));
@@ -94,7 +94,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 			sb.append(GH.localizeDate(commit.getObject("committer").getString("date"), 1));
 			
 			s = new StringItem(null, sb.toString());
-			s.setFont(GH.smallfont);
+			s.setFont(GH.smallPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
 			safeAppend(thread, new Spacer(10, 8));

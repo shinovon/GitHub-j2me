@@ -91,7 +91,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			JSONObject j = r.getObject(i);
 			
 			s = new StringItem(null, j.getString("title"));
-			s.setFont(GH.medfont);
+			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.openCmd);
 			s.setItemCommandListener(this);
@@ -117,7 +117,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			}
 			
 			s = new StringItem(null, sb.toString());
-			s.setFont(GH.smallfont);
+			s.setFont(GH.smallPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			safeAppend(thread, s);
 			safeAppend(thread, new Spacer(10, 8));

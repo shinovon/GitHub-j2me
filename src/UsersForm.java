@@ -44,7 +44,7 @@ public class UsersForm extends PagedForm {
 			JSONObject j = r.getObject(i);
 			
 			s = new StringItem(null, j.getString("login"));
-			s.setFont(GH.medfont);
+			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 			s.setDefaultCommand(GH.userCmd);
 			s.setItemCommandListener(GH.midlet);
@@ -52,7 +52,7 @@ public class UsersForm extends PagedForm {
 			
 			if (j.has("contributions")) {
 				s = new StringItem(null, j.getString("contributions").concat(GH.L[_contributions]));
-				s.setFont(GH.medfont);
+				s.setFont(GH.medPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 				safeAppend(thread, s);
 				

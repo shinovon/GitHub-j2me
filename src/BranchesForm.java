@@ -56,7 +56,7 @@ public class BranchesForm extends PagedForm {
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			} else {
 				s = new StringItem(null, t);
-				s.setFont(GH.medfont);
+				s.setFont(GH.medPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			}
 			safeAppend(thread, s);

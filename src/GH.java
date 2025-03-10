@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.Random;
 import java.util.Vector;
 
@@ -50,6 +51,7 @@ import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.ItemStateListener;
 import javax.microedition.lcdui.List;
+import javax.microedition.lcdui.Spacer;
 import javax.microedition.lcdui.StringItem;
 import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
@@ -96,11 +98,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static final String GITEA_OAUTH_PORT = "8082";
 
 	// fonts
-	static final Font largefont = Font.getFont(0, 0, Font.SIZE_LARGE);
-	static final Font medboldfont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
-	static final Font medfont = Font.getFont(0, 0, Font.SIZE_MEDIUM);
-	static final Font smallboldfont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_SMALL);
-	static final Font smallfont = Font.getFont(0, 0, Font.SIZE_SMALL);
+	static final Font largePlainFont = Font.getFont(0, 0, Font.SIZE_LARGE);
+	static final Font medPlainFont = Font.getFont(0, 0, Font.SIZE_MEDIUM);
+	static final Font medBoldFont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
+	static final Font medItalicFont = Font.getFont(0, Font.STYLE_ITALIC, Font.SIZE_MEDIUM);
+	static final Font medItalicBoldFont = Font.getFont(0, Font.STYLE_BOLD | Font.STYLE_ITALIC, Font.SIZE_MEDIUM);
+	static final Font smallPlainFont = Font.getFont(0, 0, Font.SIZE_SMALL);
+	static final Font smallBoldFont = Font.getFont(0, Font.STYLE_BOLD, Font.SIZE_SMALL);
+	static final Font smallItalicFont = Font.getFont(0, Font.STYLE_ITALIC, Font.SIZE_SMALL);
 
 	static final IllegalStateException cancelException = new IllegalStateException("cancel");
 	
@@ -125,6 +130,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static int apiMode = API_GITHUB;
 	private static String customApiUrl = GITEA_DEFAULT_API_URL;
 	private static String lang = "en";
+	private static boolean noFormat;
+	private static int fontSize = 1;
+	private static boolean loadImages;
 
 	// threading
 	private static int run;
@@ -176,6 +184,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command spoilerCmd;
 	static Command branchItemCmd;
 	static Command repoCmd;
+	static Command mdLinkCmd;
 
 	static Command followersCmd;
 	static Command followingCmd;
@@ -345,6 +354,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		spoilerCmd = new Command(L[Show_Spoiler], Command.ITEM, 1);
 		branchItemCmd = new Command(L[SelectBranch], Command.ITEM, 1);
 		repoCmd = new Command(L[ViewRepository], Command.ITEM, 1);
+		mdLinkCmd = new Command(L[Open], Command.ITEM, 1);
 
 		followersCmd = new Command(L[Followers], Command.ITEM, 1);
 		followingCmd = new Command(L[Following], Command.ITEM, 1);
@@ -394,7 +404,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		cancelCmd = new Command(L[Cancel], Command.CANCEL, 2);
 		
 		// init main form
-		
 		Form f = new Form(L[0]);
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
@@ -504,7 +513,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				StringItem s;
 				s = new StringItem(null, "GH2ME v".concat(version));
-				s.setFont(largefont);
+				s.setFont(largePlainFont);
 				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_VCENTER | Item.LAYOUT_LEFT);
 				f.append(s);
 				
@@ -778,7 +787,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 			s = new StringItem(null, L[ChooseAuthMethod]);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
-			s.setFont(medfont);
+			s.setFont(medPlainFont);
 			f.append(s);
 			
 			if (!useProxy) {
@@ -836,7 +845,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 			s = new StringItem(null, "Copy this URL to supported browser");
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
-			s.setFont(smallfont);
+			s.setFont(smallPlainFont);
 			f.append(s);
 			
 			
@@ -855,7 +864,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 			s = new StringItem(null, "After authorization, copy resulted URL from address bar and paste here");
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
-			s.setFont(smallfont);
+			s.setFont(smallPlainFont);
 			f.append(s);
 			
 			f.append("\n");
@@ -1129,6 +1138,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			giteaClientId = clientIdField.getString().trim();
 			giteaClientSecret = clientSecretField.getString().trim();
 			((TextField) item).setString(oauthUrl = getOauthUrl(oauthMode));
+			return;
+		}
+		if (c == mdLinkCmd) {
+			// TODO
 			return;
 		}
 		commandAction(c, display.getCurrent());
@@ -1692,18 +1705,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			r.closeRecordStore();
 		} catch (Exception e) {}
 	}
-
-	public static void parseMarkdown(Thread thread, GHForm form, String body, int i) {
-		// TODO
-		if (body.trim().length() == 0) return;
-		
-		StringItem s = new StringItem(null, body);
-		s.setFont(GH.medfont);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		
-		if (i == -1) form.safeAppend(thread, s);
-		else form.safeInsert(thread, i, s);
-	}
 	
 	private void loadLocale(String lang) throws IOException {
 		InputStreamReader r = new InputStreamReader(getClass().getResourceAsStream("/l/" + lang), "UTF-8");
@@ -2189,5 +2190,757 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		v.copyInto(r);
 		return r;
 	}
+	
+	// Markdown parser
+
+	private static final int
+			MD_FONT_FACE = 0,
+			MD_FONT_STYLE = 1,
+			MD_FONT_SIZE = 2,
+			MD_TAB = 3,
+			MD_SPACES = 4,
+			MD_LAST_TAB = 5,
+			MD_ESCAPE = 6,
+			MD_QUOTE = 7,
+			MD_HEADER = 8,
+			MD_LENGTH = 9,
+			MD_ITALIC = 10,
+			MD_BOLD = 11,
+			MD_HTML_BOLD = 12,
+			MD_HTML_ITALIC = 13,
+			MD_LINE = 14,
+			MD_HTML_PARAGRAPH = 15,
+			MD_HTML_UNDERLINE = 16,
+			MD_HTML_HEADER = 17,
+			MD_UNDERSCORE = 18,
+			MD_HASH = 19,
+			MD_GRAVE = 20,
+			MD_STRIKE = 21,
+			MD_ASTERISK = 22,
+			MD_HTML_BIG = 23,
+			MD_HTML_LINK = 24,
+			MD_BRACKET = 25,
+			MD_LINK = 26,
+			MD_IMAGE = 27,
+			MD_PARENTHESIS = 27;
+	
+	public static void parseMarkdown(Thread thread, GHForm form, String body, int insert, Hashtable urls) {
+		if (body == null) return;
+		if (insert == -1) insert = form.size();
+		if (noFormat) {
+			if (body.trim().length() == 0) return;
+			form.safeInsert(thread, insert, new StringItem(null, body));
+			return;
+		}
+		
+//		System.out.println("Init: " + body);
+		
+		StringBuffer sb = new StringBuffer();
+//		boolean noFormat = GH.noFormat;
+		int d = body.indexOf('<');
+		int len = body.length();
+		if (len == 0) return;
+		int o = 0;
+		int[] state = new int[30];
+		state[MD_FONT_SIZE] = Font.SIZE_SMALL;
+		
+		Item item = null;
+		
+		char[] chars = body.toCharArray();
+		while (d != -1 || o < len) {
+			a: {
+				if (o != d) {
+					if (d == -1) d = len;
+					char l = 0;
+					int i;
+					for (i = o; i < d; ++i) {
+						char c = chars[i];
+						System.out.print("> " + c + ": ");
+						if (state[MD_HASH] != 0 && ((c != '#' && c != ' ') || state[MD_HASH] > 6)) {
+							for (int k = 0; k < state[MD_HASH]; ++k) sb.append('#');
+							state[MD_LENGTH] += state[MD_HASH];
+							state[MD_HASH] = 0;
+						}
+						if (c == '\r' || (c == '\n' && l != '\r')) {
+							l = c;
+							boolean b;
+							if ((b = state[MD_HEADER] != 0) || state[MD_LENGTH] != 0 || state[MD_ESCAPE] == 1) {
+								if (b) {
+									sb.append('\n');
+									insert = flush(thread, form, sb, insert, state);
+								}
+								state[MD_LAST_TAB] = state[MD_TAB];
+								state[MD_UNDERSCORE] = state[MD_HASH] = state[MD_BOLD] = state[MD_ITALIC]
+										= state[MD_HEADER] = state[MD_ESCAPE] = state[MD_LENGTH] 
+										= state[MD_QUOTE] = state[MD_SPACES] = state[MD_TAB]
+										= state[MD_GRAVE] = state[MD_GRAVE] = state[MD_ASTERISK]
+										= state[MD_BRACKET] = state[MD_LINK] = state[MD_IMAGE]
+										= state[MD_IMAGE]
+												= 0;
+	
+								if (!b) sb.append('\n');
+							}
+							continue;
+						} else if (c <= ' ' && l <= ' ') {
+							l = c;
+							if (state[MD_SPACES]++ == 0 || state[MD_SPACES] == 4) {
+								state[MD_TAB] ++;
+								state[MD_SPACES] = 0;
+							}
+							continue;
+						} else if (state[MD_PARENTHESIS] != 0 && c != ')') {
+							l = c;
+							sb.append(c);
+							continue;
+						} else {
+							state[MD_SPACES] = 0;
+							if (c == '&' && i + 1 != len) { // entity
+								switch (chars[i + 1]) {
+								case 'n': // nsbp;
+									if (i + 5 >= len) {
+										break;
+									}
+									if (chars[i += 5] == ';') {
+										c = ' ';
+									} else i -= 5;
+									break;
+								case 'l': // lt
+									if (i + 3 >= len) break;
+									if (chars[i += 3] == ';') {
+										c = '<';
+									} else i -= 3;
+									break;
+								case 'g': // gt
+									if (i + 3 >= len) break;
+									if (chars[i += 3] == ';') {
+										c = '>';
+									} else i -= 3;
+									break;
+								case 'a': // amp
+									if (i + 4 >= len) break;
+									if (chars[i += 4] == ';') {
+										c = '&';
+									} else i -= 4;
+									break;
+								case '#':
+									int k = i + 2;
+									try {
+										while (chars[++k] != ';' && k - i < 10);
+										if (k - i == 10) break;
+										c = (char) Integer.parseInt(new String(chars, i + 2, k - i - 2));
+										i = k;
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
+									break;
+								}
+							} else if (state[MD_ESCAPE] == 0) {
+								switch (c) {
+								case '\t':
+									c = ' ';
+									break;
+								case '\\': // escape
+									state[MD_ESCAPE] = 1;
+									l = c;
+									continue;
+								case ' ':
+									if (state[MD_HASH] != 0) {
+										insert = flush(thread, form, sb, insert, state);
+										l = c;
+										state[MD_HEADER] = state[MD_HASH];
+										state[MD_HASH] = 0;
+										continue;
+									}
+									if (state[MD_LENGTH] == 0) {
+										l = c;
+										continue;
+									}
+									break;
+								case '>':
+									if (state[MD_LENGTH] == 0 && state[MD_QUOTE] == 0) {
+										state[MD_QUOTE] ++;
+										continue;
+									}
+									break;
+								case '#':
+									if (state[MD_LENGTH] == 0 && state[MD_HEADER] == 0) {
+										state[MD_HASH] ++;
+										l = c;
+										continue;
+									}
+									break;
+								case '-': {
+									if (state[MD_LENGTH] == 0 && i + 2 < len
+											&& chars[i + 1] == c && chars[i + 2] == c) {
+										int k = i;
+										while (++k < len && chars[k] != '\n' && chars[k] != '\r');
+										if (chars[k - 1] == c) {
+											i = k - 1;
+											state[MD_LINE] ++;
+											sb.append("\n");
+											insert = flush(thread, form, sb, insert, state);
+											continue;
+										}
+									}
+									break;
+								}
+								case '*':
+								case '_': {
+									int t = c == '*' ? MD_ASTERISK : MD_UNDERSCORE;
+									if (state[t] == 0 && state[MD_LENGTH] == 0 && i + 2 < len
+											&& chars[i + 1] == c && chars[i + 2] == c) {
+										int k = i;
+										while (++k < len && chars[k] != '\n' && chars[k] != '\r');
+										if (chars[k - 1] == c) {
+											i = k - 1;
+											state[MD_LINE] ++;
+											sb.append("\n");
+											insert = flush(thread, form, sb, insert, state);
+											continue;
+										}
+									}
+									
+									if (state[t] == 0 && ((c == '_' && l > ' ') || i + 1 >= len)) {
+										break;
+									}
+									int k = i; // line length
+									while (++k < len && chars[k] != '\n' && chars[k] != '\r');
+									
+									if (state[t] == 0) {
+										if (i + 2 >= k) break;
+										int j = body.indexOf(c, i + 1);
+										if (j == -1 || j >= k) break;
+									}
+									
+									l = c;
+									if (i + 1 < k && chars[i + 1] == c) {
+										String s;
+										if (i + 2 < k && chars[i + 2] == c) {
+											s = c == '*' ? "***" : "___";
+											if (state[t] == 3) {
+												insert = flush(thread, form, sb, insert, state);
+												state[t] = 0;
+												state[MD_BOLD] --;
+												state[MD_ITALIC] --;
+												i += 2;
+												continue;
+											} else if (state[t] == 0) {
+												int j = body.indexOf(s, i + 1);
+												if (i + 6 >= k || j == -1 || j >= k || chars[i + 3] <= ' '
+														|| (j + 3 != k && chars[j + 3] > ' ')) {
+													sb.append(s);
+													i += 2;
+													continue;
+												}
+												insert = flush(thread, form, sb, insert, state);
+												state[t] = 3;
+												state[MD_BOLD] ++;
+												state[MD_ITALIC] ++;
+												i += 2;
+												continue;
+											}
+											sb.append(c).append(c);
+											i+=3;
+											break;
+										}
+										s = c == '*' ? "**" : "__";
+										if (state[t] == 2) {
+											insert = flush(thread, form, sb, insert, state);
+											state[t] = 0;
+											state[MD_BOLD] --;
+											i++;
+											continue;
+										} else if (state[t] == 0) {
+											int j = body.indexOf(s, i + 1);
+											if (i + 4 >= k || j == -1 || j >= k
+													|| chars[i + 2] <= ' ' || chars[j - 1] <= ' '
+													|| (c == '_' && j + 2 != k && chars[j + 2] > ' ')) {
+												sb.append(s);
+												i++;
+												continue;
+											}
+											insert = flush(thread, form, sb, insert, state);
+											state[t] = 2;
+											state[MD_BOLD] ++;
+											i++;
+											continue;
+										}
+										sb.append(c);
+										i++;
+										break;
+									}
+									
+									if (state[t] == 1) {
+										insert = flush(thread, form, sb, insert, state);
+										state[t] = 0;
+										state[MD_ITALIC] = 0;
+										continue;
+									}
+									
+									if (state[t] == 0) {
+										int j = body.indexOf(c, i + 1);
+										if (j == -1 || j >= k || chars[i] <= ' '
+												|| (c == '_' && j + 1 != k && chars[j + 1] > ' ')) {
+											break;
+										}
+										insert = flush(thread, form, sb, insert, state);
+										state[t] = 1;
+										state[MD_ITALIC] = 1;
+										state[MD_LENGTH] ++;
+										continue;
+									}
+									break;
+								}
+								case '~': {
+									if (i + 1 >= len || chars[i + 1] != c) {
+										break;
+									}
+									int k = i; // line length
+									while (++k < len && chars[k] != '\n' && chars[k] != '\r');
+									if (state[MD_STRIKE] == 0) {
+										if (i + 4 >= k) break;
+										int j = body.indexOf("~~", i + 1);
+										if (j == -1 || j >= k || chars[i + 2] <= ' ' || chars[j - 1] <= ' ') {
+											break;
+										}
+
+										insert = flush(thread, form, sb, insert, state);
+										state[MD_STRIKE] = 1;
+										state[MD_LENGTH] ++;
+										i++;
+										continue;
+									}
+									if (state[MD_STRIKE] == 1) {
+										insert = flush(thread, form, sb, insert, state);
+										state[MD_STRIKE] = 0;
+										i++;
+										continue;
+									}
+									continue;
+								}
+								case '`': {
+									if (i + 1 >= len) {
+										break;
+									}
+									if (i + 2 < len && chars[i + 1] == c && chars[i + 2] == c) {
+										insert = flush(thread, form, sb, insert, state);
+										i += state[MD_GRAVE] = 3;
+									} else {
+										int j = body.indexOf('`', i + 1);
+										if (j == -1) break;
+										if (i + 1 < len && chars[i + 1] == c) {
+											insert = flush(thread, form, sb, insert, state);
+											i += state[MD_GRAVE] = 2;
+										} else {
+											insert = flush(thread, form, sb, insert, state);
+											i += state[MD_GRAVE] = 1;
+										}
+									}
+									if (state[MD_GRAVE] != 0) {
+//										i += state[MD_GRAVE];
+										while (i < len) {
+											if ((c = chars[i++]) == '`') {
+												if (state[MD_GRAVE] == 1) {
+													state[MD_GRAVE] = 0;
+													break;
+												} else if (state[MD_GRAVE] == 2) {
+													if (i + 1 < len && chars[i] == c) {
+														state[MD_GRAVE] = 0;
+														i++;
+														break;
+													}
+												} else if (state[MD_GRAVE] == 3) {
+													if (i + 2 < len && chars[i] == c && chars[i + 1] == c) {
+														state[MD_GRAVE] = 0;
+														i += 2;
+														break;
+													}
+												}
+											} else if (c <= ' ' && state[MD_GRAVE] != 3) {
+												if (l == ' ') continue;
+												c = ' ';
+											}
+											l = c;
+											sb.append(c);
+										}
+										insert = flush(thread, form, sb, insert, state);
+										d = body.indexOf('<', o = i);
+										state[MD_LENGTH] ++;
+										break a;
+									}
+									continue;
+								}
+								case '!':
+									if (i + 1 == len && chars[i + 1] != '[') {
+										break;
+									}
+									state[MD_IMAGE] = 1;
+									i++;
+								case '[': {
+									if (state[MD_BRACKET] != 0) {
+										break;
+									}
+									
+									int k = i; // line length
+									while (++k < len && chars[k] != '\n' && chars[k] != '\r');
+									
+									int n, m;
+									if ((n = body.indexOf(']', i)) == -1 || n >= k
+											|| (m = body.indexOf('(', n)) == -1
+											|| m != n + 1 || m >= k
+											|| (m = body.indexOf(')', m)) == -1 || m >= k) {
+										break;
+									}
+									
+									insert = flush(thread, form, sb, insert, state);
+									
+									if (state[MD_IMAGE] != 0) {
+										item = new ImageItem("Image", null, 0, null);
+										item.addCommand(mdLinkCmd);
+										item.setItemCommandListener(midlet);
+									} else {
+										item = new StringItem(null, "");
+										((StringItem) item).setFont(getFont(state));
+										item.addCommand(mdLinkCmd);
+										item.setItemCommandListener(midlet);
+									}
+									
+									l = c;
+									state[MD_BRACKET] = 1;
+									state[MD_LINK] = 1;
+									state[MD_LENGTH] ++;
+									continue;
+								}
+								case ']': {
+									if (state[MD_BRACKET] == 0 || i + 1 == len || chars[i + 1] != '(') {
+										break;
+									}
+
+									String s = sb.toString();
+									if (item instanceof StringItem) {
+										((StringItem) item).setText(s);
+									} else if (item instanceof ImageItem) {
+										((ImageItem) item).setLabel(s);
+									}
+									sb.setLength(0);
+									
+									l = c;
+									state[MD_BRACKET] = 0;
+									i++;
+								}
+								case '(': {
+									if (state[MD_LINK] == 0) {
+										break;
+									}
+									
+									l = '(';
+									state[MD_PARENTHESIS] = 1;
+									continue;
+								}
+								case ')': {
+									if (state[MD_LINK] == 0) {
+										break;
+									}
+
+									String s = sb.toString();
+									if (item instanceof ImageItem && loadImages) {
+										// TODO
+										((ImageItem) item).setAltText(s);
+//										loadThumb(item, s);
+									}
+									if (urls != null) urls.put(item, s);
+									form.safeInsert(thread, insert++, item);
+									sb.setLength(0);
+									
+									l = c;
+									state[MD_PARENTHESIS] = state[MD_LINK] = state[MD_IMAGE] = 0;
+									continue;
+								}
+								default:
+									if (c < ' ' && state[MD_LENGTH] == 0) {
+										l = c;
+										continue;
+									}
+									break;
+								}
+							} else {
+								state[MD_ESCAPE] = 0;
+								if (c == '\t') {
+									sb.append("    ");
+									l = c;
+									state[MD_LENGTH] ++;
+									continue;
+								}
+							}
+							
+						}
+						l = c;
+						sb.append(c);
+						state[MD_LENGTH] ++;
+					}
+					
+					if (/*!noFormat && */sb.length() != 0) {
+						insert = flush(thread, form, sb, insert, state);
+					}
+					if (d == len) break;
+				}
+				int e = body.indexOf('>', d);
+	//			if (noFormat) {
+	//				if (chars[d + 1] == 'p'
+	//						|| (chars[d + 1] == '/' && chars[d + 2] == 'p')
+	//						|| (chars[d + 1] == 'b' && chars[d + 2] == 'r')) {
+	//					sb.append('\n');
+	//				}
+	//			} else
+				{ // format by tags
+					if (chars[d + 1] == '/') {
+						if ((chars[d + 2] == 'b' && chars[d + 3] == '>')
+								|| (chars[d + 2] == 's' && chars[d + 3] == 't')) {
+							// </b> or </strong>
+							state[MD_HTML_BOLD] --;
+	//						state[1] &= ~Font.STYLE_BOLD;
+						} else if (chars[d + 2] == 'h' && chars[d + 4] == '>') { // </h
+							state[MD_HTML_HEADER] = 0;
+							// </h1>
+							if (chars[d + 3] == '1') state[1] &= ~Font.STYLE_BOLD;
+						} else if ((chars[d + 2] == 'e' && chars[d + 3] == 'm')
+							|| (chars[d + 2] == 'i' && chars[d + 3] == '>')) {
+							// </em> or </i>
+							state[MD_HTML_ITALIC] --;
+//							state[1] &= ~Font.STYLE_ITALIC;
+						} else if (chars[d + 2] == 'b' && chars[d + 3] == 'i' && chars[d + 4] == 'g') {
+							// </small>
+							state[MD_HTML_BIG] --;
+						} else if ((chars[d + 2] == 's' && chars[d + 3] == 'u' && chars[d + 4] == 'b')
+								|| (chars[d + 2] == 'i' && chars[d + 3] == 'n' && chars[d + 4] == 's')
+								|| (chars[d + 2] == 'u' && chars[d + 3] == '>')) {
+							// </sub>, </ins>, </u>
+							state[MD_HTML_UNDERLINE] --;
+							state[1] &= ~Font.STYLE_UNDERLINED;
+						} else if (chars[d + 2] == 'p' && chars[d + 3] == '>') {
+							// </p>
+							state[MD_HTML_PARAGRAPH] --;
+							sb.append('\n');
+						} else if (chars[d + 2] == 's' && chars[d + 3] == 'm') {
+							// </small>
+						} else if (chars[d + 2] == 'a' && chars[d + 3] == '>') {
+							// </a>
+							state[MD_HTML_LINK] --;
+							
+							((StringItem) item).setText(sb.toString());
+							
+							form.safeInsert(thread, insert++, item);
+							sb.setLength(0);
+						} else {
+							sb.append('<');
+							e = d;
+						}
+					} else {
+						if ((chars[d + 1] == 'b' && chars[d + 2] == '>')
+								|| (chars[d + 1] == 's' && chars[d + 2] == 't')) {
+							// <b> or <strong>
+							state[MD_HTML_BOLD] ++;
+//							state[1] |= Font.STYLE_BOLD;
+						} else if (chars[d + 1] == 'h' && chars[d + 3] == '>') {
+							// <h
+							// <h1>
+							state[MD_HTML_HEADER] = chars[d + 2] - '0';
+							if (chars[d + 2] == '1') state[1] |= Font.STYLE_BOLD;
+						} else if ((chars[d + 1] == 'e' && chars[d + 2] == 'm')
+								|| (chars[d + 1] == 'i' && chars[d + 2] == '>')) {
+							// <em> or <i>
+							state[MD_HTML_ITALIC] ++;
+//							state[1] |= Font.STYLE_ITALIC;
+						} else if (chars[d + 1] == 'b' && chars[d + 2] == 'i' && chars[d + 3] == 'g') {
+							// <big>
+							state[MD_HTML_BIG] ++;
+						} else if ((chars[d + 1] == 's' && chars[d + 2] == 'u' && chars[d + 3] == 'b')
+								|| (chars[d + 1] == 'i' && chars[d + 2] == 'n' && chars[d + 3] == 's')
+								|| (chars[d + 1] == 'u')) {
+							// <sub>, <ins>, <u>
+							state[MD_HTML_UNDERLINE] ++;
+							state[1] |= Font.STYLE_UNDERLINED;
+						} else if (chars[d + 1] == 'b' && chars[d + 2] == 'r') {
+							// <br>
+							sb.append('\n');
+	//						lineBreak(state);
+						} else if (chars[d + 1] == 'p' && chars[d + 2] == '>') {
+							// <p>
+							state[MD_HTML_PARAGRAPH] ++;
+							sb.append('\n');
+						} else if (chars[d + 1] == 'i' && chars[d + 2] == 'm' && chars[d + 3] == 'g') {
+							// <img>
+							
+							ImageItem img = new ImageItem("Image", null, 0, null);
+							if (loadImages) {
+								img.setLabel("");
+								String url = body.substring(d + 4, e);
+								int i;
+								if ((i = url.indexOf("src=")) != -1) {
+									url = url.substring(i + 4);
+									if ((i = url.indexOf(' ')) != -1) {
+										url = url.substring(0, i);
+									}
+									
+									if (url.charAt(0) == '"')
+										url = url.substring(1, url.length() - 1);
+									
+									// TODO
+									img.setAltText(url);
+//									scheduleThumb(img, url);
+								}
+							}
+							
+							if (sb.length() != 0) {
+								insert = flush(thread, form, sb, insert, state);
+							}
+	
+							form.safeInsert(thread, insert++, img);
+						} else if (chars[d + 1] == 's' && chars[d + 2] == 'm') {
+							// <small>
+						} else if (chars[d + 1] == 'a') {
+							// <a>
+							insert = flush(thread, form, sb, insert, state);
+							state[MD_HTML_LINK] ++;
+
+							item = new StringItem(null, "");
+							((StringItem) item).setFont(getFont(state));
+							item.addCommand(mdLinkCmd);
+							item.setItemCommandListener(midlet);
+							
+							String url = body.substring(d + 2, e);
+							int i;
+							if ((i = url.indexOf("href=")) != -1) {
+								url = url.substring(i +54);
+								if ((i = url.indexOf(' ')) != -1) {
+									url = url.substring(0, i);
+								}
+								
+								if (url.charAt(0) == '"')
+									url = url.substring(1, url.length() - 1);
+							}
+							if (urls != null) urls.put(item, url);
+						} else {
+							sb.append('<');
+							e = d;
+						}
+						
+						// <li> ?
+					}
+				}
+				d = body.indexOf('<', o = e + 1);
+			}
+		}
+	}
+	
+	private static int flush(Thread thread, GHForm form, StringBuffer sb, int insert, int[] state) {
+//		System.out.println("Flush: " + sb);
+//		for (int i = 0; i < state.length; ++i) System.out.print(i + ": " + state[i] + ", ");
+//		System.out.println(System.getProperty("kemulator.threadtrace"));
+//		System.out.println();
+		
+		if (sb.length() == 0) return insert;
+		
+		StringItem s = new StringItem(null, sb.toString());
+		s.setFont(getFont(state));
+		form.safeInsert(thread, insert++, s);
+		if (state[MD_HEADER] != 0 || state[MD_LINE] != 0) {
+			Spacer spacer = new Spacer(10, 10);
+			spacer.setLayout(Item.LAYOUT_NEWLINE_AFTER);
+			form.safeInsert(thread, insert++, spacer);
+			state[MD_LINE] = 0;
+		}
+		sb.setLength(0);
+		return insert;
+	}
+	
+	private static Font getFont(int[] state) {
+		int face = 0, style = 0, size = 0;
+		if (state[MD_GRAVE] != 0) {
+			face = Font.FACE_MONOSPACE;
+			style = Font.STYLE_PLAIN;
+			size = Font.SIZE_SMALL;
+		} else {
+			face = state[MD_FONT_FACE];
+			style = state[MD_FONT_STYLE];
+			size = state[MD_FONT_SIZE];
+			if (state[MD_BOLD] != 0 || state[MD_HTML_BOLD] != 0) {
+				style |= Font.STYLE_BOLD;
+			}
+			if (state[MD_ITALIC] != 0 || state[MD_HTML_ITALIC] != 0) {
+				style |= Font.STYLE_ITALIC;
+			}
+			if (state[MD_HTML_BIG] != 0) {
+				size = state[MD_HTML_BIG] == 1 ? Font.SIZE_MEDIUM : Font.SIZE_LARGE;
+			}
+//			if (state[MD_STRIKE] != 0) {
+//				style |= Font.STYLE_UNDERLINED;
+//			}
+			int header = state[MD_HEADER];
+			switch (header != 0 ? header : state[MD_HTML_HEADER]) {
+			case 1:
+				size = Font.SIZE_LARGE;
+				style |= Font.STYLE_BOLD;
+				break;
+			case 2:
+				size = Font.SIZE_MEDIUM;
+				style |= Font.STYLE_BOLD;
+				break;
+			case 3:
+				size = Font.SIZE_SMALL;
+				style |= Font.STYLE_BOLD;
+				break;
+			case 4:
+			case 5:
+			case 6:
+				size = Font.SIZE_SMALL;
+				break;
+			}
+		}
+		return getFont(face, style, size);
+	}
+
+	private static Font getFont(int face, int style, int size) {
+		if (face == 0) {
+			int setSize = fontSize;
+			if (setSize == 0) {
+				size = size == Font.SIZE_LARGE ? Font.SIZE_MEDIUM : Font.SIZE_SMALL;
+			} else if (setSize == 2) {
+				size = size == Font.SIZE_SMALL ? Font.SIZE_MEDIUM : Font.SIZE_LARGE;
+			}
+			
+			if (size == Font.SIZE_SMALL) {
+				if (style == Font.STYLE_BOLD) {
+					return smallBoldFont;
+				}
+				if (style == Font.STYLE_ITALIC) {
+					return smallItalicFont;
+				}
+				if (style == Font.STYLE_PLAIN) {
+					return smallPlainFont;
+				}
+			}
+			if (size == Font.SIZE_MEDIUM) {
+				if (style == Font.STYLE_BOLD) {
+					return medBoldFont;
+				}
+				if (style == Font.STYLE_ITALIC) {
+					return medItalicFont;
+				}
+				if (style == (Font.STYLE_BOLD | Font.STYLE_ITALIC)) {
+					return medItalicBoldFont;
+				}
+				if (style == Font.STYLE_PLAIN) {
+					return medPlainFont;
+				}
+			}
+			if (size == Font.SIZE_LARGE) {
+				return largePlainFont;
+			}
+		}
+		return Font.getFont(face, style, size);
+	}
+	
+	// Markdown parser end
 
 }

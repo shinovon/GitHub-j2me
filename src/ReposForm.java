@@ -61,20 +61,20 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 
 			if (users) {
 				s = new StringItem(null, j.getObject("owner").getString("login"));
-				s.setFont(GH.medfont);
+				s.setFont(GH.medPlainFont);
 				s.setDefaultCommand(GH.userCmd);
 				s.setItemCommandListener(GH.midlet);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 				safeAppend(thread, s);
 				
 				s = new StringItem(null, "/");
-				s.setFont(GH.medfont);
+				s.setFont(GH.medPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT);
 				safeAppend(thread, s);
 			}
 			
 			s = new StringItem(null, j.getString("name"));
-			s.setFont(GH.medfont);
+			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 			s.addCommand(GH.openCmd);
 			s.setDefaultCommand(GH.openCmd);
@@ -90,28 +90,28 @@ public class ReposForm extends PagedForm implements ItemCommandListener {
 					s = new StringItem(null, GH.L[b ?
 							(arch ? _privateArchive_ : (fork ? _privateFork_ : _private_)) :
 								(arch ? _archive_ : _fork_)]);
-					s.setFont(GH.smallfont);
+					s.setFont(GH.smallPlainFont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 					safeAppend(thread, s);
 				}
 				
 				if ((t = j.getString("description")) != null && t.length() != 0) {
 					s = new StringItem(null, t);
-					s.setFont(GH.smallfont);
+					s.setFont(GH.smallPlainFont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 					safeAppend(thread, s);
 				}
 				
 				if (b = ((t = j.getString("language")) != null && t.length() != 0)) {
 					s = new StringItem(null, t);
-					s.setFont(GH.smallfont);
+					s.setFont(GH.smallPlainFont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 					safeAppend(thread, s);
 				}
 				
 				s = new StringItem(null, (b ? " " : "").concat(GH.L[Updated])
 						.concat(GH.localizeDate((t = j.getString("pushed_at", null)) != null ? t : j.getString("updated_at"), 1)));
-				s.setFont(GH.smallfont);
+				s.setFont(GH.smallPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 				safeAppend(thread, s);
 				safeAppend(thread, "\n");

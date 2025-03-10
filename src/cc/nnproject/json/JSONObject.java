@@ -422,7 +422,7 @@ public class JSONObject {
 		return obj;
 	}
 
-	static Object parseJSON(String str) {
+	public static Object parseJSON(String str) {
 		char first = str.charAt(0);
 		int length;
 		char last = str.charAt(length = str.length() - 1);

@@ -165,4 +165,15 @@ public interface LangConstants {
 	BookmarkSaved = 164,
 	AuthFailed = 165,
 	gh2me = 0;
+	
+	static final int
+	MD_FONT_FACE = 0,
+	MD_FONT_STYLE = 1,
+	MD_FONT_SIZE = 2,
+	MD_TAB = 3,
+	MD_SPACES = 4,
+	MD_LAST_TAB = 5,
+	MD_ESCAPE = 6,
+	MD_QUOTE = 7,
+	MD_HEADER = 8;
 }

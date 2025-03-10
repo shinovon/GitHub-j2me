@@ -44,13 +44,13 @@ public class UserForm extends GHForm {
 		
 		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "full_name" : "name")) != null) {
 			s = new StringItem(null, t);
-			s.setFont(GH.largefont);
+			s.setFont(GH.largePlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
 		
 		s = new StringItem(null, url = t = r.getString("login"));
-		s.setFont(GH.medfont);
+		s.setFont(GH.medPlainFont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 		
@@ -58,14 +58,14 @@ public class UserForm extends GHForm {
 
 		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "description" : "bio")) != null && t.length() != 0) {
 			s = new StringItem(null, t);
-			s.setFont(GH.medfont);
+			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
 
 		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "website" : "blog")) != null && t.length() != 0) {
 			s = new StringItem(GH.L[Blog_User], t);
-			s.setFont(GH.medfont);
+			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.linkCmd);
 			s.setItemCommandListener(GH.midlet);
@@ -74,20 +74,20 @@ public class UserForm extends GHForm {
 
 		if ((t = r.getString("location", null)) != null && t.length() != 0) {
 			s = new StringItem(GH.L[Location], t);
-			s.setFont(GH.medfont);
+			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
 		
 		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "followers_count" : "followers"), _follower), Item.BUTTON);
-		s.setFont(GH.smallfont);
+		s.setFont(GH.smallPlainFont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 		s.setDefaultCommand(GH.followersCmd);
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
 		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "following_count" : "following"), _following), Item.BUTTON);
-		s.setFont(GH.smallfont);
+		s.setFont(GH.smallPlainFont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 		s.setDefaultCommand(GH.followingCmd);
 		s.setItemCommandListener(GH.midlet);
@@ -96,14 +96,14 @@ public class UserForm extends GHForm {
 		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[Repositories] :
 			GH.count(r.getInt("public_repos") + r.getInt("total_private_repos", 0), _repository),
 			Item.BUTTON);
-		s.setFont(GH.medfont);
+		s.setFont(GH.medPlainFont);
 		s.setDefaultCommand(GH.reposCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 		
 		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.count(r.getInt("starred_repos_count"), _star) : GH.L[Stars], Item.BUTTON);
-		s.setFont(GH.medfont);
+		s.setFont(GH.medPlainFont);
 		s.setDefaultCommand(GH.starsCmd);
 		s.setItemCommandListener(GH.midlet);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
