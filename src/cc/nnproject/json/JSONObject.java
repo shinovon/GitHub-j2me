@@ -683,7 +683,7 @@ public class JSONObject {
 		throw new RuntimeException("JSON: Cast to int failed: " + o);
 	}
 
-	static long getLong(Object o) {
+	public static long getLong(Object o) {
 		try {
 			if (o instanceof String[])
 				return Long.parseLong(((String[]) o)[0]);

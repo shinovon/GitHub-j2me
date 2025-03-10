@@ -21,9 +21,7 @@ SOFTWARE.
 */
 import java.util.Hashtable;
 
-import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Item;
-import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.Spacer;
 import javax.microedition.lcdui.StringItem;
 

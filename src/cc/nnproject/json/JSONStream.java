@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
+import javax.microedition.io.StreamConnection;
+
 // Streaming JSON
 
 public class JSONStream extends Reader {
@@ -36,6 +38,7 @@ public class JSONStream extends Reader {
 	private boolean eof;
 	private char prev;
 	private boolean usePrev;
+	private StreamConnection connection;
 	
 	private JSONStream() {}
 	
@@ -49,6 +52,18 @@ public class JSONStream extends Reader {
 	public static JSONStream getStream(InputStream in) throws IOException {
 		JSONStream json = new JSONStream();
 		json.init(in);
+		char c = json.nextTrim();
+		if (c != '{' && c != '[')
+			throw new RuntimeException("JSON: getStream: Not json");
+		json.isObject = c == '{';
+		json.usePrev = true;
+		return json;
+	}
+	
+	public static JSONStream getStream(StreamConnection sc) throws IOException {
+		JSONStream json = new JSONStream();
+		json.connection = sc;
+		json.init(sc.openInputStream());
 		char c = json.nextTrim();
 		if (c != '{' && c != '[')
 			throw new RuntimeException("JSON: getStream: Not json");
@@ -158,6 +173,11 @@ public class JSONStream extends Reader {
 //		back();
 		
 		while (true) {
+			c = nextTrim();
+			if (c == ',') continue;
+			if (c != '"')
+				throw new RuntimeException("JSON: jumpToKey: malformed object at ".concat(Integer.toString(index)));
+			back();
 			if (nextString(true).equals(key)) {
 				// jump to value
 				if (nextTrim() != ':')
@@ -473,10 +493,9 @@ public class JSONStream extends Reader {
 	}
 	
 	private String nextString(boolean check) throws IOException {
-		char t;
-		if (check && (t = nextTrim()) != '"') {
+		if (check && nextTrim() != '"') {
 			back();
-			throw new RuntimeException("JSON: nextString: not string at ".concat(Integer.toString(index)) + " " + t);
+			throw new RuntimeException("JSON: nextString: not string at ".concat(Integer.toString(index)));
 		}
 		StringBuffer sb = new StringBuffer();
 		char l = 0;
@@ -653,6 +672,9 @@ public class JSONStream extends Reader {
         iBufPos = 0;
         if (reader != null) {
             reader.close();
+        }
+        if (connection != null) {
+        	connection.close();
         }
     }
 

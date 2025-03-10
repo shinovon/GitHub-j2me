@@ -164,5 +164,9 @@ public interface LangConstants {
 	Authorized = 163,
 	BookmarkSaved = 164,
 	AuthFailed = 165,
+	BrowseSource = 166,
+	Readme = 167,
+	OnlineResize = 168,
+	LoadImages = 169,
 	gh2me = 0;
 }

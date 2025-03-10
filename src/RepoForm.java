@@ -151,6 +151,13 @@ public class RepoForm extends GHForm {
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 		append(s);
 		
+		s = new StringItem(null, GH.L[BrowseSource], Item.BUTTON);
+		s.setDefaultCommand(GH.filesCmd);
+		s.setItemCommandListener(GH.midlet);
+		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		append(s);
+		
+		
 		append("\n");
 		
 		if (r.getBoolean("has_issues")) {

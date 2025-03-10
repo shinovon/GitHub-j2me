@@ -73,6 +73,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final int RUN_CHECK_OAUTH_CODE = 6;
 	static final int RUN_TOGGLE_STAR = 7;
 	static final int RUN_THUMBNAILS = 8;
+	static final int RUN_OPEN_PATH = 9;
 	
 	// api modes
 	static final int API_GITHUB = 0;
@@ -83,7 +84,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static final String BOOKMARKS_RECORDNAME = "ghbm";
 	private static final String GITHUB_AUTH_RECORDNAME = "ghauth";
 	private static final String GITEA_AUTH_RECORDNAME = "giteaauth";
-	
+
+	private static final String GITHUB_URL = "https://github.com/";
+	static final String GITHUB_RAW_URL = "https://raw.githubusercontent.com/";
 	private static final String GITHUB_API_URL = "https://api.github.com/";
 	private static final String GITHUB_API_VERSION = "2022-11-28";
 	
@@ -110,7 +113,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	static final IllegalStateException cancelException = new IllegalStateException("cancel");
 	
-	private static final byte[] CRLF = {(byte)'\r', (byte)'\n'};
 	private static final String OAUTH_REDIRECT_BODY =
 		"<html><head><script type=\"text/javascript\">window.close();</script></head><body></body></html>";
 
@@ -132,10 +134,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static String customApiUrl = GITEA_DEFAULT_API_URL;
 	private static String lang = "en";
 	private static boolean noFormat;
-	private static int fontSize = 1;
-	private static boolean loadImages;
 	private static boolean onlineResize = false;
-	private static int thumbLoading;
+	private static boolean loadImages = false;
+	static boolean previewFiles;
 
 	// threading
 	private static int run;
@@ -164,6 +165,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	private static Object thumbLoadLock = new Object();
 	private static Vector thumbsToLoad = new Vector();
+	
+	// source browser
+	private static String repo;
+	private static String ref;
 	
 	// bookmarks
 	private static JSONArray bookmarks;
@@ -211,6 +216,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command selectBranchCmd;
 	static Command starCmd;
 	static Command readmeCmd;
+	static Command filesCmd;
 	
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -266,6 +272,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static TextField authField;
 	private static TextField clientIdField;
 	private static TextField clientSecretField;
+	
+	private static Image fileImg;
+	private static Image folderImg;
 
 	protected void destroyApp(boolean unconditional) {}
 
@@ -292,6 +301,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			apiMode = j.getInt("apiMode", apiMode);
 			customApiUrl = j.getString("customApiUrl", customApiUrl);
 			lang = j.getString("lang", lang);
+			noFormat = j.getBoolean("noFormat", noFormat);
+			onlineResize = j.getBoolean("onlineResize", onlineResize);
+			loadImages = j.getBoolean("loadImages", loadImages);
+			previewFiles = j.getBoolean("previewFiles", previewFiles);
 		} catch (Exception ignored) {}
 
 		try {
@@ -320,7 +333,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception ignored) {}
 		
-		(L = new String[170])[0] = "gh2me";
+		(L = new String[180])[0] = "gh2me";
 		try {
 			loadLocale(lang);
 		} catch (Exception e) {
@@ -381,7 +394,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		commitsCmd = new Command(L[Commits], Command.ITEM, 1);
 		selectBranchCmd = new Command(L[SelectBranch], Command.ITEM, 1);
 		starCmd = new Command(L[Star], Command.ITEM, 1);
-		readmeCmd = new Command("Readme", Command.ITEM, 1);
+		readmeCmd = new Command(L[Readme], Command.ITEM, 1);
+		filesCmd = new Command(L[BrowseSource], Command.ITEM, 1);
 		
 		showOpenCmd = new Command(L[ShowOpen], Command.SCREEN, 4);
 		showClosedCmd = new Command(L[ShowClosed], Command.SCREEN, 5);
@@ -470,6 +484,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		
 		display.setCurrent(current = mainForm = f);
+		
+		start(RUN_THUMBNAILS, null);
+		
+//		if (loadImages) {
+//			start(RUN_THUMBNAILS, null);
+//			start(RUN_THUMBNAILS, null);
+//		}
 	}
 
 	public void commandAction(Command c, Displayable d) {
@@ -501,7 +522,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					browseProxyField = new TextField(L[BrowserProxyURL], browseProxyUrl, 200, TextField.NON_PREDICTIVE);
 					f.append(browseProxyField);
 					
-					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] { L[UseProxy] }, null);
+					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] {
+							L[LoadImages], L[UseProxy], L[OnlineResize]
+					}, null);
 					proxyChoice.setSelectedIndex(0, useProxy);
 					f.append(proxyChoice);
 					
@@ -657,7 +680,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				// save settings
 				proxyUrl = proxyField.getString();
-				useProxy = proxyChoice.isSelected(0);
+				loadImages = proxyChoice.isSelected(0);
+				useProxy = proxyChoice.isSelected(1);
+				onlineResize = proxyChoice.isSelected(2);
 				apiMode = modeChoice.getSelectedIndex();
 				if ((customApiUrl = customApiField.getString()).trim().length() == 0)
 					customApiUrl = null;
@@ -672,6 +697,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					j.put("browseProxy", browseProxyUrl);
 					j.put("apiMode", apiMode);
 					j.put("customApiUrl", customApiUrl);
+					j.put("noFormat", noFormat);
+					j.put("onlineResize", onlineResize);
+					j.put("loadImages", loadImages);
+					j.put("previewFiles", previewFiles);
 					
 					byte[] b = j.toString().getBytes("UTF-8");
 					RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
@@ -948,15 +977,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == downloadCmd) {
-				String inst;
-				if (apiMode == API_GITHUB) {
-					inst = GITHUB_API_URL;
-				} else if (customApiUrl != null) {
-					inst = customApiUrl;
-				} else if (apiMode == API_GITEA) {
-					inst = GITEA_DEFAULT_API_URL;
-				} else return;
-				browse(inst.concat("repos/").concat(((RepoForm) d).url)
+				browse(getApi().concat("repos/").concat(((RepoForm) d).url)
 						.concat(apiMode == API_GITEA ? "/archive/" : "/zipball/")
 						.concat(((RepoForm) d).selectedBranch).concat(apiMode == API_GITEA ? ".zip" : ""));
 				return;
@@ -968,6 +989,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (c == starCmd) {
 				if (!((GHForm) d).finished) return;
 				start(RUN_TOGGLE_STAR, d);
+				return;
+			}
+			if (c == filesCmd) {
+				repo = ((RepoForm) d).url;
+				ref = ((RepoForm) d).selectedBranch;
+				start(RUN_OPEN_PATH, "");
 				return;
 			}
 			a: {
@@ -994,7 +1021,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} else if (c == selectBranchCmd) {
 					f = new BranchesForm((RepoForm) d);
 				} else if (c == readmeCmd) {
-					f = new FileForm("repos/".concat(url).concat("/readme?"), "Readme");
+					f = new FileForm("repos/".concat(url).concat("/readme?"), null, null, url, ((RepoForm) d).selectedBranch);
+					f.setTitle("Readme");
 				} else break a;
 	
 				display(f);
@@ -1061,6 +1089,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 		}
+		if (d instanceof FileForm) {
+			if (c == downloadCmd) {
+				browse(((FileForm) d).downloadUrl);
+				return;
+			}
+		}
 		// TextBox commands
 		if (d instanceof TextBox) {
 			if (c == gotoPageOkCmd) { // go to page dialog confirm
@@ -1073,6 +1107,24 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				addBookmark(((TextBox) d).getString().trim().toLowerCase(), current);
 				return;
 			}
+		}
+		if (c == List.SELECT_COMMAND) {
+			int i = ((List) d).getSelectedIndex();
+			if (i == -1) return;
+			boolean dir = ((List) d).getImage(i) == folderImg;
+			String name = ((List) d).getString(i);
+			String path = d.getTitle();
+			if (path != null && path.length() != 0)
+				path = path.concat("/");
+			path = path.concat(url(name));
+			if (dir) {
+				start(RUN_OPEN_PATH, path);
+			} else {
+				Form f = new FileForm(null, null, path, repo, ref);
+				display(f);
+				start(RUN_LOAD_FORM, f);
+			}
+			return;
 		}
 		if (c == saveBookmarkCmd) {
 			String s;
@@ -1151,10 +1203,22 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		if (c == mdLinkCmd) {
-			// TODO
 			String url = (String) ((GHForm) current).urls.get(item);
 			if (url == null) return;
-			browse(url);
+			if (url.startsWith("!")) {
+				url = url.substring(1);
+				if (url.indexOf("http") == -1) {
+					if (!(current instanceof FileForm)) return;
+					FileForm f = new FileForm(null, null, ((FileForm) current).resolveUrl(url),
+							((FileForm) current).repo, ((FileForm) current).ref);
+					display(f);
+					start(RUN_LOAD_FORM, f);
+					return;
+				}
+			}
+			if (!openUrl(url)) {
+				browse(url);
+			}
 			return;
 		}
 		commandAction(c, display.getCurrent());
@@ -1241,6 +1305,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		case RUN_OAUTH_SERVER_CLIENT: { // handle http request
 			StreamConnection s = (StreamConnection) param;
+			final byte[] CRLF = {(byte)'\r', (byte)'\n'};
 			try {
 				InputStream in = s.openDataInputStream();
 				OutputStream out = s.openDataOutputStream();
@@ -1454,6 +1519,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						if (url == null) continue;
 						
 						try {
+							if (url.startsWith("!")) {
+								if (!(current instanceof FileForm)) continue;
+								
+								url = ((FileForm) current).fetchBlobUrl(url.substring(1));
+							}
+							
 							Image img;
 							if (onlineResize) {
 								img = getImage(proxyUrl(url + ";th=" + (getHeight() / 3)));
@@ -1476,6 +1547,42 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			return;
 		}
+		case RUN_OPEN_PATH: {
+			String path = (String) param;
+			display(loadingAlert(L[Loading]), current);
+			try {
+				if (fileImg == null) {
+					fileImg = Image.createImage("/file.png");
+					folderImg = Image.createImage("/folder.png");
+				}
+				Object r = api("repos/".concat(repo).concat("/contents").concat(path).concat("?ref=").concat(ref));
+				
+				if (r instanceof JSONArray) {
+					List list = new List(path, List.IMPLICIT);
+					list.addCommand(backCmd);
+					list.addCommand(List.SELECT_COMMAND);
+					list.setCommandListener(this);
+					
+					int l = ((JSONArray) r).size();
+					for (int i = 0; i < l; ++i) {
+						JSONObject j = ((JSONArray) r).getObject(i);
+						// TODO pass download_url
+						list.append(j.getString("name"), "dir".equals(j.getString("type")) ? folderImg : fileImg);
+					}
+					
+					display(list);
+				} else {
+					FileForm f = new FileForm(null, null, path, repo, ref);
+					display(f);
+					start(RUN_LOAD_FORM, f);
+				}
+				
+			} catch (Exception e) {
+				display(errorAlert(e.toString()), current);
+				e.printStackTrace();
+			}
+			break;
+		}
 		}
 //		running--;
 	}
@@ -1495,16 +1602,23 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 	
 	private static void scheduleThumb(ImageItem item, String url) {
-		if (thumbLoading == 3 || item == null || url == null) return;
+		if (!loadImages || item == null || url == null) return;
+//		if (url.startsWith("!")) {
+//			url = url.substring(1);
+//			if (url.indexOf("http") == -1) {
+//				if (!(current instanceof FileForm)) return;
+//				url = ((FileForm) current).blobUrl(url);
+//			}
+//		}
 		synchronized (thumbLoadLock) {
 			thumbsToLoad.addElement(new Object[] { url, item });
 			thumbLoadLock.notifyAll();
 		}
 	}
 	
-	static void openUrl(String url) {
+	static boolean openUrl(String url) {
 //		System.out.println("openUrl:".concat(url));
-		if (url.startsWith("https://github.com/")) {
+		if (url.startsWith(GITHUB_URL)) {
 			url = url.substring(19);
 		} else if (url.startsWith("https://api.github.com/repos/")
 				|| url.startsWith("https://api.github.com/users/")) {
@@ -1513,55 +1627,64 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (url.indexOf('/') == -1) {
 			// user
 			openUser(url);
+			return true;
 		} else {
 			// repo
 			String[] split = split(url, '/');
 			if (split.length == 2 || split[2].length() == 0) {
 				openRepo(url);
-			} else {
-				String repo = split[0].concat("/").concat(split[1]);
-				GHForm f;
-				char c;
-				switch (c = split[2].charAt(0)) {
-				case 'f': // forks
-					f = new ReposForm("repos/".concat(repo).concat("/forks?"), L[Forks].concat(" - ").concat(repo), null, true);
-					break;
-				case 'r': // releases
-					f = new ReleasesForm(repo, false);
-					break;
-				case 't': // tags
-					f = new ReleasesForm(repo, true);
-					break;
-				case 's': // stargazers
-					f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), L[Stargazers].concat(" - ").concat(repo));
-					break;
-				case 'w': // watchers
-					f = new UsersForm("repos/".concat(repo).concat("/subscribers?"), L[Watchers].concat(" - ").concat(repo));
-					break;
-				case 'i': // issues
-				case 'p': // pulls
-					if (split.length == 4) {
-						f = new IssueForm(url);
-						break;
-					}
-					f = new IssuesForm(repo, c == 'p' ? 1 : 0);
-					break;
-				case 'c': // commits
-					if (split.length == 4) {
-						f = new CommitsForm(repo, split[3], false);
-						break;
-					}
-					f = new CommitsForm(repo, null, false);
-					break;
-				case 'b': // branches
-					f = new BranchesForm(repo);
-					break;
-				default:
-					return;
-				}
-				display(f);
-				midlet.start(RUN_LOAD_FORM, f);
+				return true;
 			}
+			String repo = split[0].concat("/").concat(split[1]);
+			GHForm f;
+			char c;
+			switch (c = split[2].charAt(0)) {
+			case 'f': // forks
+				f = new ReposForm("repos/".concat(repo).concat("/forks?"), L[Forks].concat(" - ").concat(repo), null, true);
+				break;
+			case 'r': // releases
+				f = new ReleasesForm(repo, false);
+				break;
+			case 't': // tags
+				f = new ReleasesForm(repo, true);
+				break;
+			case 's': // stargazers
+				f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), L[Stargazers].concat(" - ").concat(repo));
+				break;
+			case 'w': // watchers
+				f = new UsersForm("repos/".concat(repo).concat("/subscribers?"), L[Watchers].concat(" - ").concat(repo));
+				break;
+			case 'i': // issues
+			case 'p': // pulls
+				if (split.length == 4) {
+					f = new IssueForm(url);
+					break;
+				}
+				f = new IssuesForm(repo, c == 'p' ? 1 : 0);
+				break;
+			case 'c': // commits
+				if (split.length == 4) {
+					f = new CommitsForm(repo, split[3], false);
+					break;
+				}
+				f = new CommitsForm(repo, null, false);
+				break;
+			case 'b': // braches or blob
+				if ("branches".equals(split[2])) {
+					f = new BranchesForm(repo);
+				} else if ("blob".equals(split[2])) {
+					url = url.substring(url.indexOf('/', url.indexOf('/', url.indexOf('/') + 1) + 1) + 1);
+					f = new FileForm(null, null, url, repo, split[3]);
+				} else {
+					return false;
+				}
+				break;
+			default:
+				return false;
+			}
+			display(f);
+			midlet.start(RUN_LOAD_FORM, f);
+			return true;
 		}
 	}
 	
@@ -1629,9 +1752,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		out.write(Integer.toString(code).getBytes());
 		out.write(' ');
 		if (message != null) out.write(message.getBytes());
-		out.write(CRLF);
+		out.write("\r\n".getBytes());
 		out.write("Connection: close".getBytes());
-		out.write(CRLF);
+		out.write("\r\n".getBytes());
 	}
 	
 	private static String getOauthUrl(int mode) {
@@ -1647,7 +1770,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		sb.setLength(0);
 		
 		if (mode == API_GITHUB) {
-			sb.append("https://github.com/login/oauth/authorize?client_id=")
+			sb.append(GITHUB_URL + "login/oauth/authorize?client_id=")
 			.append(GITHUB_OAUTH_CLIENT_ID).append("&scope=").append(url(GITHUB_OAUTH_SCOPE))
 			.append("&state=").append(state)
 			.append("&redirect_uri=").append(url(GITHUB_OAUTH_REDIRECT_URI))
@@ -1691,7 +1814,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				j.put("redirect_uri", GITHUB_OAUTH_REDIRECT_URI);
 				j.put("client_secret", GITHUB_OAUTH_CLIENT_SECRET);
 				
-				j = (JSONObject) apiPost("https://github.com/login/oauth/access_token",
+				j = (JSONObject) apiPost(GITHUB_URL + "login/oauth/access_token",
 						j.toString().getBytes(), "application/json");
 				
 				githubAccessToken = j.getString("access_token");
@@ -1871,12 +1994,26 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		a.setTimeout(Alert.FOREVER);
 		return a;
 	}
+	
+	static String getApi() {
+		String inst;
+		if (apiMode == API_GITHUB) {
+			inst = GITHUB_API_URL;
+		} else if (customApiUrl != null) {
+			inst = customApiUrl;
+		} else if (apiMode == API_GITEA) {
+			inst = GITEA_DEFAULT_API_URL;
+		} else {
+			throw new IllegalStateException("Invalid API mode");
+		}
+		return inst;
+	}
 
 	void browse(String url) {
 		try {
 			if (url.indexOf(':') == -1) {
 				url = "http://".concat(url);
-			} else if (useProxy && (url.startsWith("https://github.com") || url.startsWith(GITHUB_API_URL))) {
+			} else if (useProxy && (url.startsWith(GITHUB_URL) || url.startsWith(GITHUB_API_URL))) {
 				url = browseProxyUrl.concat(url(url));
 			}
 			if (platformRequest(url)) notifyDestroyed();
@@ -1895,17 +2032,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		HttpConnection hc = null;
 		InputStream in = null;
 		try {
-			String inst;
-			if (apiMode == API_GITHUB) {
-				inst = GITHUB_API_URL;
-			} else if (customApiUrl != null) {
-				inst = customApiUrl;
-			} else if (apiMode == API_GITEA) {
-				inst = GITEA_DEFAULT_API_URL;
-			} else {
-				throw new IllegalStateException("Invalid API mode");
-			}
-			hc = openHttpConnection(proxyUrl(inst.concat(url)));
+			hc = openHttpConnection(proxyUrl(getApi().concat(url)));
 			hc.setRequestMethod("GET");
 			if (apiMode == API_GITHUB) {
 				hc.setRequestProperty("Accept", "application/vnd.github+json");
@@ -1953,17 +2080,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		HttpConnection hc = null;
 		InputStream in = null;
 		try {
-			String inst;
-			if (apiMode == API_GITHUB) {
-				inst = GITHUB_API_URL;
-			} else if (customApiUrl != null) {
-				inst = customApiUrl;
-			} else if (apiMode == API_GITEA) {
-				inst = GITEA_DEFAULT_API_URL;
-			} else {
-				throw new IllegalStateException("Invalid API mode");
-			}
-			hc = openHttpConnection(proxyUrl(url.startsWith("http") ? url : inst.concat(url)));
+			hc = openHttpConnection(proxyUrl(url.startsWith("http") ? url : getApi().concat(url)));
 			hc.setRequestMethod("POST");
 			hc.setRequestProperty("Accept", "application/json");
 			if (!url.startsWith("http")) {
@@ -1997,6 +2114,46 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (hc != null) try {
 				hc.close();
 			} catch (IOException e) {}
+		}
+//		System.out.println(res instanceof JSONObject ?
+//				((JSONObject) res).format(0) : res instanceof JSONArray ?
+//						((JSONArray) res).format(0) : res);
+		return res;
+	}
+	
+	static JSONStream apiStream(String url) throws IOException {
+		JSONStream res = null;
+
+		HttpConnection hc = null;
+		InputStream in = null;
+		try {
+			hc = openHttpConnection(proxyUrl(getApi().concat(url)));
+			hc.setRequestMethod("GET");
+			if (apiMode == API_GITHUB) {
+				hc.setRequestProperty("Accept", "application/vnd.github+json");
+				hc.setRequestProperty("X-Github-Api-Version", GITHUB_API_VERSION);
+				if (githubAccessToken != null)
+					hc.setRequestProperty("Authorization", "Bearer ".concat(githubAccessToken));
+			} else {
+				hc.setRequestProperty("Accept", "application/json");
+				if (giteaAccessToken != null)
+					hc.setRequestProperty("Authorization", "Bearer ".concat(giteaAccessToken));
+			}
+			
+			int c = hc.getResponseCode();
+			if (c >= 400) {
+				throw new APIException(url, c, null);
+			}
+			res = JSONStream.getStream(hc);
+		} finally {
+			if (res == null) {
+				if (in != null) try {
+					in.close();
+				} catch (IOException e) {}
+				if (hc != null) try {
+					hc.close();
+				} catch (IOException e) {}
+			}
 		}
 //		System.out.println(res instanceof JSONObject ?
 //				((JSONObject) res).format(0) : res instanceof JSONArray ?
@@ -2059,7 +2216,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static String proxyUrl(String url) {
 		System.out.println(url);
 		if (url == null
-				|| (!useProxy && url.indexOf(";tw=") == -1)
+				|| (!useProxy && (url.indexOf(";tw=") == -1 && url.indexOf(";th=") == -1))
 				|| proxyUrl == null || proxyUrl.length() == 0 || "https://".equals(proxyUrl)) {
 			return url;
 		}
@@ -2562,8 +2719,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			MD_BRACKET = 25,
 			MD_LINK = 26,
 			MD_IMAGE = 27,
-			MD_PARENTHESIS = 27,
-			MD_PARAGRAPH = 28;
+			MD_PARENTHESIS = 28,
+			MD_PARAGRAPH = 29;
 	
 	public static void parseMarkdown(Thread thread, GHForm form, String body, int insert, Hashtable urls) {
 		if (body == null) return;
@@ -2616,8 +2773,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										= state[MD_HEADER] = state[MD_ESCAPE] = state[MD_LENGTH] 
 										= state[MD_QUOTE] = state[MD_SPACES] = state[MD_TAB]
 										= state[MD_GRAVE] = state[MD_STRIKE] = state[MD_ASTERISK]
-										= state[MD_BRACKET] = state[MD_LINK] = state[MD_IMAGE]
-										= state[MD_IMAGE] = 0;
+										= state[MD_BRACKET] = state[MD_LINK]
+										= state[MD_IMAGE] = state[MD_PARENTHESIS] = 0;
 	
 								if (!b) {
 									sb.append('\n');
@@ -2976,7 +3133,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									
 									l = c;
 									state[MD_BRACKET] = 0;
-									i++;
+//									i++;
+									continue;
 								}
 								case '(': {
 									if (state[MD_LINK] == 0) {
@@ -2992,6 +3150,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										break;
 									}
 
+									sb.insert(0, '!');
 									String s = sb.toString();
 									if (item instanceof ImageItem && loadImages) {
 										((ImageItem) item).setAltText(s);
@@ -3134,6 +3293,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									if (url.charAt(0) == '"')
 										url = url.substring(1, url.length() - 1);
 									
+									url = "!".concat(url);
+									
 									img.setAltText(url);
 									scheduleThumb(img, url);
 								}
@@ -3167,7 +3328,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 								if (url.charAt(0) == '"')
 									url = url.substring(1, url.length() - 1);
 							}
-							if (urls != null) urls.put(item, url);
+							if (urls != null) urls.put(item, "!".concat(url));
 						} else {
 							sb.append('<');
 							e = d;
@@ -3256,12 +3417,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	private static Font getFont(int face, int style, int size) {
 		if (face == 0) {
-			int setSize = fontSize;
-			if (setSize == 0) {
-				size = size == Font.SIZE_LARGE ? Font.SIZE_MEDIUM : Font.SIZE_SMALL;
-			} else if (setSize == 2) {
-				size = size == Font.SIZE_SMALL ? Font.SIZE_MEDIUM : Font.SIZE_LARGE;
-			}
+//			int setSize = fontSize;
+//			if (setSize == 0) {
+//				size = size == Font.SIZE_LARGE ? Font.SIZE_MEDIUM : Font.SIZE_SMALL;
+//			} else if (setSize == 2) {
+//				size = size == Font.SIZE_SMALL ? Font.SIZE_MEDIUM : Font.SIZE_LARGE;
+//			}
 			
 			if (size == Font.SIZE_SMALL) {
 				if (style == Font.STYLE_BOLD) {
