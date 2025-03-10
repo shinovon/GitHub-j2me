@@ -178,7 +178,13 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 		
-		if (GH.apiMode != GH.API_GITEA) { 
+		if (GH.apiMode != GH.API_GITEA) {
+			s = new StringItem(null, "Readme", Item.BUTTON);
+			s.setDefaultCommand(GH.readmeCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			append(s);
+		
 			s = new StringItem(null, GH.L[Contributors], Item.BUTTON);
 			s.setDefaultCommand(GH.contribsCmd);
 			s.setItemCommandListener(GH.midlet);
@@ -186,7 +192,7 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 		
-		if (GH.login != null) {
+		if (GH.login != null) { // logged in
 			s = starBtn = new StringItem(null, GH.L[Star], Item.BUTTON);
 			s.setDefaultCommand(GH.starCmd);
 			s.setItemCommandListener(GH.midlet);
@@ -200,6 +206,8 @@ public class RepoForm extends GHForm {
 				s.setText(GH.L[Starred]);
 			} catch (Exception ignored) {}
 		}
+		
+		
 	}
 
 }

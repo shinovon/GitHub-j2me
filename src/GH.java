@@ -210,6 +210,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command commitsCmd;
 	static Command selectBranchCmd;
 	static Command starCmd;
+	static Command readmeCmd;
 	
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -366,7 +367,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		followingCmd = new Command(L[Following], Command.ITEM, 1);
 		reposCmd = new Command(L[Repositories], Command.ITEM, 1);
 		starsCmd = new Command(L[Stars], Command.ITEM, 1);
-		starCmd = new Command(L[Star], Command.ITEM, 1);
 		
 		ownerCmd = new Command(L[Owner], Command.SCREEN, 5);
 		releasesCmd = new Command(L[Releases], Command.SCREEN, 3);
@@ -380,6 +380,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		pullsCmd = new Command(L[Pulls], Command.ITEM, 1);
 		commitsCmd = new Command(L[Commits], Command.ITEM, 1);
 		selectBranchCmd = new Command(L[SelectBranch], Command.ITEM, 1);
+		starCmd = new Command(L[Star], Command.ITEM, 1);
+		readmeCmd = new Command("Readme", Command.ITEM, 1);
 		
 		showOpenCmd = new Command(L[ShowOpen], Command.SCREEN, 4);
 		showClosedCmd = new Command(L[ShowClosed], Command.SCREEN, 5);
@@ -991,6 +993,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new CommitsForm(url, ((RepoForm) d).selectedBranch, false);
 				} else if (c == selectBranchCmd) {
 					f = new BranchesForm((RepoForm) d);
+				} else if (c == readmeCmd) {
+					f = new FileForm("repos/".concat(url).concat("/readme?"), "Readme");
 				} else break a;
 	
 				display(f);
@@ -2421,6 +2425,105 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				final int c2_AG_org = c12 & 0xFF00FF00;
 				dst[index1++] = (c2_AG_org + ((((c34 >>> 8) & 0x00FF00FF) - (c2_AG_org >>> 8)) * v1)) & 0xFF00FF00
 						| (c2_RB + ((((c34 & 0x00FF00FF) - c2_RB) * v1) >> 8)) & 0x00FF00FF;
+			}
+		}
+	}
+	
+	// base64
+	
+	private final static byte[] DECODE_ALPHABET = {
+			-9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 0 - 8
+			-5, -5, // Whitespace: Tab and Linefeed
+			-9, -9, // Decimal 11 - 12
+			-5, // Whitespace: Carriage Return
+			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 14 - 26
+			-9, -9, -9, -9, -9, // Decimal 27 - 31
+			-5, // Whitespace: Space
+			-9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
+			62, // Plus sign at decimal 43
+			-9, -9, -9, // Decimal 44 - 46
+			63, // Slash at decimal 47
+			52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero through nine
+			-9, -9, -9, // Decimal 58 - 60
+			-1, // Equals sign at decimal 61
+			-9, -9, -9, // Decimal 62 - 64
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A' through 'N'
+			14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters 'O' through 'Z'
+			-9, -9, -9, -9, -9, -9, // Decimal 91 - 96
+			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, // Letters 'a' through 'm'
+			39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // Letters 'n' through 'z'
+			-9, -9, -9, -9 // Decimal 123 - 126
+	};
+
+	public static byte[] decodeBase64(byte[] source, int[] lenPtr) {
+		if (source == null) {
+			return null;
+		}
+		int len34 = source.length * 3 / 4;
+		byte[] outBuff = new byte[len34];
+		int outBuffPosn = 0;
+
+		byte[] b4 = new byte[4];
+		int b4Posn = 0;
+		int i = 0;
+		byte sbiCrop = 0;
+		byte sbiDecode = 0;
+		for (i = 0; i < source.length; i++) {
+			sbiCrop = (byte) (source[i] & 0x7f);
+			sbiDecode = DECODE_ALPHABET[sbiCrop];
+
+			if (sbiDecode >= -5) {
+				if (sbiDecode >= -1) {
+					b4[b4Posn++] = sbiCrop;
+					if (b4Posn > 3) {
+						outBuffPosn += decode4to3(b4, 0, outBuff, outBuffPosn);
+						b4Posn = 0;
+
+						if (sbiCrop == '=')
+							break;
+					}
+				}
+			} else {
+				return null;
+			}
+		}
+		if (outBuffPosn == 0) {
+			return null;
+		}
+		if (lenPtr == null) {
+			byte[] out = new byte[outBuffPosn];
+			System.arraycopy(outBuff, 0, out, 0, outBuffPosn);
+			return out;
+		}
+		lenPtr[0] = outBuffPosn;
+		return outBuff;
+	}
+
+	private static int decode4to3(byte[] source, int srcOffset, byte[] destination, int destOffset) {
+		if (source[srcOffset + 2] == '=') {
+			int outBuff = ((DECODE_ALPHABET[source[srcOffset]] & 0xFF) << 18)
+					| ((DECODE_ALPHABET[source[srcOffset + 1]] & 0xFF) << 12);
+			destination[destOffset] = (byte) (outBuff >>> 16);
+			return 1;
+		} else if (source[srcOffset + 3] == '=') {
+			int outBuff = ((DECODE_ALPHABET[source[srcOffset]] & 0xFF) << 18)
+					| ((DECODE_ALPHABET[source[srcOffset + 1]] & 0xFF) << 12)
+					| ((DECODE_ALPHABET[source[srcOffset + 2]] & 0xFF) << 6);
+			destination[destOffset] = (byte) (outBuff >>> 16);
+			destination[destOffset + 1] = (byte) (outBuff >>> 8);
+			return 2;
+		} else {
+			try {
+				int outBuff = ((DECODE_ALPHABET[source[srcOffset]] & 0xFF) << 18)
+						| ((DECODE_ALPHABET[source[srcOffset + 1]] & 0xFF) << 12)
+						| ((DECODE_ALPHABET[source[srcOffset + 2]] & 0xFF) << 6)
+						| ((DECODE_ALPHABET[source[srcOffset + 3]] & 0xFF));
+				destination[destOffset] = (byte) (outBuff >> 16);
+				destination[destOffset + 1] = (byte) (outBuff >> 8);
+				destination[destOffset + 2] = (byte) (outBuff);
+				return 3;
+			} catch (Exception e) {
+				return -1;
 			}
 		}
 	}
