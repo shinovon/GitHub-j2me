@@ -527,7 +527,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] {
 							L[LoadImages], L[UseProxy], L[OnlineResize]
 					}, null);
-					proxyChoice.setSelectedIndex(0, useProxy);
+					proxyChoice.setSelectedIndex(0, loadImages);
+					proxyChoice.setSelectedIndex(1, useProxy);
+					proxyChoice.setSelectedIndex(2, onlineResize);
 					f.append(proxyChoice);
 					
 					settingsForm = f;
