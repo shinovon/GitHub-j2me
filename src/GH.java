@@ -499,7 +499,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// mainForm commands
 		if (d == mainForm) {
 			if (c == goCmd) {
-				openUrl(mainField.getString().trim().toLowerCase());
+				openUrl(mainField.getString().trim());
 				return;
 			}
 			if (c == settingsCmd) {
@@ -1650,7 +1650,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		if (url.indexOf('/') == -1) {
 			// user
-			openUser(url);
+			openUser(url.toLowerCase());
 			return true;
 		} else {
 			// repo
@@ -1659,7 +1659,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				openRepo(url);
 				return true;
 			}
-			String repo = split[0].concat("/").concat(split[1]);
+			String repo = split[0].concat("/").concat(split[1]).toLowerCase();
 			GHForm f;
 			char c;
 			switch (c = split[2].charAt(0)) {
@@ -1697,8 +1697,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if ("branches".equals(split[2])) {
 					f = new BranchesForm(repo);
 				} else if ("blob".equals(split[2])) {
-					url = url.substring(url.indexOf('/', url.indexOf('/', url.indexOf('/') + 1) + 1) + 1);
-					f = new FileForm(null, null, url, repo, split[3]);
+					url = url.substring(
+							url.indexOf('/', url.indexOf('/', url.indexOf('/', url.indexOf('/') + 1) + 1) + 1)
+							);
+					GH.repo = repo;
+					GH.ref = split[3];
+					midlet.start(RUN_OPEN_PATH, url);
+					return true;
+//					f = new FileForm(null, null, url, repo, split[3]);
 				} else {
 					return false;
 				}
@@ -3246,7 +3252,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						state[MD_LENGTH] ++;
 					}
 					
-					if (/*!noFormat && */sb.length() != 0) {
+					if (state[MD_HTML_LINK] == 0 && sb.length() != 0) {
 						insert = flush(thread, form, sb, insert, state);
 					}
 					if (d == len) break;
@@ -3259,7 +3265,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	//					sb.append('\n');
 	//				}
 	//			} else
-				{ // format by tags
+				if (d + 2 < len) { // format by tags
 					if (chars[d + 1] == '/') {
 						if ((chars[d + 2] == 'b' && chars[d + 3] == '>')
 								|| (chars[d + 2] == 's' && chars[d + 3] == 't')) {
@@ -3298,6 +3304,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							
 							form.safeInsert(thread, insert++, item);
 							sb.setLength(0);
+							
+							item = null;
 						} else {
 							sb.append('<');
 							e = d;
@@ -3339,6 +3347,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							// <img>
 							
 							ImageItem img = new ImageItem("Image", null, 0, null);
+							if (item != null) {
+								img.setDefaultCommand(mdLinkCmd);
+								img.setItemCommandListener(midlet);
+								if (urls != null) urls.put(item, urls.get(item));
+							}
 							if (loadImages) {
 								img.setLabel("");
 								String url = body.substring(d + 4, e);
