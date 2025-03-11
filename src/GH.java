@@ -2906,6 +2906,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 								case '>':
 									if (state[MD_LENGTH] == 0 && state[MD_QUOTE] == 0) {
 										state[MD_QUOTE] ++;
+										l = c;
+										sb.append(c);
 										continue;
 									}
 									break;
@@ -3415,7 +3417,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			form.safeInsert(thread, insert++, spacer);
 		}
 		boolean b = false;
-		while (sb.charAt(sb.length() - 1) == ' ') {
+		while (sb.length() != 0 && sb.charAt(sb.length() - 1) == ' ') {
 			sb.setLength(sb.length() - 1);
 			b = true;
 		}
