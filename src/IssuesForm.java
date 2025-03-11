@@ -126,7 +126,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 	public void commandAction(Command c, Item item) {
 		if (urls == null) return;
 		String s = (String) urls.get(item);
-		GH.openUrl(mode == 2 ? s : url.concat(mode == 1 ? "/pulls/" : "/issues/").concat(s));
+		GH.openUrl(mode == 2 ? s : url.concat(mode == 1 ? "/pull/" : "/issues/").concat(s));
 	}
 
 }

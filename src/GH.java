@@ -334,7 +334,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception ignored) {}
 		
-		(L = new String[180])[0] = "gh2me";
+		(L = new String[200])[0] = "gh2me";
 		try {
 			loadLocale(lang);
 		} catch (Exception e) {
@@ -610,7 +610,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					}, null);
 					f.append(searchChoice);
 					
-					StringItem s = new StringItem(null, "Search", Item.BUTTON);
+					StringItem s = new StringItem(null, L[Search], Item.BUTTON);
 					s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 					s.setDefaultCommand(searchCmd);
 					s.setItemCommandListener(this);
@@ -795,14 +795,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				switch (type) {
 				case 0: // repositories
 					f = new ReposForm((GH.apiMode == GH.API_GITEA ? "repos/search?q=" : "search/repositories?q=").concat(url(q)), 
-							"Search", /*GH.apiMode == GH.API_GITEA ? "updated" : */null, true);
+							L[Search], /*GH.apiMode == GH.API_GITEA ? "updated" : */null, true);
 					break;
 				case 1: // issues
 					f = new IssuesForm(q, 2);
 					break;
 				case 2: // users
 					f = new UsersForm((GH.apiMode == GH.API_GITEA ? "users/search?q=" : "search/users?q=").concat(url(q)),
-							"Search");
+							L[Search]);
 					break;
 				case 3: // commits
 					if (GH.apiMode == GH.API_GITEA) return;
@@ -2750,13 +2750,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			MD_PARAGRAPH = 29,
 			MD_BREAKS = 30;
 	
-	public static void parseMarkdown(Thread thread, GHForm form, String body, int insert, Hashtable urls) {
-		if (body == null) return;
+	public static int parseMarkdown(Thread thread, GHForm form, String body, int insert, Hashtable urls) {
 		if (insert == -1) insert = form.size();
+		if (body == null) return insert;
 		if (noFormat) {
-			if (body.trim().length() == 0) return;
+			if (body.trim().length() == 0) return insert;
 			form.safeInsert(thread, insert, new StringItem(null, body));
-			return;
+			return insert;
 		}
 		
 //		System.out.println("Init: " + body);
@@ -2765,7 +2765,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //		boolean noFormat = GH.noFormat;
 		int d = body.indexOf('<');
 		int len = body.length();
-		if (len == 0) return;
+		if (len == 0) return insert;
 		int o = 0;
 		int[] state = new int[32];
 		state[MD_FONT_SIZE] = Font.SIZE_SMALL;
@@ -2797,12 +2797,23 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									state[MD_PARAGRAPH] = 1;
 								}
 								state[MD_LAST_TAB] = state[MD_TAB];
-								state[MD_UNDERSCORE] = state[MD_HASH] = state[MD_BOLD] = state[MD_ITALIC]
-										= state[MD_HEADER] = state[MD_ESCAPE] = state[MD_LENGTH] 
-										= state[MD_QUOTE] = state[MD_SPACES] = state[MD_TAB]
-										= state[MD_GRAVE] = state[MD_STRIKE] = state[MD_ASTERISK]
-										= state[MD_BRACKET] = state[MD_LINK]
-										= state[MD_IMAGE] = state[MD_PARENTHESIS] = 0;
+								state[MD_UNDERSCORE] = 0;
+								state[MD_HASH] = 0;
+								state[MD_BOLD] = 0;
+								state[MD_ITALIC] = 0;
+								state[MD_HEADER] = 0;
+								state[MD_ESCAPE] = 0;
+								state[MD_LENGTH] = 0;
+								state[MD_QUOTE] = 0;
+								state[MD_SPACES] = 0;
+								state[MD_TAB] = 0;
+								state[MD_GRAVE] = 0;
+								state[MD_STRIKE] = 0;
+								state[MD_ASTERISK] = 0;
+								state[MD_BRACKET] = 0;
+								state[MD_LINK] = 0;
+								state[MD_IMAGE] = 0;
+								state[MD_PARENTHESIS] = 0;
 								state[MD_BREAKS] ++;
 	
 								if (!b) {
@@ -3387,6 +3398,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				d = body.indexOf('<', o = e + 1);
 			}
 		}
+		return insert;
 	}
 	
 	private static int flush(Thread thread, GHForm form, StringBuffer sb, int insert, int[] state) {

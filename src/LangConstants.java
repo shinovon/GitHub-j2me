@@ -169,5 +169,15 @@ public interface LangConstants {
 	OnlineResize = 168,
 	LoadImages = 169,
 	Home = 170,
+	_commit = 171,
+	_commits = 172,
+	_commits2 = 173,
+	_closedThis = 174,
+	_added = 175,
+	_opened2 = 176,
+	_commented = 177,
+	_mergedCommit = 178,
+	Issue = 179,
+	PullRequest = 180,
 	gh2me = 0;
 }

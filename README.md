@@ -2,6 +2,6 @@
 Unofficial GitHub browser client for j2me
 
 ### TODO:
-- Issue comments
+- commenting?
 - avatars?
-- uploading?
+- uploading files?
