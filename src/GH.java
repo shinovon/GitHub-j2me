@@ -1108,7 +1108,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			if (c == okCmd) { // bookmark save confirm
 				commandAction(backCmd, d);
-				addBookmark(((TextBox) d).getString().trim().toLowerCase(), current);
+				addBookmark(((TextBox) d).getString().trim(), current);
 				return;
 			}
 		}
@@ -1212,20 +1212,49 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		if (c == mdLinkCmd) {
-			String url = (String) ((GHForm) current).urls.get(item);
-			if (url == null) return;
-			if (url.startsWith("!")) {
-				url = url.substring(1);
-				if (url.indexOf("http") == -1) {
-					if (!(current instanceof FileForm)) return;
-					FileForm f = new FileForm(null, null, ((FileForm) current).resolveUrl(url),
-							((FileForm) current).repo, ((FileForm) current).ref);
-					display(f);
-					start(RUN_LOAD_FORM, f);
-					return;
+			String url = null;
+			if (((GHForm) current).urls != null) {
+				url = (String) ((GHForm) current).urls.get(item);
+			}
+			url: {
+				if (url == null && item instanceof StringItem) {
+					url = ((StringItem) item).getText();
+					if (url == null) return;
+					if (url.startsWith("#")) { // issue link
+						String repo;
+						if (current instanceof FileForm) {
+							repo = ((FileForm) current).repo;
+						} else if (current instanceof IssueForm) {
+							repo = ((IssueForm) current).url;
+							repo = repo.substring(0, repo.indexOf('/', repo.indexOf('/') + 1));
+						} else {
+							return;
+						}
+						url = repo.concat("/issues/".concat(url.substring(1)));
+						break url;
+					} else if (url.startsWith("@")) { // user tag
+						url = url.substring(1);
+						break url;
+					}
+				}
+				if (url == null) return;
+				if (url.startsWith("!")) {
+					url = url.substring(1);
+					if (url.indexOf(':') == -1) {
+						if (!(current instanceof FileForm)) {
+							url = resolveUrl(url, null);
+						} else {
+							url = resolveUrl(url, ((FileForm) current).path);
+							FileForm f = new FileForm(null, null, url,
+									((FileForm) current).repo, ((FileForm) current).ref);
+							display(f);
+							start(RUN_LOAD_FORM, f);
+							return;
+						}
+					}
 				}
 			}
-			if (!(url.startsWith("/") || !url.startsWith("http")
+			if (!(url.startsWith("/") || url.indexOf(':') == -1
 					|| url.startsWith(GITHUB_URL) || url.startsWith(GITHUB_API_URL))
 					|| !openUrl(url)) {
 				browse(url);
@@ -1532,10 +1561,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						try {
 							if (url.startsWith("!")) {
 								url = url.substring(1);
-								if (!url.startsWith("http")) {
-									if (!(current instanceof FileForm)) continue;
+								if (url.indexOf(':') == -1) {
+									if (current instanceof FileForm) {
+										url = ((FileForm) current).fetchBlobUrl(url);
+									} else {
+										url = resolveUrl(url, null);
+										if (!url.startsWith("http") || url.indexOf(':') == -1) {
+											url = "https://github.com".concat(url);
+										}
+									}
 									
-									url = ((FileForm) current).fetchBlobUrl(url);
 								}
 							}
 
@@ -1627,13 +1662,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	private static void scheduleThumb(ImageItem item, String url) {
 		if (!loadImages || item == null || url == null) return;
-//		if (url.startsWith("!")) {
-//			url = url.substring(1);
-//			if (url.indexOf("http") == -1) {
-//				if (!(current instanceof FileForm)) return;
-//				url = ((FileForm) current).blobUrl(url);
-//			}
-//		}
+		if (url.startsWith("!") && !(current instanceof FileForm)) {
+			url = url.substring(1);
+			if (url.indexOf(':') == -1) {
+				url = resolveUrl(url, null);
+			}
+		}
 		synchronized (thumbLoadLock) {
 			thumbsToLoad.addElement(new Object[] { url, item });
 			thumbLoadLock.notifyAll();
@@ -1644,13 +1678,21 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //		System.out.println("openUrl:".concat(url));
 		if (url.startsWith(GITHUB_URL)) {
 			url = url.substring(19);
-		} else if (url.startsWith("https://api.github.com/repos/")
-				|| url.startsWith("https://api.github.com/users/")) {
+		} else if (url.startsWith(GITHUB_API_URL + "repos/")
+				|| url.startsWith(GITHUB_API_URL + "users/")) {
 			url = url.substring(29);
+		} else if (url.startsWith("http") && url.indexOf(':') != -1) {
+			return false;
 		}
+		if (url.length() == 0 || "/".equals(url)) {
+			display(null);
+			return true;
+		}
+		if (url.charAt(0) == '/') url = url.substring(1);
+		
 		if (url.indexOf('/') == -1) {
 			// user
-			openUser(url.toLowerCase());
+			openUser(url);
 			return true;
 		} else {
 			// repo
@@ -1659,7 +1701,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				openRepo(url);
 				return true;
 			}
-			String repo = split[0].concat("/").concat(split[1]).toLowerCase();
+			String repo = split[0].concat("/").concat(split[1]);
 			GHForm f;
 			char c;
 			switch (c = split[2].charAt(0)) {
@@ -2508,6 +2550,21 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return r;
 	}
 	
+	public static String resolveUrl(String url, String path) {
+		if (!url.startsWith("/")) {
+			int i = path.lastIndexOf('/');
+			if (i != -1) {
+				while (url.startsWith("../")) {
+					url = url.substring(3);
+					i = path.lastIndexOf('/', i - 1);
+				}
+				url = (i == -1 ? "" : path.substring(0, i + 1)).concat(url);
+			}
+		}
+		
+		return url;
+	}
+	
 	// tube42 imagelib
 
 	static Image resize(Image src_i, int size_w, int size_h) {
@@ -3238,11 +3295,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 								}
 							} else {
 								state[MD_ESCAPE] = 0;
-								if (c == '\t') {
+								switch (c) {
+								case '\t':
 									sb.append("    ");
 									l = c;
 									state[MD_LENGTH] ++;
 									continue;
+								case '#':
+								case '@':
+									sb.append('\\');
+									break;
 								}
 							}
 							
@@ -3429,25 +3491,117 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			spacer.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			form.safeInsert(thread, insert++, spacer);
 		}
-		boolean b = false;
+		int space = 0;
 		while (sb.length() != 0 && sb.charAt(sb.length() - 1) == ' ') {
 			sb.setLength(sb.length() - 1);
-			b = true;
+			space ++;
 		}
-		StringItem s = new StringItem(null, sb.toString());
-		Font f;
-		s.setFont(f = getFont(state));
-		form.safeInsert(thread, insert++, s);
+		String t = sb.toString();
+		Font f = getFont(state);
+		StringItem s;
+		
+		// find links
+		if ((state[MD_LINK] == 0 && state[MD_HTML_LINK] == 0)
+				&& (t.indexOf("http://") != -1 || t.indexOf("https://") != -1
+				|| t.indexOf('#') != -1|| t.indexOf('@') != -1)) {
+			int i, j, k, d = 0;
+			while (true) {
+				boolean b = false;
+				i = t.indexOf("://", d);
+				j = t.indexOf('#', d);
+				k = t.indexOf('@', d);
+				if (i == -1 && j == -1 && k == -1) break;
+				
+				if (k != -1 && (j == -1 || j > k)) {
+					j = k;
+				}
+				if (j != -1 && (i == -1 || i > j)) {
+					i = j;
+				} else b = i != -1;
+				
+				if (b) {
+					b: {
+						boolean https;
+						if (i < 4 || ((https = t.charAt(i - 1) != 'p')
+								&& (i < 5 || t.charAt(i - 1) != 's'))
+							|| (i != (j = https ? 5 : 4) && t.charAt(i - j - 1) > ' ')) {
+							break b;
+						}
+						j = i - j;
+						boolean valid = false;
+						int len = t.length();
+						for (k = j; k < len; ++k) {
+							char c = t.charAt(k);
+							if (c <= ' ') break;
+							if (c == '.') valid = true;
+						}
+						if (!valid) break b;
+						
+						if (i != d) {
+							s = new StringItem(null, t.substring(d, j));
+							s.setFont(f);
+							form.safeInsert(thread, insert++, s);
+						}
+						s = new StringItem(null, t.substring(j, k));
+						s.setFont(f);
+						s.setDefaultCommand(mdLinkCmd);
+						s.setItemCommandListener(midlet);
+						form.safeInsert(thread, insert++, s);
+						
+						t = t.substring(k);
+						d = 0;
+						continue;
+					}
+					d = i + 3;
+				} else {
+					b: {
+						if (i != 0 && t.charAt(i - 1) > ' ') {
+							break b;
+						}
+						b = t.charAt(i) == '@';
+						int len = t.length();
+						for (k = i + 1; k < len && k < i + 10; ++k) {
+							char c = t.charAt(k);
+							if (c <= ' ') break;
+							if (!b && (c < '0' || c > '9')) break b;
+						}
+						if (k == i + 10) break b;
+						if (i != d) {
+							s = new StringItem(null, t.substring(d, i));
+							s.setFont(f);
+							form.safeInsert(thread, insert++, s);
+						}
+						s = new StringItem(null, t.substring(i, k));
+						s.setFont(f);
+						s.setDefaultCommand(mdLinkCmd);
+						s.setItemCommandListener(midlet);
+						form.safeInsert(thread, insert++, s);
+						
+						t = t.substring(k);
+						d = 0;
+						continue;
+					}
+					d = i + 1;
+				}
+			}
+		}
+		
+		if (t.length() != 0) {
+			s = new StringItem(null, t);
+			s.setFont(f);
+			form.safeInsert(thread, insert++, s);
+		}
+		sb.setLength(0);
+		
 		if (state[MD_HEADER] != 0 || state[MD_LINE] != 0) {
 			Spacer spacer = new Spacer(10, 10);
 			spacer.setLayout(Item.LAYOUT_NEWLINE_AFTER);
 			form.safeInsert(thread, insert++, spacer);
 			state[MD_LINE] = 0;
 			state[MD_PARAGRAPH] = 1;
-		} else if (b) {
+		} else while (space-- != 0) {
 			form.safeInsert(thread, insert++, new Spacer(f.charWidth(' '), f.getBaselinePosition()));
 		}
-		sb.setLength(0);
 		return insert;
 	}
 	
