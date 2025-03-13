@@ -183,5 +183,11 @@ public interface LangConstants {
 	_open_ = 182, // (Open)
 	_draft_ = 183, // (Draft)
 	_merged_ = 184, // (Merged)
+	Comment = 185, // comment cmd
+	Send = 186,
+	Preview = 187,
+	CreateIssue = 188,
+	Title = 189,
+	Next = 190,
 	gh2me = 0;
 }

@@ -28,7 +28,7 @@ import cc.nnproject.json.JSONObject;
 public abstract class PagedForm extends GHForm {
 	
 	int perPage = 30;
-	int page = 1;
+	int page = 1, last;
 	private boolean more;
 	private String title;
 	String pageText = "";
@@ -93,6 +93,7 @@ public abstract class PagedForm extends GHForm {
 					}
 				}
 			}
+			this.last = last;
 		} catch (Exception ignored) {}
 		
 		if (thread != this.thread) throw GH.cancelException;

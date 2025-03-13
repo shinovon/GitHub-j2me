@@ -45,7 +45,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 	void loadInternal(Thread thread) throws Exception {
 		StringBuffer sb = new StringBuffer(search ? "search/commits?" : "repos/");
 		if (search) {
-			sb.append("q=").append(GH.url(url));
+			GH.appendUrl(sb.append("q="), url);
 		} else {
 			sb.append(url).append("/commits?");
 			if (sha != null) sb.append("sha=").append(sha);

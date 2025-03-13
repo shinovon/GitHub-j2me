@@ -26,7 +26,7 @@ import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.Ticker;
 
-public abstract class GHForm extends Form implements LangConstants {
+public class GHForm extends Form implements LangConstants {
 
 	String url;
 	Hashtable urls;
@@ -94,7 +94,9 @@ public abstract class GHForm extends Form implements LangConstants {
 		insert(n, item);
 	}
 	
-	abstract void loadInternal(Thread thread) throws Exception;
+	/* abstract */ void loadInternal(Thread thread) throws Exception {
+		GH.parseMarkdown(thread, null, url, 0, urls);
+	}
 	
 	void closed(boolean destroy) {
 		if (destroy) cancel();

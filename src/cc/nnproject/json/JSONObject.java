@@ -21,6 +21,8 @@ SOFTWARE.
 */
 package cc.nnproject.json;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -339,6 +341,92 @@ public class JSONObject {
 		}
 		s.append("}");
 		return s.toString();
+	}
+	
+	public void write(OutputStream out) throws IOException {
+		out.write((byte) '{');
+		if (size() == 0) {
+			out.write((byte) '}');
+			return;
+		}
+		Enumeration keys = table.keys();
+		while (true) {
+			String k = (String) keys.nextElement();
+			out.write((byte) '"');
+			writeString(out, k.toString());
+			out.write((byte) '"');
+			out.write((byte) ':');
+			Object v = table.get(k);
+			if (v instanceof JSONObject) {
+				((JSONObject) v).write(out);
+			} else if (v instanceof JSONArray) {
+				((JSONArray) v).write(out);
+			} else if (v instanceof String) {
+				out.write((byte) '"');
+				writeString(out, (String) v);
+				out.write((byte) '"');
+			} else if (v instanceof String[]) {
+				out.write((((String[]) v)[0]).getBytes("UTF-8"));
+			} else if (v == json_null) {
+				out.write((byte) 'n');
+				out.write((byte) 'u');
+				out.write((byte) 'l');
+				out.write((byte) 'l');
+			} else {
+				out.write(String.valueOf(v).getBytes("UTF-8"));
+			}
+			if (!keys.hasMoreElements()) {
+				break;
+			}
+			out.write((byte) ',');
+		}
+		out.write((byte) '}');
+	}
+
+	public static void writeString(OutputStream out, String s) throws IOException {
+		int len = s.length();
+		for (int i = 0; i < len; ++i) {
+			char c = s.charAt(i);
+			switch (c) {
+			case '"':
+			case '\\':
+				out.write((byte) '\\');
+				out.write((byte) c);
+				break;
+			case '\b':
+				out.write((byte) '\\');
+				out.write((byte) 'b');
+				break;
+			case '\f':
+				out.write((byte) '\\');
+				out.write((byte) 'f');
+				break;
+			case '\n':
+				out.write((byte) '\\');
+				out.write((byte) 'n');
+				break;
+			case '\r':
+				out.write((byte) '\\');
+				out.write((byte) 'r');
+				break;
+			case '\t':
+				out.write((byte) '\\');
+				out.write((byte) 't');
+				break;
+			default:
+				if (c < 32 || c > 255) {
+					String u = Integer.toHexString(c);
+					out.write((byte) '\\');
+					out.write((byte) 'u');
+					for (int z = u.length(); z < 4; z++) {
+						out.write((byte) '0');
+					}
+					out.write(u.getBytes());
+				} else {
+					out.write((byte) c);
+				}
+			}
+		}
 	}
 
 	public Enumeration keys() {

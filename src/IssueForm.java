@@ -43,6 +43,7 @@ public class IssueForm extends PagedForm {
 		super(url);
 		this.url = url;
 		addCommand(GH.saveBookmarkCmd);
+		if (GH.login != null) addCommand(GH.commentCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {
@@ -117,14 +118,19 @@ public class IssueForm extends PagedForm {
 	int event(Thread thread, JSONObject j, StringBuffer sb, int insert) {
 		String type = j.getString("event", null);
 		
-		if (commitItem != null && !"committed".equals(type)) {
-			commitItem = null;
-		}
-		
 		StringItem s;
 		Spacer sp;
 		String t;
-		int k;
+		int i;
+		
+		if (commitItem != null && !"committed".equals(type)) {
+			sp = new Spacer(10, 8);
+			sp.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+			safeInsert(thread, insert++, sp);
+			
+			commitItem = null;
+		}
+		
 		if (type == null || "commented".equals(type)) {
 			s = new StringItem(null, j.getObject("user").getString("login"));
 			s.setFont(GH.smallPlainFont);
@@ -174,7 +180,7 @@ public class IssueForm extends PagedForm {
 			}
 			
 			t = j.getString("message");
-			if ((k = t.indexOf('\n')) != -1) t = t.substring(0, k);
+			if ((i = t.indexOf('\n')) != -1) t = t.substring(0, i);
 			
 			s = new StringItem(null, " - ".concat(t));
 			s.setFont(GH.smallPlainFont);
@@ -236,10 +242,12 @@ public class IssueForm extends PagedForm {
 			safeInsert(thread, insert++, s);
 		}
 		
-		sp = new Spacer(10, 8);
-		sp.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
-		safeInsert(thread, insert++, sp);
-		
+		if (!"committed".equals(type)) {
+			sp = new Spacer(10, 8);
+			sp.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+			safeInsert(thread, insert++, sp);
+		}
+			
 		return insert;
 	}
 

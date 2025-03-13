@@ -41,6 +41,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 		this.url = url;
 		this.mode = mode;
 		if (mode != 2) addCommand(GH.saveBookmarkCmd);
+		if (mode == 0 && GH.login != null) addCommand(GH.createIssueCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {
@@ -48,11 +49,11 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 				mode == 2 || (mode == 0 && GH.apiMode != GH.API_GITEA) ?
 						(GH.apiMode == GH.API_GITEA ? "repos/issues/search?" : "search/issues?") : "repos/");
 		if (mode == 2) {
-			sb.append("q=").append(GH.url(url));
+			GH.appendUrl(sb.append("q="), url);
 		} else if (mode == 0 && GH.apiMode != GH.API_GITEA) {
-			sb.append("q=").append(GH.url("is:issue repo:".concat(url)));
+			GH.appendUrl(sb.append("q="), "is:issue repo:".concat(url));
 			if (!"all".equals(state)) {
-				sb.append(GH.url(" is:")).append("closed".equals(state) ? "closed" : "open");
+				GH.appendUrl(sb, " is:").append("closed".equals(state) ? "closed" : "open");
 			}
 		} else {
 			sb.append(url).append(mode == 1 ? "/pulls?" : "/issues?");
