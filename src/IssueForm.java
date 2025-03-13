@@ -58,6 +58,8 @@ public class IssueForm extends PagedForm {
 		if (issue == null) {
 			issue = (JSONObject) GH.api(sb.toString());
 			
+			pull = issue.has("pull_request");
+			
 			sb.setLength(0);
 			sb.append(issue.getString("title")).append(" - ")
 			.append(pull ? GH.L[PullRequest] : GH.L[Issue]).append(" #").append(issue.getString("number"));
@@ -73,9 +75,33 @@ public class IssueForm extends PagedForm {
 		int insert = 0;
 		
 		if (page == 1) {
-			insert = event(thread, issue, sb, 0);
+			StringItem s;
+			
+			s = new StringItem(null, issue.getString("title"));
+			s.setFont(GH.largePlainFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+			safeInsert(thread, insert++, s);
+			
+			sb.setLength(0);
+			sb.append(" #").append(issue.getString("number"));
+			
+			s = new StringItem(null, sb.toString());
+			s.setFont(GH.medPlainFont);
+			s.setLayout(Item.LAYOUT_LEFT);
+			safeInsert(thread, insert++, s);
+			
+			s = new StringItem(null, GH.L[pull && !issue.getObject("pull_request").isNull("merged_at") ? _merged_ :
+				(!issue.isNull("closed_at") ? _closed_ : (issue.getBoolean("draft", false) ? _draft_ : _open_))]);
+			s.setFont(GH.medPlainFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+			safeInsert(thread, insert++, s);
+			
+			insert = event(thread, issue, sb, insert);
 		}
 
+		// TODO gitea api
+		if (GH.apiMode == GH.API_GITEA) return;
+		
 		sb.setLength(0);
 		sb.append("repos/").append(url).append("/timeline?");
 		
@@ -152,7 +178,11 @@ public class IssueForm extends PagedForm {
 			
 			s = new StringItem(null, " - ".concat(t));
 			s.setFont(GH.smallPlainFont);
+			s.setDefaultCommand(GH.mdLinkCmd);
+			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			
+			urls.put(s, j.getString("html_url"));
 			safeInsert(thread, insert++, s);
 		} else if ("closed".equals(type)) {
 			s = new StringItem(null, j.getObject("actor").getString("login"));

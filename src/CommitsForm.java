@@ -21,14 +21,16 @@ SOFTWARE.
 */
 import java.util.Hashtable;
 
+import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Item;
+import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.Spacer;
 import javax.microedition.lcdui.StringItem;
 
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
-public class CommitsForm extends PagedForm {
+public class CommitsForm extends PagedForm implements ItemCommandListener {
 
 	String sha;
 	boolean search;
@@ -70,11 +72,15 @@ public class CommitsForm extends PagedForm {
 			s = new StringItem(null, t);
 			s.setFont(GH.medBoldFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-			if (search && j.has("repository")) {
-				urls.put(s, t = j.getObject("repository").getString("full_name"));
-				s.addCommand(GH.mdLinkCmd);
-				s.setItemCommandListener(GH.midlet);
+			if (j.has("repository")) {
+				urls.put(s, j.getObject("repository").getString("full_name")
+						.concat("/commit/".concat(j.getString("sha"))));
 			}
+			if (search) {
+				s.addCommand(GH.repoCmd);
+			}
+			s.setDefaultCommand(GH.mdLinkCmd);
+			s.setItemCommandListener(this);
 			safeAppend(thread, s);
 			
 			sb.setLength(0);
@@ -96,6 +102,17 @@ public class CommitsForm extends PagedForm {
 			safeAppend(thread, s);
 			safeAppend(thread, new Spacer(10, 8));
 		}
+	}
+
+	public void commandAction(Command c, Item item) {
+		String url = (String) urls.get(item);
+		if (url == null) return;
+		if (c == GH.repoCmd) {
+			GH.openRepo(url.substring(0, url.indexOf('/', url.indexOf('/') + 1)));
+			return;
+		}
+//		GH.openUrl(url);
+		GH.midlet.browse(GH.GITHUB_URL.concat(url));
 	}
 
 }

@@ -79,27 +79,29 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final int API_GITHUB = 0;
 	static final int API_GITEA = 1;
 	
-	// constants
+	// rms constants
 	private static final String SETTINGS_RECORDNAME = "ghsets";
 	private static final String BOOKMARKS_RECORDNAME = "ghbm";
 	private static final String GITHUB_AUTH_RECORDNAME = "ghauth";
 	private static final String GITEA_AUTH_RECORDNAME = "giteaauth";
 
-	private static final String GITHUB_URL = "https://github.com/";
+	// url constants
+	static final String GITHUB_URL = "https://github.com/";
 	static final String GITHUB_RAW_URL = "https://raw.githubusercontent.com/";
 	private static final String GITHUB_API_URL = "https://api.github.com/";
 	private static final String GITHUB_API_VERSION = "2022-11-28";
-	
+	static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
+
+	private static final String OAUTH_PORT = "8082";
+	// github oauth constants
 	private static final String GITHUB_OAUTH_CLIENT_ID = "Ov23liQSkThpLmVHIxsC";
 	private static final String GITHUB_OAUTH_CLIENT_SECRET = "f41d31e17a8cd437e05f6423d5977615a9706505";
 	private static final String GITHUB_OAUTH_REDIRECT_URI = "http://localhost:8082/oauth_github";
 	private static final String GITHUB_OAUTH_SCOPE = "user, repo";
-	
-	static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
+	// gitea oauth constants
 	private static final String GITEA_DEFAULT_CLIENT_ID = "4fce904c-9a87-4dfd-ab58-991cd496ac93";
 	private static final String GITEA_DEFAULT_CLIENT_SECRET = "gto_qxo2fawh6dugu4u2rbkon6cwnywqfnp6od5ga3kw7opiwkg42xda";
 	private static final String GITEA_OAUTH_REDIRECT_URI = "http://localhost:8082/oauth_gitea";
-	private static final String GITEA_OAUTH_PORT = "8082";
 
 	// fonts
 	static final Font largePlainFont = Font.getFont(0, 0, Font.SIZE_LARGE);
@@ -150,7 +152,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	private static int oauthMode;
 	private static String oauthUrl;
-	
+
+	// auth
 	private static String githubAccessToken;
 	private static long githubAccessTokenTime;
 
@@ -163,12 +166,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	static String login;
 	
+	// thumbs
 	private static Object thumbLoadLock = new Object();
 	private static Vector thumbsToLoad = new Vector();
 	
 	// source browser
 	private static String repo;
 	private static String ref;
+	
+	private static Image fileImg;
+	private static Image folderImg;
 	
 	// bookmarks
 	private static JSONArray bookmarks;
@@ -273,9 +280,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static TextField authField;
 	private static TextField clientIdField;
 	private static TextField clientSecretField;
-	
-	private static Image fileImg;
-	private static Image folderImg;
 
 	protected void destroyApp(boolean unconditional) {}
 
@@ -1328,7 +1332,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		case RUN_OAUTH_SERVER: { // start http server for oauth callback
 			try {
-				oauthSocket = Connector.open("socket://:".concat(GITEA_OAUTH_PORT));
+				oauthSocket = Connector.open("socket://:".concat(OAUTH_PORT));
 				oauthStarted = true;
 				try {
 					while (oauthThread != null) {
@@ -1728,8 +1732,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				}
 				f = new IssuesForm(repo, c == 'p' ? 1 : 0);
 				break;
-			case 'c': // commits
+			case 'c': // commit or commits
 				if (split.length == 4) {
+					if ("commit".equals(split[2])) {
+						// TODO commit form
+						midlet.browse(GITHUB_URL.concat(url));
+						return true;
+					}
 					f = new CommitsForm(repo, split[3], false);
 					break;
 				}
