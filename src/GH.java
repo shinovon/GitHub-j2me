@@ -1192,7 +1192,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			if (c == nextCmd) {
 				TextBox f = new TextBox(ref = s, "", 1000, TextField.ANY);
-				f.addCommand(cancelCmd);
+				f.addCommand(backCmd);
 				f.addCommand(sendCmd);
 				f.addCommand(previewCmd);
 				f.setCommandListener(midlet);
