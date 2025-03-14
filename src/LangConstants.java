@@ -189,5 +189,9 @@ public interface LangConstants {
 	CreateIssue = 188,
 	Title = 189,
 	Next = 190,
+	_deletedBranch = 191,
+	_closedThisAsNotPlanned = 192,
+	_mentionedThis = 193,
+	_removed = 194,
 	gh2me = 0;
 }

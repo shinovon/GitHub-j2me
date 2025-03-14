@@ -170,7 +170,11 @@ public class IssueForm extends PagedForm {
 			} else {
 				commitAuthor = t;
 				commitDate = GH.localizeDate(j.getObject("committer").getString("date"), 1);
-				s = new StringItem(null, "");
+
+				if (commitItem != null) {
+					sb.append(t).append(GH.L[_added]).append(GH.count(1, _commit));
+				}
+				s = new StringItem(null, sb.toString());
 				s.setFont(GH.smallPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT);
 				safeInsert(thread, insert++, s);
@@ -199,7 +203,8 @@ public class IssueForm extends PagedForm {
 			safeInsert(thread, insert++, s);
 
 			sb.setLength(0);
-			sb.append(GH.L[_closedThis])
+			sb.append(GH.L["not_planned".equals(j.getString("state_reason", null)) ?
+					_closedThisAsNotPlanned : _closedThis])
 			.append(GH.localizeDate(j.getString("created_at"), 1));
 			
 			s = new StringItem(null, sb.toString());
@@ -217,6 +222,72 @@ public class IssueForm extends PagedForm {
 			
 			sb.setLength(0);
 			sb.append(GH.L[_mergedCommit]).append(j.getString("commit_id").substring(0, 7))
+			.append(' ').append(GH.localizeDate(j.getString("created_at"), 1));
+			
+			s = new StringItem(null, sb.toString());
+			s.setFont(GH.smallPlainFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+			safeInsert(thread, insert++, s);
+		} else if ("head_ref_deleted".equals(type)) {
+			s = new StringItem(null, j.getObject("actor").getString("login"));
+			s.setFont(GH.smallPlainFont);
+			s.setDefaultCommand(GH.userCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+			safeInsert(thread, insert++, s);
+
+			
+			sb.setLength(0);
+			sb.append(GH.L[_deletedBranch]).append(' ').append(GH.localizeDate(j.getString("created_at"), 1));
+			
+			s = new StringItem(null, sb.toString());
+			s.setFont(GH.smallPlainFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+			safeInsert(thread, insert++, s);
+		} else if ("cross-referenced".equals(type)) {
+			s = new StringItem(null, j.getObject("actor").getString("login"));
+			s.setFont(GH.smallPlainFont);
+			s.setDefaultCommand(GH.userCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+			safeInsert(thread, insert++, s);
+
+			
+			sb.setLength(0);
+			sb.append(GH.L[_mentionedThis]).append(' ').append(GH.localizeDate(j.getString("created_at"), 1));
+			
+			s = new StringItem(null, sb.toString());
+			s.setFont(GH.smallPlainFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+			safeInsert(thread, insert++, s);
+		} else if ("labeled".equals(type)) {
+			s = new StringItem(null, j.getObject("actor").getString("login"));
+			s.setFont(GH.smallPlainFont);
+			s.setDefaultCommand(GH.userCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+			safeInsert(thread, insert++, s);
+
+			
+			sb.setLength(0);
+			sb.append(GH.L[_added]).append(' ').append(j.getObject("label").getString("name"))
+			.append(' ').append(GH.localizeDate(j.getString("created_at"), 1));
+			
+			s = new StringItem(null, sb.toString());
+			s.setFont(GH.smallPlainFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+			safeInsert(thread, insert++, s);
+		} else if ("unlabeled".equals(type)) {
+			s = new StringItem(null, j.getObject("actor").getString("login"));
+			s.setFont(GH.smallPlainFont);
+			s.setDefaultCommand(GH.userCmd);
+			s.setItemCommandListener(GH.midlet);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+			safeInsert(thread, insert++, s);
+
+			
+			sb.setLength(0);
+			sb.append(GH.L[_removed]).append(' ').append(j.getObject("label").getString("name"))
 			.append(' ').append(GH.localizeDate(j.getString("created_at"), 1));
 			
 			s = new StringItem(null, sb.toString());
