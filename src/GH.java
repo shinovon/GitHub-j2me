@@ -1451,7 +1451,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				try {
 					for (int c, l = 0; (c = in.read()) != -1;) {
 						if (c == '\n') {
-//									sb.append((char) c);
 							headers.addElement(sb.toString());
 							sb.setLength(0);
 							if (++l == 2) break;
@@ -1580,7 +1579,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						String inst = customApiUrl != null ? customApiUrl : GITEA_DEFAULT_API_URL;
 						inst = inst.substring(0, inst.indexOf("/api"));
 						
-						j = (JSONObject) apiPost(inst.concat("/login/oauth/access_token"),
+						j = (JSONObject) post(inst.concat("/login/oauth/access_token"),
 								j.toString().getBytes(), "application/json");
 						
 						giteaAccessToken = j.getString("access_token");
@@ -1616,13 +1615,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		case RUN_TOGGLE_STAR: { // toggle repo starred state
 			if (!useProxy || login == null) break;
+			// DELETE and PUT methods are not supported in midp
 			try {
-				apiPost("user/starred/".concat(((RepoForm) param).url)
+				post("user/starred/".concat(((RepoForm) param).url)
 						.concat(";method=").concat(((RepoForm) param).starred ? "DELETE" : "PUT"), null, null);
-				((RepoForm) param).starBtn.setText(L[((RepoForm) param).starred ? Star : Starred]);
-			} catch (Exception ignored) {
-				ignored.printStackTrace();
-			}
+				((RepoForm) param).starBtn.setText(
+						L[(((RepoForm) param).starred = !((RepoForm) param).starred) ? Starred : Star]);
+			} catch (Exception ignored) {}
 			break;
 		}
 		case RUN_THUMBNAILS: { // background thumbnails loader thread
@@ -1741,7 +1740,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				JSONObject j = new JSONObject();
 				j.put("body", param);
 				if (ref != null) j.put("title", ref);
-				apiPost(repo, j.toString().getBytes("UTF-8"), "application/json");
+				post(repo, j.toString().getBytes("UTF-8"), "application/json");
 				
 				commandAction(backCmd, current);
 				if (ref != null) 
@@ -2012,7 +2011,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				j.put("redirect_uri", GITHUB_OAUTH_REDIRECT_URI);
 				j.put("client_secret", GITHUB_OAUTH_CLIENT_SECRET);
 				
-				j = (JSONObject) apiPost(GITHUB_URL + "login/oauth/access_token",
+				j = (JSONObject) post(GITHUB_URL + "login/oauth/access_token",
 						j.toString().getBytes(), "application/json");
 				
 				githubAccessToken = j.getString("access_token");
@@ -2028,7 +2027,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				String inst = customApiUrl != null ? customApiUrl : GITEA_DEFAULT_API_URL;
 				inst = inst.substring(0, inst.indexOf("/api"));
 				
-				j = (JSONObject) apiPost(inst.concat("/login/oauth/access_token"),
+				j = (JSONObject) post(inst.concat("/login/oauth/access_token"),
 						j.toString().getBytes(), "application/json");
 				
 				giteaAccessToken = j.getString("access_token");
@@ -2053,7 +2052,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (oauthSocket != null) {
 			try {
 				oauthSocket.close();
-			} catch (Exception e) {}
+			} catch (Exception ignored) {}
 		}
 		oauthThread.interrupt();
 		oauthThread = null;
@@ -2062,7 +2061,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static void writeGithubAuth() {
 		try {
 			RecordStore.deleteRecordStore(GITHUB_AUTH_RECORDNAME);
-		} catch (Exception e) {}
+		} catch (Exception ignored) {}
 		try {
 			JSONObject j = new JSONObject();
 			
@@ -2079,7 +2078,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static void writeGiteaAuth() {
 		try {
 			RecordStore.deleteRecordStore(GITEA_AUTH_RECORDNAME);
-		} catch (Exception e) {}
+		} catch (Exception ignored) {}
 		try {
 			JSONObject j = new JSONObject();
 
@@ -2099,7 +2098,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 	
 	private void loadLocale(String lang) throws IOException {
-		InputStreamReader r = new InputStreamReader(getClass().getResourceAsStream("/l/" + lang), "UTF-8");
+		InputStreamReader r = new InputStreamReader(getClass().getResourceAsStream("/l/".concat(lang)), "UTF-8");
 		StringBuffer s = new StringBuffer();
 		int c;
 		int i = 1;
@@ -2275,7 +2274,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return res;
 	}
 	
-	private static Object apiPost(String url, byte[] body, String type) throws IOException {
+	private static Object post(String url, byte[] body, String type) throws IOException {
 		Object res;
 
 		HttpConnection hc = null;
@@ -3067,8 +3066,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			MD_IMAGE = 27,
 			MD_PARENTHESIS = 28,
 			MD_PARAGRAPH = 29,
-			MD_BREAKS = 30,
-			MD_HTML_STRIKE = 31;
+			MD_BREAKS = 30;
+//			MD_HTML_STRIKE = 31;
 	
 	public static int parseMarkdown(Thread thread, GHForm form, String body, int insert, Hashtable urls) {
 		if (insert == -1) insert = form.size();
@@ -3079,10 +3078,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return insert;
 		}
 		
-//		System.out.println("Init: " + body);
-		
 		StringBuffer sb = new StringBuffer();
-//		boolean noFormat = GH.noFormat;
 		int d = body.indexOf('<');
 		int len = body.length();
 		if (len == 0) return insert;
@@ -3101,7 +3097,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					int i;
 					for (i = o; i < d; ++i) {
 						char c = chars[i];
-//						System.out.print("> " + c + ": ");
 						if (state[MD_HASH] != 0 && ((c != '#' && c != ' ') || state[MD_HASH] > 6)) {
 							for (int k = 0; k < state[MD_HASH]; ++k) sb.append('#');
 							state[MD_LENGTH] += state[MD_HASH];
@@ -3406,7 +3401,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										}
 									}
 									if (state[MD_GRAVE] != 0) {
-//										i += state[MD_GRAVE];
 										while (i < len) {
 											if ((c = chars[i++]) == '`') {
 												if (state[MD_GRAVE] == 1) {
@@ -3577,20 +3571,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					if (d == len) break;
 				}
 				int e = body.indexOf('>', d);
-	//			if (noFormat) {
-	//				if (chars[d + 1] == 'p'
-	//						|| (chars[d + 1] == '/' && chars[d + 2] == 'p')
-	//						|| (chars[d + 1] == 'b' && chars[d + 2] == 'r')) {
-	//					sb.append('\n');
-	//				}
-	//			} else
 				if (d + 2 < len) { // format by tags
 					if (chars[d + 1] == '/') {
 						if ((chars[d + 2] == 'b' && chars[d + 3] == '>')
 								|| (chars[d + 2] == 's' && chars[d + 3] == 't')) {
 							// </b> or </strong>
 							state[MD_HTML_BOLD] --;
-	//						state[1] &= ~Font.STYLE_BOLD;
 						} else if (chars[d + 2] == 'h' && chars[d + 4] == '>') {
 							// </h?>
 							state[MD_HTML_HEADER] = 0;
@@ -3598,7 +3584,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							|| (chars[d + 2] == 'i' && chars[d + 3] == '>')) {
 							// </em> or </i>
 							state[MD_HTML_ITALIC] --;
-//							state[1] &= ~Font.STYLE_ITALIC;
 						} else if (chars[d + 2] == 'b' && chars[d + 3] == 'i' && chars[d + 4] == 'g') {
 							// </small>
 							state[MD_HTML_BIG] --;
@@ -3616,7 +3601,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							// </small>
 						} else if (chars[d + 2] == 's' && chars[d + 3] == '>') {
 							// </s>
-							state[MD_HTML_STRIKE] --;
+//							state[MD_HTML_STRIKE] --;
 						} else if (chars[d + 2] == 'a' && chars[d + 3] == '>') {
 							// </a>
 							state[MD_HTML_LINK] --;
@@ -3636,7 +3621,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 								|| (chars[d + 1] == 's' && chars[d + 2] == 't')) {
 							// <b> or <strong>
 							state[MD_HTML_BOLD] ++;
-//							state[1] |= Font.STYLE_BOLD;
 						} else if (chars[d + 1] == 'h' && chars[d + 3] == '>') {
 							// <h?>
 							state[MD_HTML_HEADER] = chars[d + 2] - '0';
@@ -3644,7 +3628,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 								|| (chars[d + 1] == 'i' && chars[d + 2] == '>')) {
 							// <em> or <i>
 							state[MD_HTML_ITALIC] ++;
-//							state[1] |= Font.STYLE_ITALIC;
 						} else if (chars[d + 1] == 'b' && chars[d + 2] == 'i' && chars[d + 3] == 'g') {
 							// <big>
 							state[MD_HTML_BIG] ++;
@@ -3657,7 +3640,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						} else if (chars[d + 1] == 'b' && chars[d + 2] == 'r') {
 							// <br>
 							sb.append('\n');
-	//						lineBreak(state);
 						} else if (chars[d + 1] == 'p' && (chars[d + 2] == ' ' || chars[d + 2] == '>')) {
 							// <p>
 							state[MD_HTML_PARAGRAPH] ++;
@@ -3669,7 +3651,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							if (item != null) {
 								img.setDefaultCommand(mdLinkCmd);
 								img.setItemCommandListener(midlet);
-								if (urls != null) urls.put(item, urls.get(item));
+								if (urls != null) urls.put(img, urls.get(item));
 							}
 							if (loadImages) {
 								img.setLabel("");
@@ -3700,7 +3682,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							// <small>
 						} else if (chars[d + 1] == 's' && chars[d + 2] == '>') {
 							// <s>
-							state[MD_HTML_STRIKE] ++;
+//							state[MD_HTML_STRIKE] ++;
 						} else if (chars[d + 1] == 'a'
 								&& (chars[d + 2] == ' ' || chars[d + 2] == '>')) {
 							// <a>
@@ -3722,8 +3704,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 								
 								if (url.charAt(0) == '"')
 									url = url.substring(1, url.length() - 1);
+								if (urls != null) urls.put(item, "!".concat(url));
 							}
-							if (urls != null) urls.put(item, "!".concat(url));
 						} else {
 							sb.append('<');
 							e = d;
@@ -3887,7 +3869,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (state[MD_HTML_BIG] != 0) {
 				size = state[MD_HTML_BIG] == 1 ? Font.SIZE_MEDIUM : Font.SIZE_LARGE;
 			}
-//			if (state[MD_STRIKE] != 0) {
+			// there is no strikethrough font in midp
+//			if (state[MD_STRIKE] != 0 || state[MD_HTML_STRIKE]) {
 //				style |= Font.STYLE_UNDERLINED;
 //			}
 			int header = state[MD_HEADER];

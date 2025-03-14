@@ -1,12 +1,3 @@
-import java.util.Hashtable;
-
-import javax.microedition.lcdui.Item;
-import javax.microedition.lcdui.Spacer;
-import javax.microedition.lcdui.StringItem;
-
-import cc.nnproject.json.JSONArray;
-import cc.nnproject.json.JSONObject;
-
 /*
 Copyright (c) 2025 Arman Jussupgaliyev
 
@@ -28,6 +19,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+import java.util.Hashtable;
+
+import javax.microedition.lcdui.Item;
+import javax.microedition.lcdui.Spacer;
+import javax.microedition.lcdui.StringItem;
+
+import cc.nnproject.json.JSONArray;
+import cc.nnproject.json.JSONObject;
 
 public class IssueForm extends PagedForm {
 
@@ -295,7 +294,7 @@ public class IssueForm extends PagedForm {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 			safeInsert(thread, insert++, s);
 		} else {
-			// TODO
+			// TODO https://docs.github.com/en/rest/using-the-rest-api/issue-event-types
 			sb.setLength(0);
 			if (j.has("actor")) {
 				sb.append(j.getObject("actor").getString("login"));
