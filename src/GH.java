@@ -3067,7 +3067,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			MD_IMAGE = 27,
 			MD_PARENTHESIS = 28,
 			MD_PARAGRAPH = 29,
-			MD_BREAKS = 30;
+			MD_BREAKS = 30,
+			MD_HTML_STRIKE = 31;
 	
 	public static int parseMarkdown(Thread thread, GHForm form, String body, int insert, Hashtable urls) {
 		if (insert == -1) insert = form.size();
@@ -3590,10 +3591,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							// </b> or </strong>
 							state[MD_HTML_BOLD] --;
 	//						state[1] &= ~Font.STYLE_BOLD;
-						} else if (chars[d + 2] == 'h' && chars[d + 4] == '>') { // </h
+						} else if (chars[d + 2] == 'h' && chars[d + 4] == '>') {
+							// </h?>
 							state[MD_HTML_HEADER] = 0;
-							// </h1>
-							if (chars[d + 3] == '1') state[1] &= ~Font.STYLE_BOLD;
 						} else if ((chars[d + 2] == 'e' && chars[d + 3] == 'm')
 							|| (chars[d + 2] == 'i' && chars[d + 3] == '>')) {
 							// </em> or </i>
@@ -3614,6 +3614,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							sb.append('\n');
 						} else if (chars[d + 2] == 's' && chars[d + 3] == 'm') {
 							// </small>
+						} else if (chars[d + 2] == 's' && chars[d + 3] == '>') {
+							// </s>
+							state[MD_HTML_STRIKE] --;
 						} else if (chars[d + 2] == 'a' && chars[d + 3] == '>') {
 							// </a>
 							state[MD_HTML_LINK] --;
@@ -3635,10 +3638,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							state[MD_HTML_BOLD] ++;
 //							state[1] |= Font.STYLE_BOLD;
 						} else if (chars[d + 1] == 'h' && chars[d + 3] == '>') {
-							// <h
-							// <h1>
+							// <h?>
 							state[MD_HTML_HEADER] = chars[d + 2] - '0';
-							if (chars[d + 2] == '1') state[1] |= Font.STYLE_BOLD;
 						} else if ((chars[d + 1] == 'e' && chars[d + 2] == 'm')
 								|| (chars[d + 1] == 'i' && chars[d + 2] == '>')) {
 							// <em> or <i>
@@ -3697,6 +3698,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							form.safeInsert(thread, insert++, img);
 						} else if (chars[d + 1] == 's' && chars[d + 2] == 'm') {
 							// <small>
+						} else if (chars[d + 1] == 's' && chars[d + 2] == '>') {
+							// <s>
+							state[MD_HTML_STRIKE] ++;
 						} else if (chars[d + 1] == 'a'
 								&& (chars[d + 2] == ' ' || chars[d + 2] == '>')) {
 							// <a>
@@ -3778,23 +3782,25 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (b) {
 					b: {
 						boolean https;
+						char c;
 						if (i < 4 || ((https = t.charAt(i - 1) != 'p')
 								&& (i < 5 || t.charAt(i - 1) != 's'))
-							|| (i != (j = https ? 5 : 4) && t.charAt(i - j - 1) > ' ')) {
+							|| (i != (j = https ? 5 : 4)
+							&& (c = t.charAt(i - j - 1)) > ' ' && c != '(')) {
 							break b;
 						}
 						j = i - j;
 						boolean valid = false;
 						int len = t.length();
 						for (k = j; k < len; ++k) {
-							char c = t.charAt(k);
-							if (c <= ' ') break;
+							c = t.charAt(k);
+							if (c <= ' ' || c == ',') break;
 							if (c == '.') valid = true;
 						}
 						if (!valid) break b;
 						
-						if (i != d) {
-							s = new StringItem(null, t.substring(d, j));
+						if (i != 0) {
+							s = new StringItem(null, t.substring(0, j));
 							s.setFont(f);
 							form.safeInsert(thread, insert++, s);
 						}
@@ -3811,19 +3817,20 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					d = i + 3;
 				} else {
 					b: {
-						if (i != 0 && t.charAt(i - 1) > ' ') {
+						char c;
+						if (i != 0 && (c = t.charAt(i - 1)) > ' ' && c != '(') {
 							break b;
 						}
 						b = t.charAt(i) == '@';
 						int len = t.length();
 						for (k = i + 1; k < len && k < i + 10; ++k) {
-							char c = t.charAt(k);
-							if (c <= ' ') break;
+							c = t.charAt(k);
+							if (c <= ' ' || c == ')' || c == ',' || c == '.') break;
 							if (!b && (c < '0' || c > '9')) break b;
 						}
-						if (k == i + 10) break b;
-						if (i != d) {
-							s = new StringItem(null, t.substring(d, i));
+						if (k == i + 10 || k == i + 1) break b;
+						if (i != 0) {
+							s = new StringItem(null, t.substring(0, i));
 							s.setFont(f);
 							form.safeInsert(thread, insert++, s);
 						}
