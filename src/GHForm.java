@@ -46,13 +46,20 @@ public class GHForm extends Form implements LangConstants {
 		loaded = true;
 		canceled = finished = false;
 		
-		setTicker(new Ticker("Loading.."));
+		if (GH.useLoadingForm) {
+			GH.display(GH.loadingForm);
+		} else {
+			setTicker(new Ticker("Loading.."));
+		}
 		Thread thread = this.thread = Thread.currentThread();
 		try {
 			deleteAll();
 			
 			loadInternal(thread);
 			finished = true;
+			if (GH.useLoadingForm && GH.current == this) {
+				GH.display(this);
+			}
 		} catch (InterruptedException e) {
 		} catch (InterruptedIOException e) {
 		} catch (Exception e) {
@@ -64,6 +71,7 @@ public class GHForm extends Form implements LangConstants {
 			e.printStackTrace();
 		} finally {
 			setTicker(null);
+			
 			if (this.thread == thread) {
 				this.thread = null;
 			}

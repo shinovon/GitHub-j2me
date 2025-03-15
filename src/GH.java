@@ -153,6 +153,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static boolean onlineResize = false;
 	private static boolean loadImages = false;
 	static boolean previewFiles;
+	private static boolean symbianJrt;
+	static boolean useLoadingForm;
 
 	// threading
 	private static int run;
@@ -281,6 +283,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Form settingsForm;
 	private static Form searchForm;
 	private static List bookmarksList;
+	static Form loadingForm;
 	private static Vector formHistory = new Vector();
 
 	// main form items
@@ -313,8 +316,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		(display = Display.getDisplay(this))
 		.setCurrent(current = new Form("gh2me"));
 		
-		// load settings
+		String p = System.getProperty("microedition.platform");
+		symbianJrt = p != null && p.indexOf("platform=S60") != -1;
+		useLoadingForm = !symbianJrt &&
+				(System.getProperty("com.symbian.midp.serversocket.support") != null ||
+				System.getProperty("com.symbian.default.to.suite.icon") != null);
 		
+		// load settings
 		try {
 			RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, false);
 			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
@@ -331,7 +339,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			loadImages = j.getBoolean("loadImages", loadImages);
 			previewFiles = j.getBoolean("previewFiles", previewFiles);
 		} catch (Exception ignored) {}
-
+		
+		// load github auth
 		try {
 			RecordStore r = RecordStore.openRecordStore(GITHUB_AUTH_RECORDNAME, false);
 			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
@@ -341,6 +350,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			githubAccessTokenTime = j.getLong("accessTime", 0);
 		} catch (Exception ignored) {}
 		
+		// load gitea auth
 		try {
 			RecordStore r = RecordStore.openRecordStore(GITEA_AUTH_RECORDNAME, false);
 			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
@@ -358,6 +368,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception ignored) {}
 		
+		// load locale
 		(L = new String[220])[0] = "gh2me";
 		try {
 			loadLocale(lang);
@@ -368,13 +379,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				// crash on fail
 				throw new RuntimeException(e2.toString());
 			}
-		}
-		
-		if ((apiMode == API_GITHUB && githubAccessToken != null)
-				|| (apiMode == API_GITEA && (giteaRefreshToken != null || giteaAccessToken != null))) {
-//			start(RUN_VALIDATE_AUTH, null);
-			run = RUN_VALIDATE_AUTH;
-			run();
 		}
 		
 		// commands
@@ -457,6 +461,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		createIssueCmd = new Command(L[CreateIssue], Command.SCREEN, 7);
 		nextCmd = new Command(L[Next], Command.OK, 1);
 		
+		loadingForm = new Form(L[0]);
+		loadingForm.append(L[Loading]);
+		loadingForm.addCommand(cancelCmd);
+		loadingForm.setCommandListener(this);
+		
+		// check auth
+		if ((apiMode == API_GITHUB && githubAccessToken != null)
+				|| (apiMode == API_GITEA && (giteaRefreshToken != null || giteaAccessToken != null))) {
+//			start(RUN_VALIDATE_AUTH, null);
+			run = RUN_VALIDATE_AUTH;
+			run();
+		}
+		
 		// init main form
 		Form f = new Form(L[0]);
 		f.addCommand(exitCmd);
@@ -519,10 +536,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		start(RUN_THUMBNAILS, null);
 		
-//		if (loadImages) {
-//			start(RUN_THUMBNAILS, null);
-//			start(RUN_THUMBNAILS, null);
-//		}
+		if (loadImages && symbianJrt) {
+			start(RUN_THUMBNAILS, null);
+			start(RUN_THUMBNAILS, null);
+		}
 	}
 
 	public void commandAction(Command c, Displayable d) {
@@ -731,6 +748,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					j.put("browseProxy", browseProxyUrl);
 					j.put("apiMode", apiMode);
 					j.put("customApiUrl", customApiUrl);
+					j.put("lang", lang);
 					j.put("noFormat", noFormat);
 					j.put("onlineResize", onlineResize);
 					j.put("loadImages", loadImages);
@@ -1251,6 +1269,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		if (c == backCmd || c == cancelCmd) {
+//			if (d == loadingForm) {
+//				if (current instanceof GHForm) {
+//					((GHForm) current).cancel();
+//				}
+//			}
 			if (formHistory.size() == 0) {
 				display(null, true);
 				return;
@@ -2158,6 +2181,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			display.setCurrent((Alert) d, mainForm);
 			return;
 		}
+		if (d == loadingForm) {
+			display.setCurrent(d);
+			return;
+		}
 		if (d == null || d == mainForm) {
 			d = mainForm;
 			
@@ -2170,6 +2197,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		}
 		Displayable p = display.getCurrent();
+		if (p == loadingForm) p = current;
 		display.setCurrent(current = d);
 		if (p == null || p == d) return;
 		
@@ -2821,13 +2849,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	public static String resolveUrl(String url, String path) {
 		if (!url.startsWith("/")) {
 			int i = path.lastIndexOf('/');
-			if (i != -1) {
-				while (url.startsWith("../")) {
-					url = url.substring(3);
-					i = path.lastIndexOf('/', i - 1);
-				}
-				url = (i == -1 ? "" : path.substring(0, i + 1)).concat(url);
+			while (i != -1 && url.startsWith("../")) {
+				url = url.substring(3);
+				i = path.lastIndexOf('/');
 			}
+			url = (i == -1 ? "/" : path.substring(0, i + 1)).concat(url);
 		}
 		
 		return url;
