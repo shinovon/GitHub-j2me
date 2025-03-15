@@ -100,7 +100,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 					s.setDefaultCommand(GH.spoilerCmd);
 					s.setItemCommandListener(this);
-	
+
 					urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url")});
 					safeAppend(thread, s);
 				}

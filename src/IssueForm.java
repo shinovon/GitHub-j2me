@@ -33,11 +33,11 @@ public class IssueForm extends PagedForm {
 	String url;
 	JSONObject issue;
 	boolean pull;
-	
+
 	StringItem commitItem;
 	String commitAuthor, commitDate;
 	int commitCount;
-	
+
 	public IssueForm(String url) {
 		super(url);
 		this.url = url;
@@ -113,7 +113,7 @@ public class IssueForm extends PagedForm {
 			insert = event(thread, j, sb, insert);
 		}
 	}
-	
+
 	int event(Thread thread, JSONObject j, StringBuffer sb, int insert) {
 		String type = j.getString("event", null);
 		
@@ -251,6 +251,7 @@ public class IssueForm extends PagedForm {
 				}
 			} else {
 				// TODO https://docs.github.com/en/rest/using-the-rest-api/issue-event-types
+				
 				// (un)marked_as_duplicate, transferred, review_dismissed,
 				// base_ref_changed. head_ref_force_pushed, head_ref_restored.
 				// (de)milestoned

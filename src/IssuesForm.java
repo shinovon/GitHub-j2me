@@ -31,7 +31,7 @@ import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
 public class IssuesForm extends PagedForm implements ItemCommandListener {
-	
+
 	String state;
 	int mode;
 

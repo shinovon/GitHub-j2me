@@ -26,7 +26,7 @@ import cc.nnproject.json.JSONObject;
 
 // base class for pagination
 public abstract class PagedForm extends GHForm {
-	
+
 	int perPage = 30;
 	int page = 1, last;
 	private boolean more;
@@ -37,7 +37,7 @@ public abstract class PagedForm extends GHForm {
 		super(title);
 		this.title = title;
 	}
-	
+
 	void changePage(boolean next) {
 		if (next) {
 			if (!more) return;
@@ -46,7 +46,7 @@ public abstract class PagedForm extends GHForm {
 		}
 		gotoPage(page <= 1 ? 1 : page - 1);
 	}
-	
+
 	void gotoPage(int n) {
 		page = n;
 		loaded = false;
@@ -54,13 +54,13 @@ public abstract class PagedForm extends GHForm {
 		cancel();
 		GH.midlet.start(GH.RUN_LOAD_FORM, this);
 	}
-	
+
 	// overriden from Form
 	public void setTitle(String title) {
 		super.setTitle(title == null ? null : title.concat(pageText == null ? "" : pageText));
 		this.title = title;
 	}
-	
+
 	// wrapped api request
 	JSONArray pagedApi(Thread thread, StringBuffer url) throws IOException {
 		if (url.charAt(url.length() - 1) != '?') {
@@ -126,6 +126,5 @@ public abstract class PagedForm extends GHForm {
 		
 		return (JSONArray) r;
 	}
-	
 
 }

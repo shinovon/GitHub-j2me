@@ -30,7 +30,7 @@ public class GHForm extends Form implements LangConstants {
 
 	String url;
 	Hashtable urls;
-	
+
 	boolean loaded, finished, canceled;
 	Thread thread;
 
@@ -40,7 +40,7 @@ public class GHForm extends Form implements LangConstants {
 		addCommand(GH.homeCmd);
 		setCommandListener(GH.midlet);
 	}
-	
+
 	void load() {
 		if (loaded) return;
 		loaded = true;
@@ -69,7 +69,7 @@ public class GHForm extends Form implements LangConstants {
 			}
 		}
 	}
-	
+
 	void cancel() {
 		loaded = false;
 		if (finished || thread == null) return;
@@ -77,27 +77,27 @@ public class GHForm extends Form implements LangConstants {
 		thread.interrupt();
 		thread = null;
 	}
-	
+
 	// for use with PagedForm
 	void safeAppend(Thread thread, Item item) {
 		if (thread != this.thread) throw GH.cancelException;
 		append(item);
 	}
-	
+
 	void safeAppend(Thread thread, String item) {
 		if (thread != this.thread) throw GH.cancelException;
 		append(item);
 	}
-	
+
 	void safeInsert(Thread thread, int n, Item item) {
 		if (thread != this.thread) throw GH.cancelException;
 		insert(n, item);
 	}
-	
+
 	/* abstract */ void loadInternal(Thread thread) throws Exception {
 		GH.parseMarkdown(thread, null, url, 0, urls);
 	}
-	
+
 	void closed(boolean destroy) {
 		if (destroy) cancel();
 	}
