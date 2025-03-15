@@ -3089,11 +3089,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		Item item = null;
 		
 		char[] chars = body.toCharArray();
+		char l = 0;
 		while (d != -1 || o < len) {
 			a: {
 				if (o != d) {
 					if (d == -1) d = len;
-					char l = 0;
 					int i;
 					for (i = o; i < d; ++i) {
 						char c = chars[i];
@@ -3433,6 +3433,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										insert = flush(thread, form, sb, insert, state);
 										d = body.indexOf('<', o = i);
 										state[MD_LENGTH] ++;
+										l = '`';
 										break a;
 									}
 									continue;
