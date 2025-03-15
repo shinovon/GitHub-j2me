@@ -226,13 +226,13 @@ public class IssueForm extends PagedForm {
 				sb.append(GH.L[type.charAt(0) == 'u' ? _unpinnedThis : _pinnedThis]);
 			} else if ("convert_to_draft".equals(type) || "ready_for_review".equals(type)) {
 				sb.append(GH.L[type.charAt(0) == 'c' ? _convertedThisToDraft : _markedThisAsReady]);
-			} else if ("assigned".equals(type) || "review_requested".equals(type)) {
+			} else if ("assigned".equals(type) || "unassigned".equals(type) ||  "review_requested".equals(type)) {
 				boolean r = type.charAt(0) == 'r';
 				t = j.getObject(r ? "requested_reviewer" : "assignee").getString("login");
 				if (j.getObject("actor").getString("login").equals(t)) {
-					sb.append(GH.L[r ? _selfRequestedReview : _selfAssigned]);
+					sb.append(GH.L[r ? _selfRequestedReview : type.charAt(0) == 'u' ? _unassignedSelf : _selfAssigned]);
 				} else {
-					s = new StringItem(null, GH.L[r ? _requestedReview : _assigned]);
+					s = new StringItem(null, GH.L[r ? _requestedReview : type.charAt(0) == 'u' ? _unassigned : _assigned]);
 					s.setFont(GH.smallPlainFont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 					safeInsert(thread, insert++, s);
@@ -246,10 +246,15 @@ public class IssueForm extends PagedForm {
 					s.setItemCommandListener(GH.midlet);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 					safeInsert(thread, insert++, s);
+					
 					sb.setLength(0);
 				}
 			} else {
 				// TODO https://docs.github.com/en/rest/using-the-rest-api/issue-event-types
+				// (un)marked_as_duplicate, transferred, review_dismissed,
+				// base_ref_changed. head_ref_force_pushed, head_ref_restored.
+				// (de)milestoned
+				
 				sb.append("Undefined event: ").append(type);
 			}
 			sb.append(' ').append(GH.localizeDate(j.getString("created_at"), 1));

@@ -208,5 +208,7 @@ public interface LangConstants {
 	_selfAssigned = 209,
 	_requestedReview = 210,
 	_selfRequestedReview = 211,
+	_unassigned = 212,
+	_unassignedSelf = 213,
 	gh2me = 0;
 }
