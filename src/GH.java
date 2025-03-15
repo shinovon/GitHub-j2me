@@ -1551,6 +1551,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (mode == API_GITHUB && githubAccessToken != null) {
 				try {
 					login = ((JSONObject) api("user")).getString("login");
+				} catch (IOException e) {
 				} catch (Exception e) {
 					// token revoked
 					githubAccessToken = null;
@@ -1564,6 +1565,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (giteaAccessToken != null) {
 					try {
 						login = ((JSONObject) api("user")).getString("login");
+					} catch (IOException e) {
 					} catch (Exception e) {
 						// token expired
 						giteaAccessToken = null;
@@ -1591,6 +1593,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						} catch (Exception e) {
 							// ???
 						}
+					} catch (IOException e) {
 					} catch (Exception e) {
 						// token revoked
 						giteaRefreshToken = null;
