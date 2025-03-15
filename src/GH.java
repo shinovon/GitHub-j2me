@@ -3443,17 +3443,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										while (i < len) {
 											if ((c = chars[i++]) == '`') {
 												if (state[MD_GRAVE] == 1) {
-													state[MD_GRAVE] = 0;
 													break;
 												} else if (state[MD_GRAVE] == 2) {
 													if (i + 1 < len && chars[i] == c) {
-														state[MD_GRAVE] = 0;
 														i++;
 														break;
 													}
 												} else if (state[MD_GRAVE] == 3) {
 													if (i + 2 < len && chars[i] == c && chars[i + 1] == c) {
-														state[MD_GRAVE] = 0;
 														i += 2;
 														break;
 													}
@@ -3472,6 +3469,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										insert = flush(thread, form, sb, insert, state);
 										d = body.indexOf('<', o = i);
 										state[MD_LENGTH] ++;
+										state[MD_GRAVE] = 0;
 										l = '`';
 										break a;
 									}

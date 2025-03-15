@@ -86,7 +86,6 @@ public class GHForm extends Form implements LangConstants {
 		thread = null;
 	}
 
-	// for use with PagedForm
 	void safeAppend(Thread thread, Item item) {
 		if (thread != this.thread) throw GH.cancelException;
 		append(item);
