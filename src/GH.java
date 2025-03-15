@@ -358,7 +358,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		} catch (Exception ignored) {}
 		
-		(L = new String[200])[0] = "gh2me";
+		(L = new String[220])[0] = "gh2me";
 		try {
 			loadLocale(lang);
 		} catch (Exception e) {
