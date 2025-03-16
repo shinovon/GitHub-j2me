@@ -27,18 +27,19 @@ import javax.microedition.lcdui.StringItem;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
-// list of repositories (forks, etc)
-public class ReposForm extends PagedForm {
+// list of repositories (forks, etc) or users (stargazers, followers, etc.)
+public class ReposOrUsersForm extends PagedForm {
 
-	boolean users;
 	String sort;
 	boolean mini;
+	int mode;
 
-	public ReposForm(String url, String title, String sort, boolean users) {
+	// mode: 0, 1 - repos, 2 - users
+	public ReposOrUsersForm(String url, String title, String sort, int mode) {
 		super(title);
 		this.url = url;
-		this.users = users;
 		this.sort = sort;
+		this.mode = mode;
 	}
 
 	void loadInternal(Thread thread) throws Exception {
@@ -55,8 +56,30 @@ public class ReposForm extends PagedForm {
 		String t;
 		for (int i = 0; i < l && thread == this.thread; ++i) {
 			JSONObject j = r.getObject(i);
+			
+			// user
+			if (mode == 2) {
+				s = new StringItem(null, j.getString("login"));
+				s.setFont(GH.medPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+				s.setDefaultCommand(GH.userCmd);
+				s.setItemCommandListener(GH.midlet);
+				safeAppend(thread, s);
+				
+				if (j.has("contributions")) {
+					s = new StringItem(null, j.getString("contributions").concat(GH.L[_contributions]));
+					s.setFont(GH.medPlainFont);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+					safeAppend(thread, s);
+					
+					safeAppend(thread, "\n");
+				}
+				continue;
+			}
+			
+			// repo
 
-			if (users) {
+			if (mode == 1) {
 				s = new StringItem(null, j.getObject("owner").getString("login"));
 				s.setFont(GH.medPlainFont);
 				s.setDefaultCommand(GH.userCmd);

@@ -715,9 +715,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (c == yourProfileCmd) {
 					f = new UserForm("user");
 				} else if (c == yourReposCmd) {
-					f = new ReposForm("user/repos?", L[YourRepositories], "pushed", true);
+					f = new ReposOrUsersForm("user/repos?", L[YourRepositories], "pushed", 1);
 				} else if (c == yourStarsCmd) {
-					f = new ReposForm("user/starred?", L[YourStars], null, true);
+					f = new ReposOrUsersForm("user/starred?", L[YourStars], null, 1);
 				} else break a;
 				display(f);
 				start(RUN_LOAD_FORM, f);
@@ -842,17 +842,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				Form f;
 				switch (type) {
 				case 0: // repositories
-					f = new ReposForm((GH.apiMode == GH.API_GITEA ? "repos/search?q=" : "search/repositories?q=")
+					f = new ReposOrUsersForm((GH.apiMode == GH.API_GITEA ? "repos/search?q=" : "search/repositories?q=")
 							.concat(url(q)), 
-							L[Search], /*GH.apiMode == GH.API_GITEA ? "updated" : */null, true);
+							L[Search], /*GH.apiMode == GH.API_GITEA ? "updated" : */null, 1);
 					break;
 				case 1: // issues
 					f = new IssuesForm(q, 2);
 					break;
 				case 2: // users
-					f = new UsersForm((GH.apiMode == GH.API_GITEA ? "users/search?q=" : "search/users?q=")
+					f = new ReposOrUsersForm((GH.apiMode == GH.API_GITEA ? "users/search?q=" : "search/users?q=")
 							.concat(url(q)),
-							L[Search]);
+							L[Search], null, 2);
 					break;
 				case 3: // commits
 					if (GH.apiMode == GH.API_GITEA) return;
@@ -1063,17 +1063,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} else if (c == tagsCmd) {
 					f = new ReleasesForm(url, true);
 				} else if (c == forksCmd) {
-					f = new ReposForm("repos/".concat(url).concat("/forks?"),
-							L[Forks].concat(" - ").concat(url), null, true);
+					f = new ReposOrUsersForm("repos/".concat(url).concat("/forks?"),
+							L[Forks].concat(" - ").concat(url), null, 1);
 				} else if (c == contribsCmd) {
-					f = new UsersForm("repos/".concat(url).concat("/contributors?"),
-							L[Contributors].concat(" - ").concat(url));
+					f = new ReposOrUsersForm("repos/".concat(url).concat("/contributors?"),
+							L[Contributors].concat(" - ").concat(url), null, 2);
 				} else if (c == stargazersCmd) {
-					 f = new UsersForm("repos/".concat(url).concat("/stargazers?"),
-							 L[Stargazers].concat(" - ").concat(url));
+					 f = new ReposOrUsersForm("repos/".concat(url).concat("/stargazers?"),
+							 L[Stargazers].concat(" - ").concat(url), null, 2);
 				} else if (c == watchersCmd) {
-					f = new UsersForm("repos/".concat(url).concat("/subscribers?"),
-							L[Watchers].concat(" - ").concat(url));
+					f = new ReposOrUsersForm("repos/".concat(url).concat("/subscribers?"),
+							L[Watchers].concat(" - ").concat(url), null, 2);
 				} else if (c == issuesCmd) {
 					f = new IssuesForm(url, 0);
 				} else if (c == pullsCmd) {
@@ -1098,18 +1098,18 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				String url = ((UserForm) d).url;
 				GHForm f;
 				if (c == reposCmd) {
-					f = new ReposForm("users/".concat(url).concat("/repos?"),
+					f = new ReposOrUsersForm("users/".concat(url).concat("/repos?"),
 							L[Repositories].concat(" - ").concat(url),
-							GH.apiMode == GH.API_GITEA ? "updated" : "pushed", false);
+							GH.apiMode == GH.API_GITEA ? "updated" : "pushed", 0);
 				} else if (c == starsCmd) {
-					f = new ReposForm("users/".concat(url).concat("/starred?"),
-							L[Stars].concat(" - ").concat(url), null, true);
+					f = new ReposOrUsersForm("users/".concat(url).concat("/starred?"),
+							L[Stars].concat(" - ").concat(url), null, 1);
 				} else if (c == followersCmd) {
-					f = new UsersForm("users/".concat(url).concat("/followers?"),
-							L[Followers].concat(" - ").concat(url));
+					f = new ReposOrUsersForm("users/".concat(url).concat("/followers?"),
+							L[Followers].concat(" - ").concat(url), null, 2);
 				} else if (c == followingCmd) {
-					f = new UsersForm("users/".concat(url).concat("/following?"),
-							L[Following].concat(" - ").concat(url));
+					f = new ReposOrUsersForm("users/".concat(url).concat("/following?"),
+							L[Following].concat(" - ").concat(url), null, 2);
 				} else break a;
 
 				display(f);
@@ -1860,7 +1860,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			char c;
 			switch (c = split[2].charAt(0)) {
 			case 'f': // forks
-				f = new ReposForm("repos/".concat(repo).concat("/forks?"), L[Forks].concat(" - ").concat(repo), null, true);
+				f = new ReposOrUsersForm("repos/".concat(repo).concat("/forks?"),
+						L[Forks].concat(" - ").concat(repo), null, 1);
 				break;
 			case 'r': // releases
 				f = new ReleasesForm(repo, false);
@@ -1869,10 +1870,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f = new ReleasesForm(repo, true);
 				break;
 			case 's': // stargazers
-				f = new UsersForm("repos/".concat(repo).concat("/stargazers?"), L[Stargazers].concat(" - ").concat(repo));
+				f = new ReposOrUsersForm("repos/".concat(repo).concat("/stargazers?"), 
+						L[Stargazers].concat(" - ").concat(repo), null, 2);
 				break;
 			case 'w': // watchers
-				f = new UsersForm("repos/".concat(repo).concat("/subscribers?"), L[Watchers].concat(" - ").concat(repo));
+				f = new ReposOrUsersForm("repos/".concat(repo).concat("/subscribers?"),
+						L[Watchers].concat(" - ").concat(repo), null, 2);
 				break;
 			case 'i': // issues
 			case 'p': // pulls
