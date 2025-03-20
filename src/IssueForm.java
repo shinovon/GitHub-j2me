@@ -129,6 +129,10 @@ public class IssueForm extends PagedForm {
 			
 			commitItem = null;
 		}
+		
+		if ("mentioned".equals(type) || "subscribed".equals(type)) {
+			return insert;
+		}
 
 		sb.setLength(0);
 		
@@ -202,8 +206,12 @@ public class IssueForm extends PagedForm {
 			sb.setLength(0);
 		} else {
 			if ("closed".equals(type)) {
-				sb.append(GH.L["not_planned".equals(j.getString("state_reason", null)) ?
-						_closedThisAsNotPlanned : _closedThis]);
+				if ((t = j.getString("commit_id", null)) != null) { 
+					sb.append(_closedThisCompleted).append(t.substring(0, 7));
+				} else {
+					sb.append(GH.L["not_planned".equals(j.getString("state_reason", null)) ?
+							_closedThisAsNotPlanned : _closedThis]);
+				}
 			} else if ("merged".equals(type)) {
 				sb.append(GH.L[_mergedCommit]).append(j.getString("commit_id").substring(0, 7));
 			} else if ("head_ref_deleted".equals(type)) {
@@ -249,6 +257,22 @@ public class IssueForm extends PagedForm {
 					
 					sb.setLength(0);
 				}
+			} else if ("reviewed".equals(type)) {
+				t = j.getString("state", null);
+				sb.append(GH.L["changes_requested".equals(t) ? _requestedChanges : _reviewed])
+				.append(GH.localizeDate(j.getString("submitted_at"), 1));
+				
+				s = new StringItem(null, sb.toString());
+				s.setFont(GH.smallPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+				safeInsert(thread, insert++, s);
+				
+				sp = new Spacer(10, 4);
+				sp.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+				safeInsert(thread, insert++, sp);
+				
+				insert = GH.parseMarkdown(thread, this, j.getString("body"), insert, urls);
+				sb.setLength(0);
 			} else {
 				// TODO https://docs.github.com/en/rest/using-the-rest-api/issue-event-types
 				
@@ -256,9 +280,11 @@ public class IssueForm extends PagedForm {
 				// base_ref_changed. head_ref_force_pushed, head_ref_restored.
 				// (de)milestoned
 				
-				sb.append("Undefined event: ").append(type);
+				sb.append("\nUndefined event: ").append(type);
 			}
-			sb.append(' ').append(GH.localizeDate(j.getString("created_at"), 1));
+			if (j.has("created_at")) {
+				sb.append(' ').append(GH.localizeDate(j.getString("created_at"), 1));
+			}
 		}
 		
 		if (sb.length() != 0) {
