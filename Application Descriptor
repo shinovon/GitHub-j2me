@@ -1,5 +1,5 @@
 MIDlet-Vendor: nnproject
-MIDlet-Version: 0.9.2
+MIDlet-Version: 0.9.3
 MIDlet-Icon: /g.png
 MicroEdition-Configuration: CLDC-1.1
 MIDlet-1: GH2ME,/g.png,GH
