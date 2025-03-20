@@ -3784,7 +3784,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		StringItem s;
 		
 		// find links
-		if ((state[MD_LINK] == 0 && state[MD_HTML_LINK] == 0)
+		if ((state[MD_GRAVE] == 0 && state[MD_LINK] == 0 && state[MD_HTML_LINK] == 0)
 				&& (t.indexOf("http://") != -1 || t.indexOf("https://") != -1
 				|| t.indexOf('#') != -1|| t.indexOf('@') != -1)) {
 			int i, j, k, d = 0;
