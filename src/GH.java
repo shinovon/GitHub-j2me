@@ -3972,7 +3972,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					return medPlainFont;
 				}
 			}
-			if (size == Font.SIZE_LARGE) {
+			if (size == Font.SIZE_LARGE && style == Font.STYLE_PLAIN) {
 				return largePlainFont;
 			}
 		}
