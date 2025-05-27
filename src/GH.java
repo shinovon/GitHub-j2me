@@ -369,7 +369,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} catch (Exception ignored) {}
 		
 		// load locale
-		(L = new String[220])[0] = "gh2me";
+		(L = new String[250])[0] = "gh2me";
 		try {
 			loadLocale(lang);
 		} catch (Exception e) {
@@ -2577,7 +2577,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	private static HttpConnection openHttpConnection(String url) throws IOException {
 		HttpConnection hc = (HttpConnection) Connector.open(url);
-		hc.setRequestProperty("User-Agent", "j2me-client/" + version + " (https://github.com/shinovon)");
+		hc.setRequestProperty("User-Agent", "github-j2me-client/" + version + " (https://github.com/shinovon)");
 		return hc;
 	}
 
@@ -2635,10 +2635,48 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return sb;
 	}
 
-	static String count(int n, int i) {
-		boolean ru = "ru".equals(lang);
-		return Integer.toString(n).concat(L[n == 1 || (ru && n % 10 == 1 && n % 100 != 11) ?
-				i : (ru && (n % 10 > 4 || n % 10 < 2) ? (i + 2) : (i + 1))]);
+	static String localizePlural(int n, int i) {
+		String s = Integer.toString(n);
+		if (L[LocaleSlavicPlurals].length() == 0) {
+			String l = L[n == 1 ? i : i + 1];
+			if (L[LocaleCustomPlurals].length() != 0) {
+				int idx;
+				if ((idx = l.indexOf('%')) != -1) {
+					return l.substring(0, idx).concat(s.concat(l.substring(idx + 1)));
+				}
+			}
+			return s.concat(l);
+		}
+		
+		int a = n % 10;
+		int b = n % 100;
+		if ("pl".equals(lang) ? n == 1 : (a == 1 && b != 11))
+			return s.concat(L[i]);
+		if ((a >= 2 && a <= 4) && !(b >= 12 && b <= 14))
+			return s.concat(L[i + 1]);
+		return s.concat(L[i + 2]);
+	}
+	
+	static StringBuffer appendLocalizedPlural(StringBuffer sb, int n, int i) {
+		sb.append(n);
+		if (L[LocaleSlavicPlurals].length() == 0) {
+			String l = L[n == 1 ? i : i + 1];
+			if (L[LocaleCustomPlurals].length() != 0) {
+				int idx;
+				if ((idx = l.indexOf('%')) != -1) {
+					return sb.insert(0, l.substring(0, idx)).append(l.substring(idx + 1));
+				}
+			}
+			return sb.append(l);
+		}
+		
+		int a = n % 10;
+		int b = n % 100;
+		if ("pl".equals(lang) ? n == 1 : (a == 1 && b != 11))
+			return sb.append(L[i]);
+		if ((a >= 2 && a <= 4) && !(b >= 12 && b <= 14))
+			return sb.append(L[i + 1]);
+		return sb.append(L[i + 2]);
 	}
 
 	// detailMode: 0 - date, 1 - offset or date, 2 - offset only
@@ -2647,6 +2685,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		long t = parseDateGMT(date);
 		long d = (now - t) / 1000L;
 		boolean ru = "ru".equals(lang);
+
+		StringBuffer sb = new StringBuffer();
 		
 		if (detailMode != 0) {
 			if (d < 5) {
@@ -2654,68 +2694,41 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			
 			if (d < 60) {
-				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
-					return Integer.toString((int) d).concat(L[_secondAgo]);
-				if (ru && (d % 10 > 4 || d % 10 < 2))
-					return Integer.toString((int) d).concat(L[_secondsAgo2]);
-				return Integer.toString((int) d).concat(L[_secondsAgo]);
+				return appendLocalizedPlural(sb, (int) d, _secondAgo).toString();
 			}
 			
 			if (d < 60 * 60) {
 				d /= 60L;
-				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
-					return Integer.toString((int) d).concat(L[_minuteAgo]);
-				if (ru && (d % 10 > 4 || d % 10 < 2))
-					return Integer.toString((int) d).concat(L[_minutesAgo2]);
-				return Integer.toString((int) d).concat(L[_minutesAgo]);
+				return appendLocalizedPlural(sb, (int) d, _minuteAgo).toString();
 			}
 			
 			if (d < 24 * 60 * 60) {
 				d /= 60 * 60L;
-				if (d == 1 || (ru && d % 10 == 1 && d % 100 != 11))
-					return Integer.toString((int) d).concat(L[_hourAgo]);
-				if (ru && (d % 10 > 4 || d % 10 < 2))
-					return Integer.toString((int) d).concat(L[_hoursAgo2]);
-				return Integer.toString((int) d).concat(L[_hoursAgo]);
+				return appendLocalizedPlural(sb, (int) d, _hourAgo).toString();
 			}
 			
 			if (d < 7 * 24 * 60 * 60) {
 				d /= 24 * 60 * 60L;
 				if (d == 1)
 					return L[Yesterday];
-				if (ru && d % 10 == 1 && d % 100 != 11)
-					return Integer.toString((int) d).concat(L[_dayAgo]);
-				if (ru && (d % 10 > 4 || d % 10 < 2))
-					return Integer.toString((int) d).concat(L[_daysAgo2]);
-				return Integer.toString((int) d).concat(L[_daysAgo]);
+				return appendLocalizedPlural(sb, (int) d, _dayAgo).toString();
 			}
 
 			if (d < 28 * 24 * 60 * 60) {
 				d /= 7 * 24 * 60 * 60L;
 				if (d == 1)
 					return L[LastWeek];
-				if (ru && d % 10 == 1 && d % 100 != 11)
-					return Integer.toString((int) d).concat(L[_weekAgo]);
-				if (ru && (d % 10 > 4 || d % 10 < 2))
-					return Integer.toString((int) d).concat(L[_weeksAgo2]);
-				return Integer.toString((int) d).concat(L[_weeksAgo]);
+				return appendLocalizedPlural(sb, (int) d, _weekAgo).toString();
 			}
 			
 			if (detailMode != 1) {
 				if (d < 365 * 24 * 60 * 60) {
 					d /= 30 * 24 * 60 * 60L;
-					if (d == 1)
-						return Integer.toString((int) d).concat(L[_monthAgo]);
-					if (ru && (d % 10 > 4 || d % 10 < 2))
-						return Integer.toString((int) d).concat(L[_monthsAgo2]);
-					return Integer.toString((int) d).concat(L[_monthsAgo]);
+					return appendLocalizedPlural(sb, (int) d, _monthAgo).toString();
 				}
 				
 				d /= 365 * 24 * 60 * 60L;
-				if (d == 1) return Integer.toString((int) d).concat(L[_yearAgo]);
-				if (ru && (d % 10 > 4 || d % 10 < 2))
-					return Integer.toString((int) d).concat(L[_yearsAgo2]);
-				return Integer.toString((int) d).concat(L[_yearsAgo]);
+				return appendLocalizedPlural(sb, (int) d, _yearAgo).toString();
 			}
 		}
 		
@@ -2723,7 +2736,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		int currentYear = c.get(Calendar.YEAR);
 		c.setTime(new Date(t));
 		
-		StringBuffer sb = new StringBuffer();
 		if (detailMode != 0) sb.append(L[on_Date]);
 		
 		if (!ru) sb.append(L[Jan + c.get(Calendar.MONTH)]).append(' ');

@@ -110,7 +110,7 @@ public class RepoForm extends GHForm {
 			append(s);
 		}
 		
-		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "stars_count" : "stargazers_count"), _star),
+		s = new StringItem(null, GH.localizePlural(r.getInt(GH.apiMode == GH.API_GITEA ? "stars_count" : "stargazers_count"), _star),
 				Item.BUTTON);
 		s.setFont(GH.smallPlainFont);
 		s.setDefaultCommand(GH.stargazersCmd);
@@ -118,7 +118,7 @@ public class RepoForm extends GHForm {
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 		
-		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "watchers_count" : "subscribers_count"),
+		s = new StringItem(null, GH.localizePlural(r.getInt(GH.apiMode == GH.API_GITEA ? "watchers_count" : "subscribers_count"),
 				_watching), Item.BUTTON);
 		s.setFont(GH.smallPlainFont);
 		s.setDefaultCommand(GH.watchersCmd);
@@ -126,7 +126,7 @@ public class RepoForm extends GHForm {
 		s.setLayout(Item.LAYOUT_LEFT);
 		append(s);
 		
-		s = new StringItem(null, GH.count(r.getInt(GH.apiMode == GH.API_GITEA ? "forks_count" : "forks"), _fork), Item.BUTTON);
+		s = new StringItem(null, GH.localizePlural(r.getInt(GH.apiMode == GH.API_GITEA ? "forks_count" : "forks"), _fork), Item.BUTTON);
 		s.setFont(GH.smallPlainFont);
 		s.setDefaultCommand(GH.forksCmd);
 		s.setItemCommandListener(GH.midlet);
@@ -169,7 +169,7 @@ public class RepoForm extends GHForm {
 		
 		if (r.getBoolean("has_issues")) {
 			s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[Issues] : GH.L[Issues].concat(" (")
-				.concat(GH.count(r.getInt("open_issues"), _open).concat(")")), Item.BUTTON);
+				.concat(GH.localizePlural(r.getInt("open_issues"), _open).concat(")")), Item.BUTTON);
 			s.setDefaultCommand(GH.issuesCmd);
 			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);

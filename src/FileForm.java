@@ -95,7 +95,7 @@ public class FileForm extends GHForm {
 				ext = ext.substring(i + 1);
 			} else ext = null;
 
-			if (size > 10240
+			if (size > 16*1024
 					|| (!"md".equals(ext) && !"txt".equals(ext) && !GH.previewFiles)
 					|| !r.jumpToKey("content")) {
 				StringItem s;

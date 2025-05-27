@@ -144,7 +144,7 @@ public class IssueForm extends PagedForm {
 			}
 			
 			if (commitItem != null && commitAuthor != null && commitAuthor.equals(t)) {
-				sb.append(t).append(GH.L[_added]).append(GH.count(++commitCount, _commit));
+				sb.append(t).append(GH.L[_added]).append(GH.localizePlural(++commitCount, _commit));
 				commitItem.setText(sb.toString());
 				commitItem.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			} else {
@@ -152,7 +152,7 @@ public class IssueForm extends PagedForm {
 				commitDate = GH.localizeDate(j.getObject("committer").getString("date"), 1);
 
 				if (commitItem != null) {
-					sb.append(t).append(GH.L[_added]).append(GH.count(1, _commit));
+					sb.append(t).append(GH.L[_added]).append(GH.localizePlural(1, _commit));
 				}
 				s = new StringItem(null, sb.toString());
 				s.setFont(GH.smallPlainFont);

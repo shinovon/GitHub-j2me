@@ -4,3 +4,12 @@ deployed
 bin
 *.class
 *.jar
+/.processed/
+/mtj-build/
+*.tmp
+/out/
+.pydevproject
+
+# see langs/compile.py
+src/LangConstants.java
+res/l
