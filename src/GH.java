@@ -1614,7 +1614,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						inst = inst.substring(0, inst.indexOf("/api"));
 						
 						j = (JSONObject) post(inst.concat("/login/oauth/access_token"),
-								j.toString().getBytes(), "application/json");
+								j.toString().getBytes(), "application/json", null);
 						
 						giteaAccessToken = j.getString("access_token");
 						giteaRefreshToken = j.getString("refresh_token", giteaRefreshToken);
@@ -1650,10 +1650,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		case RUN_TOGGLE_STAR: { // toggle repo starred state
 			if (!useProxy || login == null) break;
-			// DELETE and PUT methods are not supported in midp
 			try {
-				post("user/starred/".concat(((RepoForm) param).url)
-						.concat(";method=").concat(((RepoForm) param).starred ? "DELETE" : "PUT"), null, null);
+				post("user/starred/".concat(((RepoForm) param).url), null, null, ((RepoForm) param).starred ? "DELETE" : "PUT");
 				((RepoForm) param).starBtn.setText(
 						L[(((RepoForm) param).starred = !((RepoForm) param).starred) ? Starred : Star]);
 			} catch (Exception ignored) {}
@@ -1775,7 +1773,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				JSONObject j = new JSONObject();
 				j.put("body", param);
 				if (ref != null) j.put("title", ref);
-				post(repo, j.toString().getBytes("UTF-8"), "application/json");
+				post(repo, j.toString().getBytes("UTF-8"), "application/json", null);
 				
 				commandAction(backCmd, current);
 				if (ref != null) 
@@ -2050,7 +2048,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				j.put("client_secret", GITHUB_OAUTH_CLIENT_SECRET);
 				
 				j = (JSONObject) post(GITHUB_URL + "login/oauth/access_token",
-						j.toString().getBytes(), "application/json");
+						j.toString().getBytes(), "application/json", null);
 				
 				githubAccessToken = j.getString("access_token");
 				
@@ -2066,7 +2064,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				inst = inst.substring(0, inst.indexOf("/api"));
 				
 				j = (JSONObject) post(inst.concat("/login/oauth/access_token"),
-						j.toString().getBytes(), "application/json");
+						j.toString().getBytes(), "application/json", null);
 				
 				giteaAccessToken = j.getString("access_token");
 				giteaRefreshToken = j.getString("refresh_token");
@@ -2317,14 +2315,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return res;
 	}
 
-	private static Object post(String url, byte[] body, String type) throws IOException {
+	private static Object post(String url, byte[] body, String type, String method) throws IOException {
 		Object res;
 
 		HttpConnection hc = null;
 		InputStream in = null;
 		try {
+			// DELETE and PUT methods are not supported in midp, unless tls or http patch is used
+			if (method != null && useProxy) {
+				url = url.concat(";method=").concat(method);
+				method = null;
+			}
 			hc = openHttpConnection(proxyUrl(url.startsWith("http") ? url : getApi().concat(url)));
-			hc.setRequestMethod("POST");
+			hc.setRequestMethod(method != null ? method : "POST");
 			hc.setRequestProperty("Accept", "application/json");
 			if (!url.startsWith("http")) {
 				if (apiMode == API_GITHUB) {
