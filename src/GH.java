@@ -153,8 +153,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static boolean onlineResize = false;
 	private static boolean loadImages = false;
 	static boolean previewFiles;
-	private static boolean symbianJrt;
 	static boolean useLoadingForm;
+	private static boolean jsonStream = true;
+	
+	private static boolean symbianJrt;
+	public static String encoding = "UTF-8";
 
 	// threading
 	private static int run;
@@ -2288,8 +2291,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			
 			int c = hc.getResponseCode();
 			try {
-				res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
-//				res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
+				if (jsonStream) {
+					res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+				} else {
+					res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
+				}
 			} catch (RuntimeException e) {
 				if (c >= 400) {
 					throw new APIException(url, c, null);
@@ -2349,7 +2355,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 
 			int c = hc.getResponseCode();
-			res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+			try {
+				if (jsonStream) {
+					res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+				} else {
+					res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
+				}
+			} catch (RuntimeException e) {
+				if (c >= 400) {
+					throw new APIException(url, c, null);
+				} else throw e;
+			}
 			if (c >= 400 || (res instanceof JSONObject && ((JSONObject) res).has("error"))) {
 				throw new APIException(url, c, res);
 			}
@@ -2518,6 +2534,18 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Image getImage(String url) throws IOException {
 		byte[] b = get(url);
 		return Image.createImage(b, 0, b.length);
+	}
+
+	private static String readUtf(InputStream in, int i) throws IOException {
+		byte[] buf = new byte[i <= 0 ? 1024 : i];
+		i = 0;
+		int j;
+		while ((j = in.read(buf, i, buf.length - i)) != -1) {
+			if ((i += j) >= buf.length) {
+				System.arraycopy(buf, 0, buf = new byte[i + 2048], 0, i);
+			}
+		}
+		return new String(buf, 0, i, encoding);
 	}
 
 	private static byte[] readBytes(InputStream inputStream, int initialSize, int bufferSize, int expandSize)
