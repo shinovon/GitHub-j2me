@@ -94,6 +94,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static final String GITHUB_API_URL = "https://api.github.com/";
 	private static final String GITHUB_API_VERSION = "2022-11-28";
 	static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
+	static final String DEFAULT_PROXY_URL = "http://nnp.nnchan.ru/hproxy.php?";
+	static final String DEFAULT_BROWSE_PROXY_URL = "http://nnp.nnchan.ru/glype/browse.php?u=";
 
 	private static final String OAUTH_PORT = "8082";
 	// github oauth constants
@@ -145,8 +147,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	// region Settings
 
-	private static String proxyUrl = "http://nnp.nnchan.ru/hproxy.php?";
-	private static String browseProxyUrl = "http://nnp.nnchan.ru/glype/browse.php?u=";
+	private static String proxyUrl = DEFAULT_PROXY_URL;
+	private static String browseProxyUrl = DEFAULT_BROWSE_PROXY_URL;
 	private static boolean useProxy = false;
 	static int apiMode = API_GITHUB;
 	static String customApiUrl = GITEA_DEFAULT_API_URL;
@@ -157,8 +159,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static boolean previewFiles;
 	static boolean useLoadingForm;
 	private static boolean jsonStream = true;
-	
-	private static boolean symbianJrt;
+
+	// platform
+	static boolean symbianJrt;
+	static boolean symbian;
 	public static String encoding = "UTF-8";
 
 	// endregion Settings
@@ -264,7 +268,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Form searchForm;
 	private static List bookmarksList;
 	static Form loadingForm;
-	private static Vector formHistory = new Vector();
+	private static final Vector formHistory = new Vector();
 
 	// main form items
 	private static TextField mainField;
@@ -300,9 +304,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		String p = System.getProperty("microedition.platform");
 		symbianJrt = p != null && p.indexOf("platform=S60") != -1;
-		useLoadingForm = !symbianJrt &&
-				(System.getProperty("com.symbian.midp.serversocket.support") != null ||
-				System.getProperty("com.symbian.default.to.suite.icon") != null);
+		symbian = symbianJrt
+				|| System.getProperty("com.symbian.midp.serversocket.support") != null
+				|| System.getProperty("com.symbian.default.to.suite.icon") != null
+				|| checkClass("com.symbian.midp.io.protocol.http.Protocol")
+				|| checkClass("com.symbian.lcdjava.io.File");
+
+		useLoadingForm = !symbianJrt;
+		jsonStream = symbianJrt || !symbian;
 		
 		// load settings
 		try {
@@ -339,6 +348,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			r.closeRecordStore();
 
 			String apiUrl = j.getString("apiUrl", null);
+			//noinspection StringEquality // intended null == null check
 			if (customApiUrl == apiUrl
 					|| (apiUrl == null ? GITEA_DEFAULT_API_URL.equals(customApiUrl) : apiUrl.equals(customApiUrl))) {
 				giteaAccessToken = j.getString("accessToken", null);
@@ -717,6 +727,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				// save settings
 				proxyUrl = proxyField.getString();
+				browseProxyUrl = browseProxyField.getString();
 				loadImages = proxyChoice.isSelected(0);
 				useProxy = proxyChoice.isSelected(1);
 				onlineResize = proxyChoice.isSelected(2);
@@ -726,7 +737,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				try {
 					RecordStore.deleteRecordStore(SETTINGS_RECORDNAME);
-				} catch (Exception e) {}
+				} catch (Exception ignored) {}
 				try {
 					JSONObject j = new JSONObject();
 					j.put("proxy", proxyUrl);
@@ -744,7 +755,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
 					r.addRecord(b, 0, b.length);
 					r.closeRecordStore();
-				} catch (Exception e) {}
+				} catch (Exception ignored) {}
 				
 				if (prevApiMode != apiMode) {
 					start(RUN_VALIDATE_AUTH, null);
@@ -766,6 +777,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (c == cancelCmd) {
 				// cancel moving
 				movingBookmark = -1;
+				//noinspection DataFlowIssue // assume d can't be null
 				d.removeCommand(cancelCmd);
 				d.addCommand(removeBookmarkCmd);
 				d.addCommand(moveBookmarkCmd);
@@ -773,6 +785,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				d.addCommand(addBookmarkCmd);
 				return;
 			}
+			//noinspection DataFlowIssue // bookmarksList is List
 			int i = ((List) d).getSelectedIndex();
 			if (i == -1 || bookmarks == null) return;
 			if (c == removeBookmarkCmd) {
@@ -1216,9 +1229,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		// File list commands
 		if (c == List.SELECT_COMMAND) {
+			//noinspection DataFlowIssue // assume d can only be List since we got List.SELECT_COMMAND
 			int i = ((List) d).getSelectedIndex();
 			if (i == -1) return;
+			//noinspection DataFlowIssue
 			boolean dir = ((List) d).getImage(i) == folderImg;
+			//noinspection DataFlowIssue
 			String name = ((List) d).getString(i);
 			String path = d.getTitle();
 
@@ -1439,7 +1455,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						Object bm = bookmarks.get(i);
 						list.append(bm.toString(), null);
 					}
-				} catch (Exception e) {}
+				} catch (Exception ignored) {}
 				bookmarksList = list;
 			}
 			display(bookmarksList);
@@ -1576,7 +1592,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (mode == API_GITHUB && githubAccessToken != null) {
 				try {
 					login = ((JSONObject) api("user")).getString("login");
-				} catch (IOException e) {
+				} catch (IOException ignored) {
 				} catch (Exception e) {
 					// token revoked
 					githubAccessToken = null;
@@ -1590,7 +1606,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (giteaAccessToken != null) {
 					try {
 						login = ((JSONObject) api("user")).getString("login");
-					} catch (IOException e) {
+					} catch (IOException ignored) {
 					} catch (Exception e) {
 						// token expired
 						giteaAccessToken = null;
@@ -1618,7 +1634,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						} catch (Exception e) {
 							// ???
 						}
-					} catch (IOException e) {
+					} catch (IOException ignored) {
 					} catch (Exception e) {
 						// token revoked
 						giteaRefreshToken = null;
@@ -1645,6 +1661,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (!useProxy || login == null) break;
 			try {
 				post("user/starred/".concat(((RepoForm) param).url), null, null, ((RepoForm) param).starred ? "DELETE" : "PUT");
+				//noinspection AssignmentUsedAsCondition // I love inlining
 				((RepoForm) param).starBtn.setText(
 						L[(((RepoForm) param).starred = !((RepoForm) param).starred) ? Starred : Star]);
 			} catch (Exception ignored) {}
@@ -1652,14 +1669,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		case RUN_THUMBNAILS: { // background thumbnails loader thread
 			try {
+				//noinspection InfiniteLoopStatement // intended use
 				while (true) {
 					synchronized (thumbLoadLock) {
 						thumbLoadLock.wait();
 					}
+					//noinspection BusyWait
 					Thread.sleep(200);
 					while (thumbsToLoad.size() > 0) {
 						int i = 0;
-						Object[] o = null;
+						Object[] o;
 						
 						try {
 							synchronized (thumbLoadLock) {
@@ -1810,8 +1829,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// region Image queue
 
 	// thumbs
-	private static Object thumbLoadLock = new Object();
-	private static Vector thumbsToLoad = new Vector();
+	private static final Object thumbLoadLock = new Object();
+	private static final Vector thumbsToLoad = new Vector();
 
 	private static void scheduleThumb(ImageItem item, String url) {
 		if (!loadImages || item == null || url == null) return;
@@ -1971,7 +1990,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			RecordStore r = RecordStore.openRecordStore(GITHUB_AUTH_RECORDNAME, true);
 			r.addRecord(b, 0, b.length);
 			r.closeRecordStore();
-		} catch (Exception e) {}
+		} catch (Exception ignored) {}
 	}
 
 	private static void writeGiteaAuth() {
@@ -1993,7 +2012,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			RecordStore r = RecordStore.openRecordStore(GITEA_AUTH_RECORDNAME, true);
 			r.addRecord(b, 0, b.length);
 			r.closeRecordStore();
-		} catch (Exception e) {}
+		} catch (Exception ignored) {}
 	}
 
 	// endregion Authorization
@@ -2231,10 +2250,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} finally {
 			if (in != null) try {
 				in.close();
-			} catch (IOException e) {}
+			} catch (IOException ignored) {}
 			if (hc != null) try {
 				hc.close();
-			} catch (IOException e) {}
+			} catch (IOException ignored) {}
 		}
 //		System.out.println(res instanceof JSONObject ?
 //				((JSONObject) res).format(0) : res instanceof JSONArray ?
@@ -2293,10 +2312,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} finally {
 			if (in != null) try {
 				in.close();
-			} catch (IOException e) {}
+			} catch (IOException ignored) {}
 			if (hc != null) try {
 				hc.close();
-			} catch (IOException e) {}
+			} catch (IOException ignored) {}
 		}
 //		System.out.println(res instanceof JSONObject ?
 //				((JSONObject) res).format(0) : res instanceof JSONArray ?
@@ -2332,10 +2351,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (res == null) {
 				if (in != null) try {
 					in.close();
-				} catch (IOException e) {}
+				} catch (IOException ignored) {}
 				if (hc != null) try {
 					hc.close();
-				} catch (IOException e) {}
+				} catch (IOException ignored) {}
 			}
 		}
 		return res;
@@ -2440,11 +2459,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} finally {
 			if (in != null) try {
 				in.close();
-			} catch (IOException e) {}
+			} catch (IOException ignored) {}
 			if (hc != null) try {
 				hc.close();
-			} catch (IOException e) {}
-			stream.close();
+			} catch (IOException ignored) {}
+			if (stream != null) try {
+				stream.close();
+			} catch (IOException ignored) {}
 		}
 //		System.out.println(res instanceof JSONObject ?
 //				((JSONObject) res).format(0) : res instanceof JSONArray ?
@@ -2508,12 +2529,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} finally {
 			try {
 				if (in != null) in.close();
-			} catch (IOException e) {
-			}
+			} catch (IOException ignored) {}
 			try {
 				if (hc != null) hc.close();
-			} catch (IOException e) {
-			}
+			} catch (IOException ignored) {}
 		}
 	}
 
@@ -2842,6 +2861,37 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	// endregion
 
+	// region Misc utils
+
+	private static boolean checkClass(String s) {
+		try {
+			//noinspection ConstantValue // intellij doesn't know
+			return Class.forName(s) != null;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	static String[] split(String str, char d) {
+		int i = str.indexOf(d);
+		if (i == -1)
+			return new String[] {str};
+		Vector v = new Vector();
+		v.addElement(str.substring(0, i));
+		while (i != -1) {
+			str = str.substring(i + 1);
+			if ((i = str.indexOf(d)) != -1)
+				v.addElement(str.substring(0, i));
+			i = str.indexOf(d);
+		}
+		v.addElement(str);
+		String[] r = new String[v.size()];
+		v.copyInto(r);
+		return r;
+	}
+
+	// endregion
+
 	// region Date parsing
 
 	static long parseDateGMT(String date) {
@@ -2928,30 +2978,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return m ? -offset : offset;
 	}
 
-	static String n(int n) {
-		if (n < 10) {
-			return "0".concat(Integer.toString(n));
-		} else return Integer.toString(n);
-	}
-
-	static String[] split(String str, char d) {
-		int i = str.indexOf(d);
-		if (i == -1)
-			return new String[] {str};
-		Vector v = new Vector();
-		v.addElement(str.substring(0, i));
-		while (i != -1) {
-			str = str.substring(i + 1);
-			if ((i = str.indexOf(d)) != -1)
-				v.addElement(str.substring(0, i));
-			i = str.indexOf(d);
-		}
-		v.addElement(str);
-		String[] r = new String[v.size()];
-		v.copyInto(r);
-		return r;
-	}
-
 	// endregion
 
 	// region ImageUtils
@@ -2971,26 +2997,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// no change??
 		if (size_w == w && size_h == h)
 			return src_i;
-		
-//		if (MangaApp.mipmap) {
-//			while (w > size_w * 3 && h > size_h * 3) {
-//				src_i = halve(src_i);
-//				w /= 2;
-//				h /= 2;
-//			}
-//		}
 
 		int[] dst = new int[size_w * size_h];
 
 		resize_rgb_filtered(src_i, dst, w, h, size_w, size_h);
 
 		// not needed anymore
+		//noinspection UnusedAssignment
 		src_i = null;
 
 		return Image.createRGBImage(dst, size_w, size_h, true);
 	}
 
-	private static final void resize_rgb_filtered(Image src_i, int[] dst, int w0, int h0, int w1, int h1) {
+	private static void resize_rgb_filtered(Image src_i, int[] dst, int w0, int h0, int w1, int h1) {
 		int[] buffer1 = new int[w0];
 		int[] buffer2 = new int[w0];
 
@@ -3332,6 +3351,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 								case '#':
 									int k = i + 2;
 									try {
+										//noinspection StatementWithEmptyBody
 										while (chars[++k] != ';' && k - i < 10);
 										if (k - i == 10) break;
 										c = (char) Integer.parseInt(new String(chars, i + 2, k - i - 2));
@@ -3382,6 +3402,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									if (state[MD_LENGTH] == 0 && i + 2 < len
 											&& chars[i + 1] == c && chars[i + 2] == c) {
 										int k = i;
+										//noinspection StatementWithEmptyBody
 										while (++k < len && chars[k] != '\n' && chars[k] != '\r');
 										if (chars[k - 1] == c) {
 											i = k - 1;
@@ -3399,6 +3420,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									if (state[t] == 0 && state[MD_LENGTH] == 0 && i + 2 < len
 											&& chars[i + 1] == c && chars[i + 2] == c) {
 										int k = i;
+										//noinspection StatementWithEmptyBody
 										while (++k < len && chars[k] != '\n' && chars[k] != '\r');
 										if (chars[k - 1] == c) {
 											i = k - 1;
@@ -3413,6 +3435,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										break;
 									}
 									int k = i; // line length
+									//noinspection StatementWithEmptyBody
 									while (++k < len && chars[k] != '\n' && chars[k] != '\r');
 									
 									if (state[t] == 0) {
@@ -3505,6 +3528,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 										break;
 									}
 									int k = i; // line length
+									//noinspection StatementWithEmptyBody
 									while (++k < len && chars[k] != '\n' && chars[k] != '\r');
 									if (state[MD_STRIKE] == 0) {
 										if (i + 4 >= k) break;
@@ -3594,6 +3618,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //									}
 									
 									int k = i; // line length
+									//noinspection StatementWithEmptyBody
 									while (++k < len && chars[k] != '\n' && chars[k] != '\r');
 									
 									int n, m;
