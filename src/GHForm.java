@@ -47,7 +47,7 @@ public class GHForm extends Form implements LangConstants {
 		canceled = finished = false;
 
 		Ticker ticker;
-		setTicker(ticker = new Ticker(GH.L[Loading]));
+		setTicker(ticker = new Ticker(GH.L[LLoading]));
 		if (GH.useLoadingForm) {
 			GH.display(GH.loadingForm);
 		}

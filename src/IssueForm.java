@@ -62,7 +62,7 @@ public class IssueForm extends PagedForm {
 			
 			sb.setLength(0);
 			sb.append(issue.getString("title")).append(" - ")
-			.append(pull ? GH.L[PullRequest] : GH.L[Issue]).append(" #").append(issue.getString("number"));
+			.append(pull ? GH.L[LPullRequest] : GH.L[LIssue]).append(" #").append(issue.getString("number"));
 			setTitle(sb.toString());
 		}
 		
@@ -90,8 +90,8 @@ public class IssueForm extends PagedForm {
 			s.setLayout(Item.LAYOUT_LEFT);
 			safeInsert(thread, insert++, s);
 			
-			s = new StringItem(null, GH.L[pull && !issue.getObject("pull_request").isNull("merged_at") ? _merged_ :
-				(!issue.isNull("closed_at") ? _closed_ : (issue.getBoolean("draft", false) ? _draft_ : _open_))]);
+			s = new StringItem(null, GH.L[pull && !issue.getObject("pull_request").isNull("merged_at") ? L_merged_ :
+				(!issue.isNull("closed_at") ? L_closed_ : (issue.getBoolean("draft", false) ? L_draft_ : L_open_))]);
 			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 			safeInsert(thread, insert++, s);
@@ -144,7 +144,7 @@ public class IssueForm extends PagedForm {
 			}
 			
 			if (commitItem != null && commitAuthor != null && commitAuthor.equals(t)) {
-				sb.append(t).append(GH.L[_added]).append(GH.localizePlural(++commitCount, _commit));
+				sb.append(t).append(GH.L[L_added]).append(GH.localizePlural(++commitCount, L_commit));
 				commitItem.setText(sb.toString());
 				commitItem.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			} else {
@@ -152,7 +152,7 @@ public class IssueForm extends PagedForm {
 				commitDate = GH.localizeDate(j.getObject("committer").getString("date"), 1);
 
 				if (commitItem != null) {
-					sb.append(t).append(GH.L[_added]).append(GH.localizePlural(1, _commit));
+					sb.append(t).append(GH.L[L_added]).append(GH.localizePlural(1, L_commit));
 				}
 				s = new StringItem(null, sb.toString());
 				s.setFont(GH.smallPlainFont);
@@ -190,7 +190,7 @@ public class IssueForm extends PagedForm {
 		}
 		
 		if (type == null || "commented".equals(type)) {
-			sb.append(GH.L[!pull && type == null ? _opened2 : _commented])
+			sb.append(GH.L[!pull && type == null ? L_opened2 : L_commented])
 			.append(GH.localizeDate(j.getString("created_at"), 1));
 			
 			s = new StringItem(null, sb.toString());
@@ -207,40 +207,40 @@ public class IssueForm extends PagedForm {
 		} else {
 			if ("closed".equals(type)) {
 				if ((t = j.getString("commit_id", null)) != null) { 
-					sb.append(_closedThisCompleted).append(t.substring(0, 7));
+					sb.append(L_closedThisCompleted).append(t.substring(0, 7));
 				} else {
 					sb.append(GH.L["not_planned".equals(j.getString("state_reason", null)) ?
-							_closedThisAsNotPlanned : _closedThis]);
+							L_closedThisAsNotPlanned : L_closedThis]);
 				}
 			} else if ("merged".equals(type)) {
-				sb.append(GH.L[_mergedCommit]).append(j.getString("commit_id").substring(0, 7));
+				sb.append(GH.L[L_mergedCommit]).append(j.getString("commit_id").substring(0, 7));
 			} else if ("head_ref_deleted".equals(type)) {
-				sb.append(GH.L[_deletedBranch]);
+				sb.append(GH.L[L_deletedBranch]);
 			} else if ("cross-referenced".equals(type)) {
-				sb.append(GH.L[_mentionedThis]);
+				sb.append(GH.L[L_mentionedThis]);
 			} else if ("labeled".equals(type) || "unlabeled".equals(type)) {
-				sb.append(GH.L[type.charAt(0) == 'u' ? _removed : _added]);
+				sb.append(GH.L[type.charAt(0) == 'u' ? L_removed : L_added]);
 			} else if ("referenced".equals(type)) {
-				sb.append(GH.L[_mentionedThisIn]).append(j.getString("commit_id").substring(0, 7));
+				sb.append(GH.L[L_mentionedThisIn]).append(j.getString("commit_id").substring(0, 7));
 			} else if ("renamed".equals(type)) {
-				sb.append(GH.L[_renamedThisTo]).append(j.getObject("renamed").getString("to"));
+				sb.append(GH.L[L_renamedThisTo]).append(j.getObject("renamed").getString("to"));
 			} else if ("reopened".equals(type)) {
-				sb.append(GH.L[_reopenedThis]);
+				sb.append(GH.L[L_reopenedThis]);
 			} else if ("subscribed".equals(type) || "unsubscribed".equals(type)) {
-				sb.append(GH.L[type.charAt(0) == 'u' ? _unsubscribed : _subscribed]);
+				sb.append(GH.L[type.charAt(0) == 'u' ? L_unsubscribed : L_subscribed]);
 			} else if ("locked".equals(type) || "unlocked".equals(type)) {
-				sb.append(GH.L[type.charAt(0) == 'u' ? _unlockedThis : _lockedThis]);
+				sb.append(GH.L[type.charAt(0) == 'u' ? L_unlockedThis : L_lockedThis]);
 			} else if ("pinned".equals(type) || "unpinned".equals(type)) {
-				sb.append(GH.L[type.charAt(0) == 'u' ? _unpinnedThis : _pinnedThis]);
+				sb.append(GH.L[type.charAt(0) == 'u' ? L_unpinnedThis : L_pinnedThis]);
 			} else if ("convert_to_draft".equals(type) || "ready_for_review".equals(type)) {
-				sb.append(GH.L[type.charAt(0) == 'c' ? _convertedThisToDraft : _markedThisAsReady]);
+				sb.append(GH.L[type.charAt(0) == 'c' ? L_convertedThisToDraft : L_markedThisAsReady]);
 			} else if ("assigned".equals(type) || "unassigned".equals(type) ||  "review_requested".equals(type)) {
 				boolean r = type.charAt(0) == 'r';
 				t = j.getObject(r ? "requested_reviewer" : "assignee").getString("login");
 				if (j.getObject("actor").getString("login").equals(t)) {
-					sb.append(GH.L[r ? _selfRequestedReview : type.charAt(0) == 'u' ? _unassignedSelf : _selfAssigned]);
+					sb.append(GH.L[r ? L_selfRequestedReview : type.charAt(0) == 'u' ? L_unassignedSelf : L_selfAssigned]);
 				} else {
-					s = new StringItem(null, GH.L[r ? _requestedReview : type.charAt(0) == 'u' ? _unassigned : _assigned]);
+					s = new StringItem(null, GH.L[r ? L_requestedReview : type.charAt(0) == 'u' ? L_unassigned : L_assigned]);
 					s.setFont(GH.smallPlainFont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 					safeInsert(thread, insert++, s);
@@ -259,7 +259,7 @@ public class IssueForm extends PagedForm {
 				}
 			} else if ("reviewed".equals(type)) {
 				t = j.getString("state", null);
-				sb.append(GH.L["changes_requested".equals(t) ? _requestedChanges : _reviewed])
+				sb.append(GH.L["changes_requested".equals(t) ? L_requestedChanges : L_reviewed])
 				.append(GH.localizeDate(j.getString("submitted_at"), 1));
 				
 				s = new StringItem(null, sb.toString());

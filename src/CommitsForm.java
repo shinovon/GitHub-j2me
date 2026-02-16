@@ -36,7 +36,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 	boolean search;
 	
 	public CommitsForm(String repo, String sha, boolean search) {
-		super(search ? GH.L[Search] : GH.L[Commits].concat(" - ").concat(repo));
+		super(search ? GH.L[LSearch] : GH.L[LCommits].concat(" - ").concat(repo));
 		this.url = repo;
 		this.sha = sha;
 		this.search = search;
@@ -88,10 +88,10 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 			JSONObject m;
 			if ((m = j.getObject("author")) != null && !"invalid-email-address".equals(t = m.getString("login"))) {
 				sb.append(t);
-				sb.append(GH.L[!t.equals(j.getObject("committer").getString("login")) ? _authored : _commited]);
+				sb.append(GH.L[!t.equals(j.getObject("committer").getString("login")) ? L_authored : L_commited]);
 			} else if ((m = commit.getObject("author")) != null) {
 				sb.append(t = m.getString("name"));
-				sb.append(GH.L[!t.equals(commit.getObject("committer").getString("name"))  ? _authored : _commited]);
+				sb.append(GH.L[!t.equals(commit.getObject("committer").getString("name"))  ? L_authored : L_commited]);
 			}
 			
 			sb.append(GH.localizeDate(commit.getObject("committer").getString("date"), 1));

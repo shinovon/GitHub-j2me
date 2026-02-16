@@ -67,7 +67,7 @@ public class ReposOrUsersForm extends PagedForm {
 				safeAppend(thread, s);
 				
 				if (j.has("contributions")) {
-					s = new StringItem(null, j.getString("contributions").concat(GH.L[_contributions]));
+					s = new StringItem(null, j.getString("contributions").concat(GH.L[L_contributions]));
 					s.setFont(GH.medPlainFont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 					safeAppend(thread, s);
@@ -108,8 +108,8 @@ public class ReposOrUsersForm extends PagedForm {
 					s.setLayout(Item.LAYOUT_LEFT);
 					
 					s = new StringItem(null, GH.L[b ?
-							(arch ? _privateArchive_ : (fork ? _privateFork_ : _private_)) :
-								(arch ? _archive_ : _fork_)]);
+							(arch ? L_privateArchive_ : (fork ? L_privateFork_ : L_private_)) :
+								(arch ? L_archive_ : L_fork_)]);
 					s.setFont(GH.smallPlainFont);
 					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 					safeAppend(thread, s);
@@ -129,7 +129,7 @@ public class ReposOrUsersForm extends PagedForm {
 					safeAppend(thread, s);
 				}
 				
-				s = new StringItem(null, (b ? " " : "").concat(GH.L[Updated])
+				s = new StringItem(null, (b ? " " : "").concat(GH.L[LUpdated])
 						.concat(GH.localizeDate((t = j.getString("pushed_at", null)) != null ? t : j.getString("updated_at"), 1)));
 				s.setFont(GH.smallPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);

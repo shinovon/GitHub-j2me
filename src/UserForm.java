@@ -64,7 +64,7 @@ public class UserForm extends GHForm {
 		}
 
 		if ((t = r.getString(GH.apiMode == GH.API_GITEA ? "website" : "blog")) != null && t.length() != 0) {
-			s = new StringItem(GH.L[Blog_User], t);
+			s = new StringItem(GH.L[LBlog_User], t);
 			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.linkCmd);
@@ -73,28 +73,28 @@ public class UserForm extends GHForm {
 		}
 
 		if ((t = r.getString("location", null)) != null && t.length() != 0) {
-			s = new StringItem(GH.L[Location], t);
+			s = new StringItem(GH.L[LLocation], t);
 			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			append(s);
 		}
 		
-		s = new StringItem(null, GH.localizePlural(r.getInt(GH.apiMode == GH.API_GITEA ? "followers_count" : "followers"), _follower), Item.BUTTON);
+		s = new StringItem(null, GH.localizePlural(r.getInt(GH.apiMode == GH.API_GITEA ? "followers_count" : "followers"), L_follower), Item.BUTTON);
 		s.setFont(GH.smallPlainFont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 		s.setDefaultCommand(GH.followersCmd);
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
-		s = new StringItem(null, GH.localizePlural(r.getInt(GH.apiMode == GH.API_GITEA ? "following_count" : "following"), _following), Item.BUTTON);
+		s = new StringItem(null, GH.localizePlural(r.getInt(GH.apiMode == GH.API_GITEA ? "following_count" : "following"), L_following), Item.BUTTON);
 		s.setFont(GH.smallPlainFont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
 		s.setDefaultCommand(GH.followingCmd);
 		s.setItemCommandListener(GH.midlet);
 		append(s);
 		
-		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[Repositories] :
-			GH.localizePlural(r.getInt("public_repos") + r.getInt("total_private_repos", 0), _repository),
+		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[LRepositories] :
+			GH.localizePlural(r.getInt("public_repos") + r.getInt("total_private_repos", 0), L_repository),
 			Item.BUTTON);
 		s.setFont(GH.medPlainFont);
 		s.setDefaultCommand(GH.reposCmd);
@@ -102,7 +102,7 @@ public class UserForm extends GHForm {
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		append(s);
 		
-		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.localizePlural(r.getInt("starred_repos_count"), _star) : GH.L[Stars], Item.BUTTON);
+		s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.localizePlural(r.getInt("starred_repos_count"), L_star) : GH.L[LStars], Item.BUTTON);
 		s.setFont(GH.medPlainFont);
 		s.setDefaultCommand(GH.starsCmd);
 		s.setItemCommandListener(GH.midlet);

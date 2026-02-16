@@ -37,7 +37,7 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 
 	// 0 - issues, 1 - pulls, 2 - search issues and pulls
 	public IssuesForm(String url, int mode) {
-		super(mode == 2 ? GH.L[Search] : GH.L[mode == 1 ? Pulls : Issues].concat(" - ").concat(url));
+		super(mode == 2 ? GH.L[LSearch] : GH.L[mode == 1 ? LPulls : LIssues].concat(" - ").concat(url));
 		this.url = url;
 		this.mode = mode;
 		if (mode != 2) addCommand(GH.saveBookmarkCmd);
@@ -105,14 +105,14 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 			
 			t = j.getObject("user").getString("login");
 			if ("open".equals(j.getString("state"))) {
-				sb.append(GH.L[_opened]).append(GH.localizeDate(j.getString("created_at"), 1))
-				.append(GH.L[_by]).append(t);
+				sb.append(GH.L[L_opened]).append(GH.localizeDate(j.getString("created_at"), 1))
+				.append(GH.L[L_by]).append(t);
 			} else {
-				sb.append(GH.L[_by]).append(t);
+				sb.append(GH.L[L_by]).append(t);
 				if ((t = j.getString("merged_at", null)) != null) {
-					sb.append(GH.L[_was_merged]).append(GH.localizeDate(t, 1));
+					sb.append(GH.L[L_was_merged]).append(GH.localizeDate(t, 1));
 				} else {
-					sb.append(GH.L[_was_closed]).append(GH.localizeDate(j.getString("closed_at"), 1));
+					sb.append(GH.L[L_was_closed]).append(GH.localizeDate(j.getString("closed_at"), 1));
 				}
 			}
 			

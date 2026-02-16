@@ -375,86 +375,86 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		// commands
 		
-		exitCmd = new Command(L[Exit], Command.EXIT, 2);
-		backCmd = new Command(L[Back], Command.BACK, 2);
-		homeCmd = new Command(L[Home], Command.SCREEN, 10);
-		settingsCmd = new Command(L[Settings], Command.SCREEN, 5);
-		aboutCmd = new Command(L[About], Command.SCREEN, 7);
-		bookmarksCmd = new Command(L[Bookmarks], Command.ITEM, 1);
-		searchCmd = new Command(L[Search], Command.ITEM, 1);
-		searchSubmitCmd = new Command(L[Search], Command.OK, 1);
-		authCmd = new Command(L[Accounts], Command.SCREEN, 6);
-		yourProfileCmd = new Command(L[YourProfile], Command.ITEM, 1);
-		yourReposCmd = new Command(L[YourRepositories], Command.ITEM, 1);
-		yourStarsCmd = new Command(L[YourStars], Command.ITEM, 1);
+		exitCmd = new Command(L[LExit], Command.EXIT, 2);
+		backCmd = new Command(L[LBack], Command.BACK, 2);
+		homeCmd = new Command(L[LHome], Command.SCREEN, 10);
+		settingsCmd = new Command(L[LSettings], Command.SCREEN, 5);
+		aboutCmd = new Command(L[LAbout], Command.SCREEN, 7);
+		bookmarksCmd = new Command(L[LBookmarks], Command.ITEM, 1);
+		searchCmd = new Command(L[LSearch], Command.ITEM, 1);
+		searchSubmitCmd = new Command(L[LSearch], Command.OK, 1);
+		authCmd = new Command(L[LAccounts], Command.SCREEN, 6);
+		yourProfileCmd = new Command(L[LYourProfile], Command.ITEM, 1);
+		yourReposCmd = new Command(L[LYourRepositories], Command.ITEM, 1);
+		yourStarsCmd = new Command(L[LYourStars], Command.ITEM, 1);
 		
-		goCmd = new Command(L[Go], Command.ITEM, 1);
-		downloadCmd = new Command(L[Download], Command.ITEM, 1);
-		openCmd = new Command(L[Open], Command.ITEM, 1);
-		linkCmd = new Command(L[Open], Command.ITEM, 1);
-		userCmd = new Command(L[ViewUser], Command.ITEM, 1);
-		spoilerCmd = new Command(L[Show_Spoiler], Command.ITEM, 1);
-		branchItemCmd = new Command(L[SelectBranch], Command.ITEM, 1);
-		repoCmd = new Command(L[ViewRepository], Command.ITEM, 1);
-		mdLinkCmd = new Command(L[Open], Command.ITEM, 1);
+		goCmd = new Command(L[LGo], Command.ITEM, 1);
+		downloadCmd = new Command(L[LDownload], Command.ITEM, 1);
+		openCmd = new Command(L[LOpen], Command.ITEM, 1);
+		linkCmd = new Command(L[LOpen], Command.ITEM, 1);
+		userCmd = new Command(L[LViewUser], Command.ITEM, 1);
+		spoilerCmd = new Command(L[LShow_Spoiler], Command.ITEM, 1);
+		branchItemCmd = new Command(L[LSelectBranch], Command.ITEM, 1);
+		repoCmd = new Command(L[LViewRepository], Command.ITEM, 1);
+		mdLinkCmd = new Command(L[LOpen], Command.ITEM, 1);
 
-		followersCmd = new Command(L[Followers], Command.ITEM, 1);
-		followingCmd = new Command(L[Following], Command.ITEM, 1);
-		reposCmd = new Command(L[Repositories], Command.ITEM, 1);
-		starsCmd = new Command(L[Stars], Command.ITEM, 1);
+		followersCmd = new Command(L[LFollowers], Command.ITEM, 1);
+		followingCmd = new Command(L[LFollowing], Command.ITEM, 1);
+		reposCmd = new Command(L[LRepositories], Command.ITEM, 1);
+		starsCmd = new Command(L[LStars], Command.ITEM, 1);
 		
-		ownerCmd = new Command(L[Owner], Command.SCREEN, 5);
-		releasesCmd = new Command(L[Releases], Command.SCREEN, 3);
-		tagsCmd = new Command(L[Tags], Command.SCREEN, 4);
-		forksCmd = new Command(L[Forks], Command.ITEM, 1);
-		contribsCmd = new Command(L[Contributors], Command.ITEM, 1);
-		stargazersCmd = new Command(L[Stargazers], Command.ITEM, 1);
-		watchersCmd = new Command(L[Watchers], Command.ITEM, 1);
-		forkCmd = new Command(L[OpenParent], Command.ITEM, 1);
-		issuesCmd = new Command(L[Issues], Command.ITEM, 1);
-		pullsCmd = new Command(L[Pulls], Command.ITEM, 1);
-		commitsCmd = new Command(L[Commits], Command.ITEM, 1);
-		selectBranchCmd = new Command(L[SelectBranch], Command.ITEM, 1);
-		starCmd = new Command(L[Star], Command.ITEM, 1);
-		readmeCmd = new Command(L[Readme], Command.ITEM, 1);
-		filesCmd = new Command(L[BrowseSource], Command.ITEM, 1);
+		ownerCmd = new Command(L[LOwner], Command.SCREEN, 5);
+		releasesCmd = new Command(L[LReleases], Command.SCREEN, 3);
+		tagsCmd = new Command(L[LTags], Command.SCREEN, 4);
+		forksCmd = new Command(L[LForks], Command.ITEM, 1);
+		contribsCmd = new Command(L[LContributors], Command.ITEM, 1);
+		stargazersCmd = new Command(L[LStargazers], Command.ITEM, 1);
+		watchersCmd = new Command(L[LWatchers], Command.ITEM, 1);
+		forkCmd = new Command(L[LOpenParent], Command.ITEM, 1);
+		issuesCmd = new Command(L[LIssues], Command.ITEM, 1);
+		pullsCmd = new Command(L[LPulls], Command.ITEM, 1);
+		commitsCmd = new Command(L[LCommits], Command.ITEM, 1);
+		selectBranchCmd = new Command(L[LSelectBranch], Command.ITEM, 1);
+		starCmd = new Command(L[LStar], Command.ITEM, 1);
+		readmeCmd = new Command(L[LReadme], Command.ITEM, 1);
+		filesCmd = new Command(L[LBrowseSource], Command.ITEM, 1);
 		
-		showOpenCmd = new Command(L[ShowOpen], Command.SCREEN, 4);
-		showClosedCmd = new Command(L[ShowClosed], Command.SCREEN, 5);
-		showAllCmd = new Command(L[ShowAll], Command.SCREEN, 6);
+		showOpenCmd = new Command(L[LShowOpen], Command.SCREEN, 4);
+		showClosedCmd = new Command(L[LShowClosed], Command.SCREEN, 5);
+		showAllCmd = new Command(L[LShowAll], Command.SCREEN, 6);
 		
-		nextPageCmd = new Command(L[NextPage], Command.SCREEN, 8);
-		prevPageCmd = new Command(L[PrevPage], Command.SCREEN, 9);
-		gotoPageCmd = new Command(L[GoToPage_Cmd], Command.SCREEN, 10);
-		gotoPageOkCmd = new Command(L[Go], Command.OK, 1);
+		nextPageCmd = new Command(L[LNextPage], Command.SCREEN, 8);
+		prevPageCmd = new Command(L[LPrevPage], Command.SCREEN, 9);
+		gotoPageCmd = new Command(L[LGoToPage_Cmd], Command.SCREEN, 10);
+		gotoPageOkCmd = new Command(L[LGo], Command.OK, 1);
 
-		saveBookmarkCmd = new Command(L[SaveToBookmarks], Command.SCREEN, 11);
+		saveBookmarkCmd = new Command(L[LSaveToBookmarks], Command.SCREEN, 11);
 
-		addBookmarkCmd = new Command(L[New_Bookmark], Command.SCREEN, 5);
-		removeBookmarkCmd = new Command(L[Delete], Command.ITEM, 3);
-		moveBookmarkCmd = new Command(L[Move], Command.ITEM, 4);
+		addBookmarkCmd = new Command(L[LNew_Bookmark], Command.SCREEN, 5);
+		removeBookmarkCmd = new Command(L[LDelete], Command.ITEM, 3);
+		moveBookmarkCmd = new Command(L[LMove], Command.ITEM, 4);
 		
 		authGithubCmd = new Command("GitHub", Command.ITEM, 1);
 		authGiteaCmd = new Command("Gitea", Command.ITEM, 1);
-		logoutGithubCmd = new Command(L[Logout], Command.ITEM, 1);
-		logoutGiteaCmd = new Command(L[Logout], Command.ITEM, 1);
-		authBrowserCmd = new Command(L[OpenInBrowser], Command.ITEM, 1);
-		authDoneCmd = new Command(L[Done], Command.ITEM, 1);
-		authRegenCmd = new Command(L[Regenerate], Command.ITEM, 1);
-		authManualCmd = new Command(L[ManualOAuth], Command.ITEM, 1);
-		authPersonalTokenCmd = new Command(L[PersonalToken], Command.ITEM, 1);
+		logoutGithubCmd = new Command(L[LLogout], Command.ITEM, 1);
+		logoutGiteaCmd = new Command(L[LLogout], Command.ITEM, 1);
+		authBrowserCmd = new Command(L[LOpenInBrowser], Command.ITEM, 1);
+		authDoneCmd = new Command(L[LDone], Command.ITEM, 1);
+		authRegenCmd = new Command(L[LRegenerate], Command.ITEM, 1);
+		authManualCmd = new Command(L[LManualOAuth], Command.ITEM, 1);
+		authPersonalTokenCmd = new Command(L[LPersonalToken], Command.ITEM, 1);
 
-		okCmd = new Command(L[Ok], Command.OK, 1);
-		cancelCmd = new Command(L[Cancel], Command.CANCEL, 2);
+		okCmd = new Command(L[LOk], Command.OK, 1);
+		cancelCmd = new Command(L[LCancel], Command.CANCEL, 2);
 		
-		commentCmd = new Command(L[Comment], Command.SCREEN, 4);
-		sendCmd = new Command(L[Send], Command.OK, 1);
-		previewCmd = new Command(L[Preview], Command.SCREEN, 1);
-		createIssueCmd = new Command(L[CreateIssue], Command.SCREEN, 7);
-		nextCmd = new Command(L[Next], Command.OK, 1);
+		commentCmd = new Command(L[LComment], Command.SCREEN, 4);
+		sendCmd = new Command(L[LSend], Command.OK, 1);
+		previewCmd = new Command(L[LPreview], Command.SCREEN, 1);
+		createIssueCmd = new Command(L[LCreateIssue], Command.SCREEN, 7);
+		nextCmd = new Command(L[LNext], Command.OK, 1);
 		
-		loadingForm = new Form(L[0]);
-		loadingForm.append(L[Loading]);
+		loadingForm = new Form(L[Lgh2me]);
+		loadingForm.append(L[LLoading]);
 		loadingForm.addCommand(cancelCmd);
 		loadingForm.setCommandListener(this);
 		
@@ -467,7 +467,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		
 		// init main form
-		Form f = new Form(L[0]);
+		Form f = new Form(L[Lgh2me]);
 		f.addCommand(exitCmd);
 		f.addCommand(settingsCmd);
 		f.addCommand(aboutCmd);
@@ -476,7 +476,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		f.setCommandListener(this);
 		f.setItemStateListener(this);
 		
-		mainField = new TextField(L[URL_Main], "", 200, TextField.NON_PREDICTIVE);
+		mainField = new TextField(L[LURL_Main], "", 200, TextField.NON_PREDICTIVE);
 		mainField.addCommand(goCmd);
 		mainField.setItemCommandListener(this);
 		mainField.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
@@ -484,19 +484,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		StringItem s;
 		
-		s = new StringItem(null, L[Go], StringItem.BUTTON);
+		s = new StringItem(null, L[LGo], StringItem.BUTTON);
 		s.setDefaultCommand(goCmd);
 		s.setItemCommandListener(this);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		f.append(s);
 		
-		s = new StringItem(null, L[Search], StringItem.BUTTON);
+		s = new StringItem(null, L[LSearch], StringItem.BUTTON);
 		s.setDefaultCommand(searchCmd);
 		s.setItemCommandListener(this);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		f.append(s);
 		
-		s = new StringItem(null, L[Bookmarks], StringItem.BUTTON);
+		s = new StringItem(null, L[LBookmarks], StringItem.BUTTON);
 		s.setDefaultCommand(bookmarksCmd);
 		s.setItemCommandListener(this);
 		s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
@@ -505,19 +505,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (login != null) { // authorized
 			f.append("\n");
 			
-			s = new StringItem(null, L[YourProfile], StringItem.BUTTON);
+			s = new StringItem(null, L[LYourProfile], StringItem.BUTTON);
 			s.setDefaultCommand(yourProfileCmd);
 			s.setItemCommandListener(this);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			f.append(s);
 
-			s = new StringItem(null, L[YourRepositories], StringItem.BUTTON);
+			s = new StringItem(null, L[LYourRepositories], StringItem.BUTTON);
 			s.setDefaultCommand(yourReposCmd);
 			s.setItemCommandListener(this);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			f.append(s);
 
-			s = new StringItem(null, L[YourStars], StringItem.BUTTON);
+			s = new StringItem(null, L[LYourStars], StringItem.BUTTON);
 			s.setDefaultCommand(yourStarsCmd);
 			s.setItemCommandListener(this);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
@@ -547,28 +547,28 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			if (c == settingsCmd) {
 				if (settingsForm == null) {
-					Form f = new Form(L[Settings]);
+					Form f = new Form(L[LSettings]);
 					f.addCommand(backCmd);
 					f.setCommandListener(this);
 					
-					modeChoice = new ChoiceGroup(L[Mode_API], ChoiceGroup.POPUP, new String[] {
+					modeChoice = new ChoiceGroup(L[LMode_API], ChoiceGroup.POPUP, new String[] {
 							"GitHub", "Gitea", /* "GitLab" */
 							}, null);
 					modeChoice.setSelectedIndex(apiMode, true);
 					f.append(modeChoice);
 					
-					customApiField = new TextField(L[GiteaAPIURL],
+					customApiField = new TextField(L[LGiteaAPIURL],
 							customApiUrl == null ? GITEA_DEFAULT_API_URL : customApiUrl, 200, TextField.URL);
 					f.append(customApiField);
 					
-					proxyField = new TextField(L[APIProxyURL], proxyUrl, 200, TextField.NON_PREDICTIVE);
+					proxyField = new TextField(L[LAPIProxyURL], proxyUrl, 200, TextField.NON_PREDICTIVE);
 					f.append(proxyField);
 					
-					browseProxyField = new TextField(L[BrowserProxyURL], browseProxyUrl, 200, TextField.NON_PREDICTIVE);
+					browseProxyField = new TextField(L[LBrowserProxyURL], browseProxyUrl, 200, TextField.NON_PREDICTIVE);
 					f.append(browseProxyField);
 					
 					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] {
-							L[LoadImages], L[UseProxy], L[OnlineResize]
+							L[LLoadImages], L[LUseProxy], L[LOnlineResize]
 					}, null);
 					proxyChoice.setSelectedIndex(0, loadImages);
 					proxyChoice.setSelectedIndex(1, useProxy);
@@ -595,12 +595,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_VCENTER | Item.LAYOUT_LEFT);
 				f.append(s);
 				
-				s = new StringItem(null, L[About_Text]);
+				s = new StringItem(null, L[LAbout_Text]);
 				s.setFont(Font.getDefaultFont());
 				s.setLayout(Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 				f.append(s);
 
-				s = new StringItem(L[Developer], "shinovon");
+				s = new StringItem(L[LDeveloper], "shinovon");
 				s.setLayout(Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_LEFT);
 				f.append(s);
 
@@ -631,13 +631,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					display(bookmarksList);
 					return;
 				}
-				display(loadingAlert(L[Loading]));
+				display(loadingAlert(L[LLoading]));
 				start(RUN_BOOKMARKS_SCREEN, null);
 				return;
 			}
 			if (c == searchCmd) {
 				if (searchForm == null) {
-					Form f = new Form(L[Search]);
+					Form f = new Form(L[LSearch]);
 					f.addCommand(backCmd);
 					f.setCommandListener(this);
 					f.setItemStateListener(this);
@@ -645,15 +645,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					searchField = new TextField("", "", 200, TextField.ANY);
 					f.append(searchField);
 					
-					searchChoice = new ChoiceGroup(L[Type_Search], Choice.POPUP, new String[] {
-							L[Repositories],
-							L[Issues],
-							L[Users],
-							L[Commits],
+					searchChoice = new ChoiceGroup(L[LType_Search], Choice.POPUP, new String[] {
+							L[LRepositories],
+							L[LIssues],
+							L[LUsers],
+							L[LCommits],
 					}, null);
 					f.append(searchChoice);
 					
-					StringItem s = new StringItem(null, L[Search], Item.BUTTON);
+					StringItem s = new StringItem(null, L[LSearch], Item.BUTTON);
 					s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 					s.setDefaultCommand(searchCmd);
 					s.setItemCommandListener(this);
@@ -667,7 +667,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == authCmd) {
-				Form f = new Form(L[Accounts]);
+				Form f = new Form(L[LAccounts]);
 				f.addCommand(backCmd);
 				f.setCommandListener(this);
 				
@@ -678,10 +678,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f.append(s);
 				
 				if (githubAccessToken == null) {
-					s = new StringItem(null, L[Authorize], Item.BUTTON);
+					s = new StringItem(null, L[LAuthorize], Item.BUTTON);
 					s.setDefaultCommand(authGithubCmd);
 				} else {
-					s = new StringItem(null, L[Logout], Item.BUTTON);
+					s = new StringItem(null, L[LLogout], Item.BUTTON);
 					s.setDefaultCommand(logoutGithubCmd);
 				}
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
@@ -693,10 +693,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f.append(s);
 				
 				if (giteaRefreshToken == null && giteaAccessToken == null) {
-					s = new StringItem(null, L[Authorize], Item.BUTTON);
+					s = new StringItem(null, L[LAuthorize], Item.BUTTON);
 					s.setDefaultCommand(authGiteaCmd);
 				} else {
-					s = new StringItem(null, L[Logout], Item.BUTTON);
+					s = new StringItem(null, L[LLogout], Item.BUTTON);
 					s.setDefaultCommand(logoutGiteaCmd);
 				}
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
@@ -711,9 +711,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (c == yourProfileCmd) {
 					f = new UserForm("user");
 				} else if (c == yourReposCmd) {
-					f = new ReposOrUsersForm("user/repos?", L[YourRepositories], "pushed", 1);
+					f = new ReposOrUsersForm("user/repos?", L[LYourRepositories], "pushed", 1);
 				} else if (c == yourStarsCmd) {
-					f = new ReposOrUsersForm("user/starred?", L[YourStars], null, 1);
+					f = new ReposOrUsersForm("user/starred?", L[LYourStars], null, 1);
 				} else break a;
 				display(f);
 				start(RUN_LOAD_FORM, f);
@@ -767,7 +767,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// bookmarksList commands
 		if (d == bookmarksList && c != backCmd) {
 			if (c == addBookmarkCmd) {
-				TextBox t = new TextBox(L[URL_Main], "", 100, TextField.NON_PREDICTIVE);
+				TextBox t = new TextBox(L[LURL_Main], "", 100, TextField.NON_PREDICTIVE);
 				t.addCommand(okCmd);
 				t.addCommand(cancelCmd);
 				t.setCommandListener(this);
@@ -843,7 +843,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				case 0: // repositories
 					f = new ReposOrUsersForm((GH.apiMode == GH.API_GITEA ? "repos/search?q=" : "search/repositories?q=")
 							.concat(url(q)), 
-							L[Search], /*GH.apiMode == GH.API_GITEA ? "updated" : */null, 1);
+							L[LSearch], /*GH.apiMode == GH.API_GITEA ? "updated" : */null, 1);
 					break;
 				case 1: // issues
 					f = new IssuesForm(q, 2);
@@ -851,7 +851,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				case 2: // users
 					f = new ReposOrUsersForm((GH.apiMode == GH.API_GITEA ? "users/search?q=" : "search/users?q=")
 							.concat(url(q)),
-							L[Search], null, 2);
+							L[LSearch], null, 2);
 					break;
 				case 3: // commits
 					if (GH.apiMode == GH.API_GITEA) return;
@@ -870,32 +870,32 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (c == authGithubCmd || c == authGiteaCmd) {
 				oauthMode = c == authGithubCmd ? 0 : 1;
 				
-				Form f = new Form(L[Authorization]);
+				Form f = new Form(L[LAuthorization]);
 				f.addCommand(backCmd);
 				f.setCommandListener(this);
 				
 				StringItem s;
 
-				s = new StringItem(null, L[ChooseAuthMethod]);
+				s = new StringItem(null, L[LChooseAuthMethod]);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 				s.setFont(medPlainFont);
 				f.append(s);
 				
 				if (!useProxy) {
-					s = new StringItem(null, L[AutoOAuth], Item.BUTTON);
+					s = new StringItem(null, L[LAutoOAuth], Item.BUTTON);
 					s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 					s.setDefaultCommand(authBrowserCmd);
 					s.setItemCommandListener(this);
 					f.append(s);
 				}
 				
-				s = new StringItem(null, L[ManualOAuth], Item.BUTTON);
+				s = new StringItem(null, L[LManualOAuth], Item.BUTTON);
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 				s.setDefaultCommand(authManualCmd);
 				s.setItemCommandListener(this);
 				f.append(s);
 				
-				s = new StringItem(null, L[PersonalToken], Item.BUTTON);
+				s = new StringItem(null, L[LPersonalToken], Item.BUTTON);
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 				s.setDefaultCommand(authPersonalTokenCmd);
 				s.setItemCommandListener(this);
@@ -905,7 +905,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == authPersonalTokenCmd) {
-				TextBox t = new TextBox(L[PersonalToken], "", 200, TextField.NON_PREDICTIVE);
+				TextBox t = new TextBox(L[LPersonalToken], "", 200, TextField.NON_PREDICTIVE);
 				t.addCommand(cancelCmd);
 				t.addCommand(authDoneCmd);
 				t.setCommandListener(this);
@@ -916,7 +916,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (c == authManualCmd) {
 				String url = oauthUrl = getOauthUrl(oauthMode);
 				
-				Form f = new Form(L[Authorization]);
+				Form f = new Form(L[LAuthorization]);
 				f.addCommand(backCmd);
 				f.setCommandListener(this);
 
@@ -943,7 +943,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				
 				if (!useProxy) {
-					s = new StringItem(null, L[OpenInBrowser], Item.BUTTON);
+					s = new StringItem(null, L[LOpenInBrowser], Item.BUTTON);
 					s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 					s.setDefaultCommand(authBrowserCmd);
 					s.setItemCommandListener(this);
@@ -962,7 +962,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				f.append("\n");
 				
-				s = new StringItem(null, L[Done], Item.BUTTON);
+				s = new StringItem(null, L[LDone], Item.BUTTON);
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 				s.setDefaultCommand(authDoneCmd);
 				s.setItemCommandListener(this);
@@ -1063,16 +1063,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new ReleasesForm(url, true);
 				} else if (c == forksCmd) {
 					f = new ReposOrUsersForm("repos/".concat(url).concat("/forks?"),
-							L[Forks].concat(" - ").concat(url), null, 1);
+							L[LForks].concat(" - ").concat(url), null, 1);
 				} else if (c == contribsCmd) {
 					f = new ReposOrUsersForm("repos/".concat(url).concat("/contributors?"),
-							L[Contributors].concat(" - ").concat(url), null, 2);
+							L[LContributors].concat(" - ").concat(url), null, 2);
 				} else if (c == stargazersCmd) {
 					 f = new ReposOrUsersForm("repos/".concat(url).concat("/stargazers?"),
-							 L[Stargazers].concat(" - ").concat(url), null, 2);
+							 L[LStargazers].concat(" - ").concat(url), null, 2);
 				} else if (c == watchersCmd) {
 					f = new ReposOrUsersForm("repos/".concat(url).concat("/subscribers?"),
-							L[Watchers].concat(" - ").concat(url), null, 2);
+							L[LWatchers].concat(" - ").concat(url), null, 2);
 				} else if (c == issuesCmd) {
 					f = new IssuesForm(url, 0);
 				} else if (c == pullsCmd) {
@@ -1098,17 +1098,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				GHForm f;
 				if (c == reposCmd) {
 					f = new ReposOrUsersForm("users/".concat(url).concat("/repos?"),
-							L[Repositories].concat(" - ").concat(url),
+							L[LRepositories].concat(" - ").concat(url),
 							GH.apiMode == GH.API_GITEA ? "updated" : "pushed", 0);
 				} else if (c == starsCmd) {
 					f = new ReposOrUsersForm("users/".concat(url).concat("/starred?"),
-							L[Stars].concat(" - ").concat(url), null, 1);
+							L[LStars].concat(" - ").concat(url), null, 1);
 				} else if (c == followersCmd) {
 					f = new ReposOrUsersForm("users/".concat(url).concat("/followers?"),
-							L[Followers].concat(" - ").concat(url), null, 2);
+							L[LFollowers].concat(" - ").concat(url), null, 2);
 				} else if (c == followingCmd) {
 					f = new ReposOrUsersForm("users/".concat(url).concat("/following?"),
-							L[Following].concat(" - ").concat(url), null, 2);
+							L[LFollowing].concat(" - ").concat(url), null, 2);
 				} else break a;
 
 				display(f);
@@ -1131,7 +1131,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == gotoPageCmd) {
-				TextBox t = new TextBox(L[GoToPage].concat(((PagedForm) d).pageText), "", 10, TextField.NUMERIC);
+				TextBox t = new TextBox(L[LGoToPage].concat(((PagedForm) d).pageText), "", 10, TextField.NUMERIC);
 				t.addCommand(gotoPageOkCmd);
 				t.addCommand(cancelCmd);
 				t.setCommandListener(this);
@@ -1151,7 +1151,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == createIssueCmd) {
-				TextBox f = new TextBox(L[Title], "", 1000, TextField.ANY);
+				TextBox f = new TextBox(L[LTitle], "", 1000, TextField.ANY);
 				f.addCommand(cancelCmd);
 				f.addCommand(nextCmd);
 				f.setCommandListener(midlet);
@@ -1210,7 +1210,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == previewCmd) { // preview comment
-				GHForm f = new GHForm(L[Preview]);
+				GHForm f = new GHForm(L[LPreview]);
 				f.url = s;
 				display(f);
 				start(RUN_LOAD_FORM, f);
@@ -1579,7 +1579,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			break;
 		}
 		case RUN_VALIDATE_AUTH: { // validate and refresh auth
-			display(loadingAlert(L[Authorizing]), null);
+			display(loadingAlert(L[LAuthorizing]), null);
 			login = null;
 			
 			
@@ -1646,9 +1646,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (param != null) {
 				apiMode = prevMode;
 				if (login != null) {
-					display(infoAlert(L[Authorized]), mainForm);
+					display(infoAlert(L[LAuthorized]), mainForm);
 				} else {
-					display(errorAlert(L[AuthFailed]), mainForm);
+					display(errorAlert(L[LAuthFailed]), mainForm);
 				}
 			}
 			break;
@@ -1663,7 +1663,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				post("user/starred/".concat(((RepoForm) param).url), null, null, ((RepoForm) param).starred ? "DELETE" : "PUT");
 				//noinspection AssignmentUsedAsCondition // I love inlining
 				((RepoForm) param).starBtn.setText(
-						L[(((RepoForm) param).starred = !((RepoForm) param).starred) ? Starred : Star]);
+						L[(((RepoForm) param).starred = !((RepoForm) param).starred) ? LStarred : LStar]);
 			} catch (Exception ignored) {}
 			break;
 		}
@@ -1746,7 +1746,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		case RUN_OPEN_PATH: {
 			String path = (String) param;
 			if (path.length() == 0) path = "/";
-			display(loadingAlert(L[Loading]), current);
+			display(loadingAlert(L[LLoading]), current);
 			try {
 				if (fileImg == null) {
 					fileImg = Image.createImage("/file.png");
@@ -1914,7 +1914,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else code = query;
 		}
 		
-		display(loadingAlert(L[Authorizing]), d);
+		display(loadingAlert(L[LAuthorizing]), d);
 		
 		try {
 			if (code == null)
@@ -1956,7 +1956,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				writeGiteaAuth();
 			}
 			display(mainForm, true);
-			display(infoAlert(L[Authorized]), mainForm);
+			display(infoAlert(L[LAuthorized]), mainForm);
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -2136,7 +2136,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			r.closeRecordStore();
 		} catch (Exception ignored) {}
 
-		display(infoAlert(L[BookmarkSaved]), d);
+		display(infoAlert(L[LBookmarkSaved]), d);
 	}
 
 	static Alert errorAlert(String text) {
@@ -2643,7 +2643,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			switch (c = split[2].charAt(0)) {
 			case 'f': // forks
 				f = new ReposOrUsersForm("repos/".concat(repo).concat("/forks?"),
-						L[Forks].concat(" - ").concat(repo), null, 1);
+						L[LForks].concat(" - ").concat(repo), null, 1);
 				break;
 			case 'r': // releases
 				f = new ReleasesForm(repo, false);
@@ -2653,11 +2653,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				break;
 			case 's': // stargazers
 				f = new ReposOrUsersForm("repos/".concat(repo).concat("/stargazers?"),
-						L[Stargazers].concat(" - ").concat(repo), null, 2);
+						L[LStargazers].concat(" - ").concat(repo), null, 2);
 				break;
 			case 'w': // watchers
 				f = new ReposOrUsersForm("repos/".concat(repo).concat("/subscribers?"),
-						L[Watchers].concat(" - ").concat(repo), null, 2);
+						L[LWatchers].concat(" - ").concat(repo), null, 2);
 				break;
 			case 'i': // issues
 			case 'p': // pulls
@@ -2746,9 +2746,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	static String localizePlural(int n, int i) {
 		String s = Integer.toString(n);
-		if (L[LocaleSlavicPlurals].length() == 0) {
+		if (L[LLocaleSlavicPlurals].length() == 0) {
 			String l = L[n == 1 ? i : i + 1];
-			if (L[LocaleCustomPlurals].length() != 0) {
+			if (L[LLocaleCustomPlurals].length() != 0) {
 				int idx;
 				if ((idx = l.indexOf('%')) != -1) {
 					return l.substring(0, idx).concat(s.concat(l.substring(idx + 1)));
@@ -2768,9 +2768,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	
 	static StringBuffer appendLocalizedPlural(StringBuffer sb, int n, int i) {
 		sb.append(n);
-		if (L[LocaleSlavicPlurals].length() == 0) {
+		if (L[LLocaleSlavicPlurals].length() == 0) {
 			String l = L[n == 1 ? i : i + 1];
-			if (L[LocaleCustomPlurals].length() != 0) {
+			if (L[LLocaleCustomPlurals].length() != 0) {
 				int idx;
 				if ((idx = l.indexOf('%')) != -1) {
 					return sb.insert(0, l.substring(0, idx)).append(l.substring(idx + 1));
@@ -2799,45 +2799,45 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		if (detailMode != 0) {
 			if (d < 5) {
-				return L[Now];
+				return L[LNow];
 			}
 			
 			if (d < 60) {
-				return appendLocalizedPlural(sb, (int) d, _secondAgo).toString();
+				return appendLocalizedPlural(sb, (int) d, L_secondAgo).toString();
 			}
 			
 			if (d < 60 * 60) {
 				d /= 60L;
-				return appendLocalizedPlural(sb, (int) d, _minuteAgo).toString();
+				return appendLocalizedPlural(sb, (int) d, L_minuteAgo).toString();
 			}
 			
 			if (d < 24 * 60 * 60) {
 				d /= 60 * 60L;
-				return appendLocalizedPlural(sb, (int) d, _hourAgo).toString();
+				return appendLocalizedPlural(sb, (int) d, L_hourAgo).toString();
 			}
 			
 			if (d < 7 * 24 * 60 * 60) {
 				d /= 24 * 60 * 60L;
 				if (d == 1)
-					return L[Yesterday];
-				return appendLocalizedPlural(sb, (int) d, _dayAgo).toString();
+					return L[LYesterday];
+				return appendLocalizedPlural(sb, (int) d, L_dayAgo).toString();
 			}
 
 			if (d < 28 * 24 * 60 * 60) {
 				d /= 7 * 24 * 60 * 60L;
 				if (d == 1)
-					return L[LastWeek];
-				return appendLocalizedPlural(sb, (int) d, _weekAgo).toString();
+					return L[LLastWeek];
+				return appendLocalizedPlural(sb, (int) d, L_weekAgo).toString();
 			}
 			
 			if (detailMode != 1) {
 				if (d < 365 * 24 * 60 * 60) {
 					d /= 30 * 24 * 60 * 60L;
-					return appendLocalizedPlural(sb, (int) d, _monthAgo).toString();
+					return appendLocalizedPlural(sb, (int) d, L_monthAgo).toString();
 				}
 				
 				d /= 365 * 24 * 60 * 60L;
-				return appendLocalizedPlural(sb, (int) d, _yearAgo).toString();
+				return appendLocalizedPlural(sb, (int) d, L_yearAgo).toString();
 			}
 		}
 		
@@ -2845,11 +2845,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		int currentYear = c.get(Calendar.YEAR);
 		c.setTime(new Date(t));
 		
-		if (detailMode != 0) sb.append(L[on_Date]);
+		if (detailMode != 0) sb.append(L[Lon_Date]);
 		
-		if (!ru) sb.append(L[Jan + c.get(Calendar.MONTH)]).append(' ');
+		if (!ru) sb.append(L[LJan + c.get(Calendar.MONTH)]).append(' ');
 		sb.append(c.get(Calendar.DAY_OF_MONTH));
-		if (ru) sb.append(' ').append(L[Jan + c.get(Calendar.MONTH)]);
+		if (ru) sb.append(' ').append(L[LJan + c.get(Calendar.MONTH)]);
 		
 		int year = c.get(Calendar.YEAR);
 		if (year != currentYear) {

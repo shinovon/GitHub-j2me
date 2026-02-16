@@ -60,7 +60,7 @@ public class FileForm extends GHForm {
 				append(s);
 			}
 
-			s = new StringItem(null, GH.L[Download], Item.BUTTON);
+			s = new StringItem(null, GH.L[LDownload], Item.BUTTON);
 			s.setDefaultCommand(GH.downloadCmd);
 			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
@@ -105,7 +105,7 @@ public class FileForm extends GHForm {
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 				append(s);
 				
-				s = new StringItem(null, GH.L[Download], Item.BUTTON);
+				s = new StringItem(null, GH.L[LDownload], Item.BUTTON);
 				s.setDefaultCommand(GH.downloadCmd);
 				s.setItemCommandListener(GH.midlet);
 				s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
