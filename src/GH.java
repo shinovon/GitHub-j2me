@@ -98,12 +98,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final String DEFAULT_BROWSE_PROXY_URL = "http://nnp.nnchan.ru/glype/browse.php?u=";
 
 	private static final String OAUTH_PORT = "8082";
-	// github oauth constants
+	// oauth constants, pls don't reuse
+	// github
 	private static final String GITHUB_OAUTH_CLIENT_ID = "Ov23liQSkThpLmVHIxsC";
 	private static final String GITHUB_OAUTH_CLIENT_SECRET = "f41d31e17a8cd437e05f6423d5977615a9706505";
 	private static final String GITHUB_OAUTH_REDIRECT_URI = "http://localhost:8082/oauth_github";
 	private static final String GITHUB_OAUTH_SCOPE = "user, repo";
-	// gitea oauth constants
+	// gitea
 	private static final String GITEA_DEFAULT_CLIENT_ID = "4fce904c-9a87-4dfd-ab58-991cd496ac93";
 	private static final String GITEA_DEFAULT_CLIENT_SECRET = "gto_qxo2fawh6dugu4u2rbkon6cwnywqfnp6od5ga3kw7opiwkg42xda";
 	private static final String GITEA_OAUTH_REDIRECT_URI = "http://localhost:8082/oauth_gitea";

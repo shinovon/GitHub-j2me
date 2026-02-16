@@ -22,6 +22,7 @@ Unofficial GitHub and Gitea browser client for J2ME platform.
 ### Requirements
 
 - MIDP 2.0
+- CLDC 1.1
 - JSR-75
 
 ### Optional requirements
