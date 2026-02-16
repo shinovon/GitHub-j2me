@@ -159,11 +159,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static boolean previewFiles;
 	static boolean useLoadingForm;
 	private static boolean jsonStream = true;
+	static int blackberryNetwork = -1; // -1: undefined, 0: data, 1: wifi
 
 	// platform
 	static boolean symbianJrt;
-	static boolean symbian;
 	public static String encoding = "UTF-8";
+	static boolean blackberry;
+	static boolean symbian;
 
 	// endregion Settings
 
@@ -303,13 +305,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		.setCurrent(current = new Form("gh2me"));
 		
 		String p = System.getProperty("microedition.platform");
-		symbianJrt = p != null && p.indexOf("platform=S60") != -1;
+		if (p == null) p = "";
+		symbianJrt = p.indexOf("platform=S60") != -1;
+		blackberry = p.toLowerCase().startsWith("blackberry");
 		symbian = symbianJrt
 				|| System.getProperty("com.symbian.midp.serversocket.support") != null
 				|| System.getProperty("com.symbian.default.to.suite.icon") != null
 				|| checkClass("com.symbian.midp.io.protocol.http.Protocol")
 				|| checkClass("com.symbian.lcdjava.io.File");
-
 		useLoadingForm = !symbianJrt;
 		jsonStream = symbianJrt || !symbian;
 		
@@ -329,6 +332,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			onlineResize = j.getBoolean("onlineResize", onlineResize);
 			loadImages = j.getBoolean("loadImages", loadImages);
 			previewFiles = j.getBoolean("previewFiles", previewFiles);
+			blackberryNetwork = j.getInt("blackberryNetwork", blackberryNetwork);
 		} catch (Exception ignored) {}
 		
 		// load github auth
@@ -750,6 +754,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					j.put("onlineResize", onlineResize);
 					j.put("loadImages", loadImages);
 					j.put("previewFiles", previewFiles);
+					j.put("blackberryNetwork", blackberryNetwork);
 					
 					byte[] b = j.toString().getBytes("UTF-8");
 					RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
@@ -2537,6 +2542,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 
 	private static HttpConnection openHttpConnection(String url) throws IOException {
+		if (blackberry && blackberryNetwork == 1) {
+			url = url.concat(";deviceside=true;interface=wifi");
+		}
 		HttpConnection hc = (HttpConnection) Connector.open(url);
 		hc.setRequestProperty("User-Agent", "github-j2me-client/" + version + " (https://github.com/shinovon)");
 		return hc;
