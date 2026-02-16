@@ -64,6 +64,8 @@ import cc.nnproject.json.JSONStream;
 
 public class GH extends MIDlet implements CommandListener, ItemCommandListener, ItemStateListener, Runnable, LangConstants {
 
+	// region Constants
+
 	// threading tasks
 	static final int RUN_LOAD_FORM = 1;
 	static final int RUN_BOOKMARKS_SCREEN = 2;
@@ -132,6 +134,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		(byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)45, (byte)95
 	};
 
+	// endregion Constants
+
 	// midp lifecycle
 	static Display display;
 	static GH midlet;
@@ -139,10 +143,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	private static String version;
 
-	// localization
-	static String[] L;
+	// region Settings
 
-	// settings
 	private static String proxyUrl = "http://nnp.nnchan.ru/hproxy.php?";
 	private static String browseProxyUrl = "http://nnp.nnchan.ru/glype/browse.php?u=";
 	private static boolean useProxy = false;
@@ -159,35 +161,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static boolean symbianJrt;
 	public static String encoding = "UTF-8";
 
-	// threading
-	private static int run;
-	private static Object runParam;
-//	private static int running;
-
-	// oauth
-	private static Connection oauthSocket;
-	private static boolean oauthStarted;
-	private static Thread oauthThread;
-
-	private static int oauthMode;
-	private static String oauthUrl;
-
-	// auth
-	private static String githubAccessToken;
-	private static long githubAccessTokenTime;
-
-	private static String giteaClientId = GITEA_DEFAULT_CLIENT_ID;
-	private static String giteaClientSecret = GITEA_DEFAULT_CLIENT_SECRET;
-	private static String giteaAccessToken;
-	private static String giteaRefreshToken;
-	private static long giteaAccessTokenTime;
-	private static long giteaRefreshTokenTime;
-
-	static String login;
-
-	// thumbs
-	private static Object thumbLoadLock = new Object();
-	private static Vector thumbsToLoad = new Vector();
+	// endregion Settings
 
 	// source browser
 	private static String repo; // also used as url by posting
@@ -200,7 +174,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static JSONArray bookmarks;
 	private static int movingBookmark = -1;
 
-	// ui commands
+	// region Commands
+
 	private static Command exitCmd;
 	static Command backCmd;
 	static Command homeCmd;
@@ -281,6 +256,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command createIssueCmd;
 	static Command nextCmd;
 
+	// endregion Commands
+
 	// ui
 	private static Form mainForm;
 	private static Form settingsForm;
@@ -306,6 +283,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static TextField authField;
 	private static TextField clientIdField;
 	private static TextField clientSecretField;
+
+	// region MIDlet
 
 	protected void destroyApp(boolean unconditional) {}
 
@@ -544,6 +523,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			start(RUN_THUMBNAILS, null);
 		}
 	}
+
+	// endregion
+
+	// region UI Listeners
 
 	public void commandAction(Command c, Displayable d) {
 		// mainForm commands
@@ -1412,7 +1395,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
-	// threading
+	// endregion UI Listeners
+
+	// region Threading
+
+	private static int run;
+	private static Object runParam;
+//	private static int running;
+
 	public void run() {
 		int run;
 		Object param;
@@ -1815,6 +1805,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return t;
 	}
 
+	// endregion Threading
+
+	// region Image queue
+
+	// thumbs
+	private static Object thumbLoadLock = new Object();
+	private static Vector thumbsToLoad = new Vector();
+
 	private static void scheduleThumb(ImageItem item, String url) {
 		if (!loadImages || item == null || url == null) return;
 		if (url.startsWith("!") && !(current instanceof FileForm)) {
@@ -1829,168 +1827,30 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
-	static boolean openUrl(String url) {
-//		System.out.println("openUrl:".concat(url));
-		if (url.startsWith(GITHUB_URL)) {
-			url = url.substring(19);
-		} else if (url.startsWith(GITHUB_API_URL + "repos/")
-				|| url.startsWith(GITHUB_API_URL + "users/")) {
-			url = url.substring(29);
-		} else if (url.startsWith("http") && url.indexOf(':') != -1) {
-			return false;
-		}
-		if (url.length() == 0 || "/".equals(url)) {
-			display(null);
-			return true;
-		}
-		if (url.charAt(0) == '/') url = url.substring(1);
-		
-		if (url.indexOf('/') == -1) {
-			// user
-			openUser(url);
-			return true;
-		} else {
-			// repo
-			String[] split = split(url, '/');
-			if (split.length == 2 || split[2].length() == 0) {
-				openRepo(url);
-				return true;
-			}
-			String repo = split[0].concat("/").concat(split[1]);
-			GHForm f;
-			char c;
-			switch (c = split[2].charAt(0)) {
-			case 'f': // forks
-				f = new ReposOrUsersForm("repos/".concat(repo).concat("/forks?"),
-						L[Forks].concat(" - ").concat(repo), null, 1);
-				break;
-			case 'r': // releases
-				f = new ReleasesForm(repo, false);
-				break;
-			case 't': // tags
-				f = new ReleasesForm(repo, true);
-				break;
-			case 's': // stargazers
-				f = new ReposOrUsersForm("repos/".concat(repo).concat("/stargazers?"), 
-						L[Stargazers].concat(" - ").concat(repo), null, 2);
-				break;
-			case 'w': // watchers
-				f = new ReposOrUsersForm("repos/".concat(repo).concat("/subscribers?"),
-						L[Watchers].concat(" - ").concat(repo), null, 2);
-				break;
-			case 'i': // issues
-			case 'p': // pulls
-				if (split.length == 4) {
-					f = new IssueForm(url);
-					break;
-				}
-				f = new IssuesForm(repo, c == 'p' ? 1 : 0);
-				break;
-			case 'c': // commit or commits
-				if (split.length == 4) {
-					if ("commit".equals(split[2])) {
-						// TODO commit form
-						midlet.browse(GITHUB_URL.concat(url));
-						return true;
-					}
-					f = new CommitsForm(repo, split[3], false);
-					break;
-				}
-				f = new CommitsForm(repo, null, false);
-				break;
-			case 'b': // braches or blob
-				if ("branches".equals(split[2])) {
-					f = new BranchesForm(repo);
-				} else if ("blob".equals(split[2])) {
-					url = url.substring(
-							url.indexOf('/', url.indexOf('/', url.indexOf('/', url.indexOf('/') + 1) + 1) + 1)
-							);
-					GH.repo = repo;
-					GH.ref = split[3];
-					midlet.start(RUN_OPEN_PATH, url);
-					return true;
-//					f = new FileForm(null, null, url, repo, split[3]);
-				} else {
-					return false;
-				}
-				break;
-			default:
-				return false;
-			}
-			display(f);
-			midlet.start(RUN_LOAD_FORM, f);
-			return true;
-		}
-	}
+	// endregion Image queue
 
-	static void openRepo(String url) {
-		RepoForm f = new RepoForm(url);
-		display(f);
-		midlet.start(RUN_LOAD_FORM, f);
-	}
+	// region Authorization
 
-	static void openUser(String url) {
-		url = "users/".concat(url);
-		
-		UserForm f = null;
-		// search in previous screens
-		synchronized (formHistory) {
-			int l = formHistory.size();
-			for (int i = 0; i < l; ++i) {
-				Object o = formHistory.elementAt(i);
-				if (!(o instanceof UserForm) || !url.equals(((UserForm) o).url)) {
-					break;
-				}
-				f = (UserForm) o;
-			}
-		}
-		if (f == null) {
-			f = new UserForm(url);
-		}
-		display(f);
-		midlet.start(RUN_LOAD_FORM, f);
-	}
+	// oauth
+	private static Connection oauthSocket;
+	private static boolean oauthStarted;
+	private static Thread oauthThread;
 
-	static void addBookmark(String url, Displayable d) {
-		if (bookmarks == null) {
-			try {
-				RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
-				bookmarks = JSONObject.parseArray(new String(r.getRecord(1), "UTF-8"));
-				r.closeRecordStore();
-			} catch (Exception e) {
-				bookmarks = new JSONArray(10);
-			}
-		} else {
-			// check if this bookmark already exists
-			if (bookmarks.has(url)) return;
-		}
-		bookmarks.add(url);
-		if (bookmarksList != null) {
-			bookmarksList.append(url, null);
-		}
-		
-		try {
-			RecordStore.deleteRecordStore(BOOKMARKS_RECORDNAME);
-		} catch (Exception ignored) {}
-		try {
-			RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, true);
-			byte[] b = bookmarks.toString().getBytes("UTF-8");
-			r.addRecord(b, 0, b.length);
-			r.closeRecordStore();
-		} catch (Exception ignored) {}
-		
-		display(infoAlert(L[BookmarkSaved]), d);
-	}
+	private static int oauthMode;
+	private static String oauthUrl;
 
-	private static void writeHttpHeader(OutputStream out, int code, String message) throws IOException {
-		out.write("HTTP/1.1 ".getBytes());
-		out.write(Integer.toString(code).getBytes());
-		out.write(' ');
-		if (message != null) out.write(message.getBytes());
-		out.write("\r\n".getBytes());
-		out.write("Connection: close".getBytes());
-		out.write("\r\n".getBytes());
-	}
+	// auth
+	private static String githubAccessToken;
+	private static long githubAccessTokenTime;
+
+	private static String giteaClientId = GITEA_DEFAULT_CLIENT_ID;
+	private static String giteaClientSecret = GITEA_DEFAULT_CLIENT_SECRET;
+	private static String giteaAccessToken;
+	private static String giteaRefreshToken;
+	private static long giteaAccessTokenTime;
+	private static long giteaRefreshTokenTime;
+
+	static String login;
 
 	private static String getOauthUrl(int mode) {
 		StringBuffer sb = new StringBuffer();
@@ -2136,26 +1996,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} catch (Exception e) {}
 	}
 
-	private void loadLocale(String lang) throws IOException {
-		InputStreamReader r = new InputStreamReader(getClass().getResourceAsStream("/l/".concat(lang)), "UTF-8");
-		StringBuffer s = new StringBuffer();
-		int c;
-		int i = 1;
-		while ((c = r.read()) > 0) {
-			if (c == '\r') continue;
-			if (c == '\\') {
-				s.append((c = r.read()) == 'n' ? '\n' : (char) c);
-				continue;
-			}
-			if (c == '\n') {
-				L[i++] = s.toString();
-				s.setLength(0);
-				continue;
-			}
-			s.append((char) c);
-		}
-		r.close();
-	}
+	// endregion Authorization
+
+	// region Display logic
 
 	private static int getWidth() {
 		return mainForm.getWidth();
@@ -2214,6 +2057,69 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
+	// endregion
+
+	// region UI builders
+
+	static void openRepo(String url) {
+		RepoForm f = new RepoForm(url);
+		display(f);
+		midlet.start(RUN_LOAD_FORM, f);
+	}
+
+	static void openUser(String url) {
+		url = "users/".concat(url);
+
+		UserForm f = null;
+		// search in previous screens
+		synchronized (formHistory) {
+			int l = formHistory.size();
+			for (int i = 0; i < l; ++i) {
+				Object o = formHistory.elementAt(i);
+				if (!(o instanceof UserForm) || !url.equals(((UserForm) o).url)) {
+					break;
+				}
+				f = (UserForm) o;
+			}
+		}
+		if (f == null) {
+			f = new UserForm(url);
+		}
+		display(f);
+		midlet.start(RUN_LOAD_FORM, f);
+	}
+
+	static void addBookmark(String url, Displayable d) {
+		if (bookmarks == null) {
+			try {
+				RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
+				bookmarks = JSONObject.parseArray(new String(r.getRecord(1), "UTF-8"));
+				r.closeRecordStore();
+			} catch (Exception e) {
+				bookmarks = new JSONArray(10);
+			}
+		} else {
+			// check if this bookmark already exists
+			if (bookmarks.has(url)) return;
+		}
+		bookmarks.add(url);
+		if (bookmarksList != null) {
+			bookmarksList.append(url, null);
+		}
+
+		try {
+			RecordStore.deleteRecordStore(BOOKMARKS_RECORDNAME);
+		} catch (Exception ignored) {}
+		try {
+			RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, true);
+			byte[] b = bookmarks.toString().getBytes("UTF-8");
+			r.addRecord(b, 0, b.length);
+			r.closeRecordStore();
+		} catch (Exception ignored) {}
+
+		display(infoAlert(L[BookmarkSaved]), d);
+	}
+
 	static Alert errorAlert(String text) {
 		Alert a = new Alert("");
 		a.setType(AlertType.ERROR);
@@ -2239,6 +2145,20 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return a;
 	}
 
+	// endregion
+
+	// region Networking
+
+	private static void writeHttpHeader(OutputStream out, int code, String message) throws IOException {
+		out.write("HTTP/1.1 ".getBytes());
+		out.write(Integer.toString(code).getBytes());
+		out.write(' ');
+		if (message != null) out.write(message.getBytes());
+		out.write("\r\n".getBytes());
+		out.write("Connection: close".getBytes());
+		out.write("\r\n".getBytes());
+	}
+
 	static String getApi() {
 		String inst;
 		if (apiMode == API_GITHUB) {
@@ -2252,6 +2172,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		return inst;
 	}
+
 
 	void browse(String url) {
 		try {
@@ -2596,6 +2517,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
+	private static HttpConnection openHttpConnection(String url) throws IOException {
+		HttpConnection hc = (HttpConnection) Connector.open(url);
+		hc.setRequestProperty("User-Agent", "github-j2me-client/" + version + " (https://github.com/shinovon)");
+		return hc;
+	}
+
+	// endregion Networking
+
+	// region URLs
+
 	private static String proxyUrl(String url) {
 		System.out.println(url);
 		if (url == null
@@ -2604,12 +2535,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return url;
 		}
 		return proxyUrl.concat(url(url));
-	}
-
-	private static HttpConnection openHttpConnection(String url) throws IOException {
-		HttpConnection hc = (HttpConnection) Connector.open(url);
-		hc.setRequestProperty("User-Agent", "github-j2me-client/" + version + " (https://github.com/shinovon)");
-		return hc;
 	}
 
 	public static String url(String url) {
@@ -2664,6 +2589,140 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		}
 		return sb;
+	}
+
+	static boolean openUrl(String url) {
+//		System.out.println("openUrl:".concat(url));
+		if (url.startsWith(GITHUB_URL)) {
+			url = url.substring(19);
+		} else if (url.startsWith(GITHUB_API_URL + "repos/")
+				|| url.startsWith(GITHUB_API_URL + "users/")) {
+			url = url.substring(29);
+		} else if (url.startsWith("http") && url.indexOf(':') != -1) {
+			return false;
+		}
+		if (url.length() == 0 || "/".equals(url)) {
+			display(null);
+			return true;
+		}
+		if (url.charAt(0) == '/') url = url.substring(1);
+
+		if (url.indexOf('/') == -1) {
+			// user
+			openUser(url);
+			return true;
+		} else {
+			// repo
+			String[] split = split(url, '/');
+			if (split.length == 2 || split[2].length() == 0) {
+				openRepo(url);
+				return true;
+			}
+			String repo = split[0].concat("/").concat(split[1]);
+			GHForm f;
+			char c;
+			switch (c = split[2].charAt(0)) {
+			case 'f': // forks
+				f = new ReposOrUsersForm("repos/".concat(repo).concat("/forks?"),
+						L[Forks].concat(" - ").concat(repo), null, 1);
+				break;
+			case 'r': // releases
+				f = new ReleasesForm(repo, false);
+				break;
+			case 't': // tags
+				f = new ReleasesForm(repo, true);
+				break;
+			case 's': // stargazers
+				f = new ReposOrUsersForm("repos/".concat(repo).concat("/stargazers?"),
+						L[Stargazers].concat(" - ").concat(repo), null, 2);
+				break;
+			case 'w': // watchers
+				f = new ReposOrUsersForm("repos/".concat(repo).concat("/subscribers?"),
+						L[Watchers].concat(" - ").concat(repo), null, 2);
+				break;
+			case 'i': // issues
+			case 'p': // pulls
+				if (split.length == 4) {
+					f = new IssueForm(url);
+					break;
+				}
+				f = new IssuesForm(repo, c == 'p' ? 1 : 0);
+				break;
+			case 'c': // commit or commits
+				if (split.length == 4) {
+					if ("commit".equals(split[2])) {
+						// TODO commit form
+						midlet.browse(GITHUB_URL.concat(url));
+						return true;
+					}
+					f = new CommitsForm(repo, split[3], false);
+					break;
+				}
+				f = new CommitsForm(repo, null, false);
+				break;
+			case 'b': // braches or blob
+				if ("branches".equals(split[2])) {
+					f = new BranchesForm(repo);
+				} else if ("blob".equals(split[2])) {
+					url = url.substring(
+							url.indexOf('/', url.indexOf('/', url.indexOf('/', url.indexOf('/') + 1) + 1) + 1)
+					);
+					GH.repo = repo;
+					GH.ref = split[3];
+					midlet.start(RUN_OPEN_PATH, url);
+					return true;
+//					f = new FileForm(null, null, url, repo, split[3]);
+				} else {
+					return false;
+				}
+				break;
+			default:
+				return false;
+			}
+			display(f);
+			midlet.start(RUN_LOAD_FORM, f);
+			return true;
+		}
+	}
+
+	public static String resolveUrl(String url, String path) {
+		if (!url.startsWith("/")) {
+			int i = path.lastIndexOf('/');
+			while (i != -1 && url.startsWith("../")) {
+				url = url.substring(3);
+				i = path.lastIndexOf('/');
+			}
+			url = (i == -1 ? "/" : path.substring(0, i + 1)).concat(url);
+		}
+
+		return url;
+	}
+
+	// endregion
+
+	// region Localizations
+
+	static String[] L;
+
+	private void loadLocale(String lang) throws IOException {
+		InputStreamReader r = new InputStreamReader(getClass().getResourceAsStream("/l/".concat(lang)), "UTF-8");
+		StringBuffer s = new StringBuffer();
+		int c;
+		int i = 1;
+		while ((c = r.read()) > 0) {
+			if (c == '\r') continue;
+			if (c == '\\') {
+				s.append((c = r.read()) == 'n' ? '\n' : (char) c);
+				continue;
+			}
+			if (c == '\n') {
+				L[i++] = s.toString();
+				s.setLength(0);
+				continue;
+			}
+			s.append((char) c);
+		}
+		r.close();
 	}
 
 	static String localizePlural(int n, int i) {
@@ -2781,6 +2840,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return sb.toString();
 	}
 
+	// endregion
+
+	// region Date parsing
+
 	static long parseDateGMT(String date) {
 		Calendar c = parseDate(date);
 		return c.getTime().getTime() + c.getTimeZone().getRawOffset() - parseTimeZone(date);
@@ -2889,20 +2952,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return r;
 	}
 
-	public static String resolveUrl(String url, String path) {
-		if (!url.startsWith("/")) {
-			int i = path.lastIndexOf('/');
-			while (i != -1 && url.startsWith("../")) {
-				url = url.substring(3);
-				i = path.lastIndexOf('/');
-			}
-			url = (i == -1 ? "/" : path.substring(0, i + 1)).concat(url);
-		}
-		
-		return url;
-	}
+	// endregion
 
-	// tube42 imagelib
+	// region ImageUtils
+
+/*
+ * Part of the TUBE42 imagelib, released under the LGPL license.
+ *
+ * Development page: https://github.com/tube42/imagelib
+ * License:          http://www.gnu.org/copyleft/lesser.html
+ */
 
 	static Image resize(Image src_i, int size_w, int size_h) {
 		// set source size
@@ -3016,7 +3075,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
-	// base64
+	// endregion
+
+	// region Base64
 
 	private final static byte[] DECODE_ALPHABET = {
 			-9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 0 - 8
@@ -3115,7 +3176,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
-	// Markdown parser
+	// endregion Base64
+
+	// region Markdown parser
 
 	private static final int
 			MD_FONT_FACE = 0,
@@ -4019,6 +4082,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return Font.getFont(face, style, size);
 	}
 
-	// Markdown parser end
+	// endregion Markdown Parser
 
 }

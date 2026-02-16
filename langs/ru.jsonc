@@ -70,9 +70,9 @@
 	"Wednesday": "Среда",
 	"Thursday": "Четверг",
 	"Friday": "Пятница",
-	"Saturday": "Cуббота",
+	"Saturday": "Суббота",
 	
-	// Countables
+	// Plurals
 	"_star": " звезда",
 	"_stars": " звезды",
 	"_stars2": " звезд",
