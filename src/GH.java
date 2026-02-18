@@ -1217,6 +1217,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			if (c == previewCmd) { // preview comment
 				GHForm f = new GHForm(L[LPreview]);
+				f.removeCommand(homeCmd);
 				f.url = s;
 				display(f);
 				start(RUN_LOAD_FORM, f);

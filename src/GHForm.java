@@ -105,7 +105,7 @@ public class GHForm extends Form implements LangConstants {
 	}
 
 	/* abstract */ void loadInternal(Thread thread) throws Exception {
-		GH.parseMarkdown(thread, null, url, 0, urls);
+		GH.parseMarkdown(thread, this, url, 0, urls);
 	}
 
 	void closed(boolean destroy) {
