@@ -133,9 +133,6 @@
 	"ShowOpen": "Show open",
 	"ShowClosed": "Show closed",
 	"ShowAll": "Show all",
-	"NextPage": "Next page",
-	"PrevPage": "Prev. page",
-	"GoToPage_Cmd": "Go to page...",
 	"Go_Dialog": "Go",
 	"SaveToBookmarks": "Save to bookmarks",
 	"New_Bookmark": "New...",
@@ -150,12 +147,18 @@
 	"Preview": "Preview",
 	"CreateIssue": "Create issue",
 	"Title": "Title",
+	
+	// Dialog commands
 	"Next": "Next",
-	"GoToPage": "Go to page",
-	"Home": "Home",
-	"Done": "Done",
 	"Ok": "Ok",
 	"Cancel": "Cancel",
+	
+	// PagedForm/Navigation
+	"NextPage": "Next page",
+	"PrevPage": "Prev. page",
+	"GoToPage_Cmd": "Go to page...",
+	"GoToPage": "Go to page",
+	"Home": "Home",
 	
 	// Main form
 	"URL_Main": "URL (user or user/repo)",
@@ -172,6 +175,9 @@
 	"UseProxy": "Use proxy",
 	"OnlineResize": "Resize images online",
 	"LoadImages": "Load images",
+	"NetworkAccess": "Network access",
+	"MobileData": "Data",
+	"WiFi": "Wi-Fi",
 	
 	// Auth
 	"ChooseAuthMethod": "Choose authorization method",
@@ -181,15 +187,24 @@
 	"Authorized": "Authorized",
 	"Authorize": "Authorize",
 	"Authorizing": "Authorizing",
+	"AuthFailed": "Authorization failed",
+	"Done": "Done",
 	
 	// About form
 	"About_Text": "Unofficial GitHub browser client for J2ME",
 	"Developer": "Developer",
 	"Loading": "Loading",
 	
-	// TODO arrange
-	"Type_Search": "Type",
+	// User
+	"Blog_User": "Web",
+	"Location": "Location",
+	"Stars": "Stars",
+	
+	// Search
 	"Users": "Users",
+	"Type_Search": "Type",
+	
+	// Repository
 	"About_Repo": "About",
 	"Homepage_Repo": "Web",
 	"License": "License",
@@ -198,35 +213,34 @@
 	"Branches": "Branches",
 	"DownloadZIP": "Download ZIP",
 	"PullRequests": "Pull requests",
-	"Blog_User": "Web",
-	"SourceCodeZip": "Source code (zip)",
-	"ShowAssets": "Show assets",
-	"ShowText": "Show text",
-	"Assets": "Assets",
-	"_opened": " opened ",
-	"_by": " by ",
 	"_authored": " authored ",
 	"_commited": " commited ",
 	"_fork_": " (fork)",
 	"Updated": "Updated ",
-	"Location": "Location",
 	"_private_": " (private)",
 	"_archive_": " (archive)",
 	"_privateFork_": " (private fork)",
 	"_privateArchive_": " (private archive)",
-	"Stars": "Stars",
 	"Star": "Star",
 	"Starred": "Starred",
-	"BookmarkSaved": "Bookmark saved",
-	"AuthFailed": "Authorization failed",
 	"BrowseSource": "View files",
 	"Readme": "Readme",
+	
+	// Issues/Pulls
+	"_opened": " opened ",
+	"_by": " by ",
 	"Issue": "Issue",
 	"PullRequest": "Pull request",
 	"_closed_": " (closed)",
 	"_open_": " (open)",
 	"_draft_": " (draft)",
 	"_merged_": " (merged)",
+	
+	// Releases
+	"SourceCodeZip": "Source code (zip)",
+	"ShowAssets": "Show assets",
+	"ShowText": "Show text",
+	"Assets": "Assets",
 	
 	// Issue events
 	"_was_merged": " was merged ",
@@ -259,6 +273,12 @@
 	"_unassignedSelf": " unassigned themself",
 	"_closedThisCompleted": " closed this as completed in ",
 	"_requestedChanges": " requested changes",
-	"_reviewed": " reviewed"
+	"_reviewed": " reviewed",
 	
+	// Alert messages
+	"BookmarkSaved": "Bookmark saved",
+	"ChooseNetwork_Alert": "Choose network access point",
+	
+	// end of file
+	"_": ""
 }

@@ -1,6 +1,6 @@
-Manifest-Version: 1.0
 MIDlet-Vendor: nnproject
 MIDlet-Version: 0.9.3
+Manifest-Version: 1.0
 MIDlet-Icon: /g.png
 MicroEdition-Configuration: CLDC-1.1
 MIDlet-1: GH2ME,/g.png,GH

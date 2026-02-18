@@ -100,10 +100,10 @@
 	"_commit": " коммит",
 	"_commits": " коммита",
 	"_commits2": " коммитов",
-	"_Bytes": " B",
-	"_KBytes": " KB",
-	"_MBytes": " MB",
-	"_GBytes": " GB",
+	"_Bytes": " B", // Untranslated
+	"_KBytes": " KB", // Untranslated
+	"_MBytes": " MB", // Untranslated
+	"_GBytes": " GB", // Untranslated
 	
 	// Commands TODO arrage
 	"Bookmarks": "Закладки",
@@ -114,7 +114,7 @@
 	"Open": "Откр.",
 	"ViewUser": "Откр. польз.",
 	"Show_Spoiler": "Показать",
-	"ViewRepository": "View repository",
+	"ViewRepository": "View repository", // Untranslated
 	"Followers": "Подписчики",
 	"Following": "Подписки",
 	"Repositories": "Репозитории",
@@ -123,19 +123,16 @@
 	"Tags": "Тэги",
 	"Forks": "Форки",
 	"Contributors": "Контрибьюторы",
-	"Stargazers": "Stargazers",
-	"Watchers": "Watchers",
-	"OpenParent": "Open parent",
-	"Issues": "Issues",
-	"Pulls": "Pulls",
-	"Commits": "Commits",
-	"SelectBranch": "Select branch",
-	"ShowOpen": "Show open",
-	"ShowClosed": "Show closed",
-	"ShowAll": "Show all",
-	"NextPage": "След. стр.",
-	"PrevPage": "Пред стр.",
-	"GoToPage_Cmd": "На стр...",
+	"Stargazers": "Stargazers", // Untranslated
+	"Watchers": "Watchers", // Untranslated
+	"OpenParent": "Open parent", // Untranslated
+	"Issues": "Issues", // Untranslated
+	"Pulls": "Pulls", // Untranslated
+	"Commits": "Commits", // Untranslated
+	"SelectBranch": "Select branch", // Untranslated
+	"ShowOpen": "Show open", // Untranslated
+	"ShowClosed": "Show closed", // Untranslated
+	"ShowAll": "Show all", // Untranslated
 	"Go_Dialog": "Открыть",
 	"SaveToBookmarks": "Сохр. в закладки",
 	"New_Bookmark": "Добавить закладку...",
@@ -147,50 +144,67 @@
 	"Accounts": "Аккаунты",
 	"Comment": "Комментировать",
 	"Send": "Отправить",
-	"Preview": "Preview",
-	"CreateIssue": "Create issue",
-	"Title": "Title",
+	"Preview": "Preview", // Untranslated
+	"CreateIssue": "Create issue", // Untranslated
+	"Title": "Title", // Untranslated
+	
+	// Dialog commands
 	"Next": "Дальше",
-	"GoToPage": "Перейти на",
-	"Home": "На дом. стр.",
-	"Done": "Готово",
 	"Ok": "Ок",
 	"Cancel": "Отмена",
 	
+	// PagedForm/Navigation
+	"NextPage": "След. стр.",
+	"PrevPage": "Пред стр.",
+	"GoToPage_Cmd": "На стр...",
+	"GoToPage": "Перейти на",
+	"Home": "На дом. стр.",
+	
 	// Main form
-	"URL_Main": "URL (user или user/repo)",
+	"URL_Main": "URL (user или user/repo)", // Untranslated
 	"YourProfile": "Ваш профиль",
 	"YourRepositories": "Ваши репозитории",
-	"YourStars": " Your stars",
+	"YourStars": " Your stars", // Untranslated
 	
 	// Settings
 	"Mode_API": "Режим",
-	"CustomAPIURL": "Custom API URL",
-	"GiteaAPIURL": "Gitea API URL",
-	"APIProxyURL": "API Proxy URL",
-	"BrowserProxyURL": "Browser Proxy URL",
+	"CustomAPIURL": "Custom API URL", // Untranslated
+	"GiteaAPIURL": "Gitea API URL", // Untranslated
+	"APIProxyURL": "API Proxy URL", // Untranslated
+	"BrowserProxyURL": "Browser Proxy URL", // Untranslated
 	"UseProxy": "Исп. прокси",
-	"OnlineResize": "Resize images online",
-	"LoadImages": "Load images",
+	"OnlineResize": "Resize images online", // Untranslated
+	"LoadImages": "Load images", // Untranslated
+	"NetworkAccess": "Сеть",
+	"MobileData": "Мобильные данные",
+	"WiFi": "Wi-Fi",
 	
 	// Auth
 	"ChooseAuthMethod": "Выберите метод авторизации",
 	"AutoOAuth": "Автоматический OAuth",
 	"ManualOAuth": "Ручной OAuth",
-	"PersonalToken": "Personal token",
+	"PersonalToken": "Personal token", // Untranslated
 	"Authorized": "Авторизация успешна",
-	"Authorize": "Authorize",
-	"Authorizing": "Authorizing",
+	"Authorize": "Authorize", // Untranslated
+	"Authorizing": "Authorizing", // Untranslated
 	"AuthFailed": "Авторизация не удалась",
+	"Done": "Готово",
 	
 	// About form
 	"About_Text": "Неофициальный клиент GitHub для J2ME устройств",
 	"Developer": "Разработчик",
 	"Loading": "Загрузка",
 	
-	// TODO arrange
-	"Type_Search": "Тип",
+	// User
+	"Blog_User": "Сайт",
+	"Location": "Местоположение",
+	"Stars": "Звезды",
+	
+	// Search
 	"Users": "Пользователи",
+	"Type_Search": "Тип",
+	
+	// Repository
 	"About_Repo": "Описание",
 	"Homepage_Repo": "Сайт",
 	"License": "Лицензия",
@@ -199,43 +213,43 @@
 	"Branches": "Ветки",
 	"DownloadZIP": "Скачать ZIP",
 	"PullRequests": "Пулл реквесты",
-	"Blog_User": "Сайт",
-	"SourceCodeZip": "Исходный код (zip)",
-	"ShowAssets": "Show assets",
-	"ShowText": "Show text",
-	"Assets": "Assets",
-	"_opened": " opened",
-	"_by": " ",
 	"_authored": " коммитнул ",
 	"_commited": " коммитнул ",
 	"_fork_": " (форк)",
 	"Updated": "Обновлено ",
-	"Location": "Местоположение",
 	"_private_": " (приват.)",
 	"_archive_": " (архив)",
 	"_privateFork_": " (прив. форк)",
 	"_privateArchive_": " (прив. архив)",
-	"Stars": "Звезды",
 	"Star": "Поставить звезду",
 	"Starred": "Убрать звезду",
-	"BookmarkSaved": "Закладка сохранена",
-	"BrowseSource": "View files",
-	"Readme": "Readme",
-	"Issue": "Issue",
-	"PullRequest": "Pull request",
-	"_closed_": " (closed)",
-	"_open_": " (open)",
-	"_draft_": " (draft)",
-	"_merged_": " (merged)",
+	"BrowseSource": "View files", // Untranslated
+	"Readme": "Readme", // Untranslated
+	
+	// Issues/Pulls
+	"_opened": " opened", // Untranslated
+	"_by": " ",
+	"Issue": "Issue", // Untranslated
+	"PullRequest": "Pull request", // Untranslated
+	"_closed_": " (closed)", // Untranslated
+	"_open_": " (open)", // Untranslated
+	"_draft_": " (draft)", // Untranslated
+	"_merged_": " (merged)", // Untranslated
+	
+	// Releases
+	"SourceCodeZip": "Исходный код (zip)",
+	"ShowAssets": "Show assets", // Untranslated
+	"ShowText": "Show text", // Untranslated
+	"Assets": "Assets", // Untranslated
 	
 	// Issue events
-	"_was_merged": " was merged ",
-	"_was_closed": " was closed ",
+	"_was_merged": " was merged ", // Untranslated
+	"_was_closed": " was closed ", // Untranslated
 	"_closedThis": " закрыл это ",
-	"_added": " added ",
-	"_opened2": " opened ",
-	"_commented": " commented ",
-	"_mergedCommit": " merged commit ",
+	"_added": " added ", // Untranslated
+	"_opened2": " opened ", // Untranslated
+	"_commented": " commented ", // Untranslated
+	"_mergedCommit": " merged commit ", // Untranslated
 	"_deletedBranch": " удалил ветку",
 	"_closedThisAsNotPlanned": " закрыл это как не запланированное",
 	"_mentionedThis": " упомянул это",
@@ -255,10 +269,16 @@
 	"_selfAssigned": " назначил самого себя",
 	"_requestedReview": " запросил оценку у",
 	"_selfRequestedReview": " запросил оценку у самого себя",
-	"_unassigned": " unassigned",
-	"_unassignedSelf": " unassigned themself",
+	"_unassigned": " unassigned", // Untranslated
+	"_unassignedSelf": " unassigned themself", // Untranslated
 	"_closedThisCompleted": " закрыл это как завершенное в ",
 	"_requestedChanges": " запросил изменения",
-	"_reviewed": " рассмотрел"
+	"_reviewed": " рассмотрел",
 	
+	// Alert messages
+	"BookmarkSaved": "Закладка сохранена",
+	"ChooseNetwork_Alert": "Выберите точку доступа",
+	
+	// end of file
+	"_": ""
 }

@@ -282,6 +282,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static ChoiceGroup proxyChoice;
 	private static ChoiceGroup modeChoice;
 	private static TextField customApiField;
+	private static ChoiceGroup networkChoice;
 
 	// search items
 	private static TextField searchField;
@@ -316,6 +317,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				|| checkClass("com.symbian.lcdjava.io.File");
 		useLoadingForm = !symbianJrt;
 		jsonStream = symbianJrt || !symbian;
+		
+		// platforms that probably stupport https
+		boolean b = System.getProperty("kemulator.mod.version") == null
+				&& System.getProperty("symbianhttpspatch") == null
+				&& !checkClass("javax.microedition.shell.MicroActivity");
+		
+		loadImages = b || symbianJrt;
+		useProxy = b;
 		
 		// load settings
 		try {
@@ -530,6 +539,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		
 		display.setCurrent(current = mainForm = f);
+		// show network access settings on blackberry
+		if (blackberry && blackberryNetwork == -1) {
+			commandAction(settingsCmd, current);
+			display(infoAlert(L[LChooseNetwork_Alert]), current);
+			return;
+		}
 		
 		start(RUN_THUMBNAILS, null);
 		
@@ -579,10 +594,25 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					proxyChoice.setSelectedIndex(1, useProxy);
 					proxyChoice.setSelectedIndex(2, onlineResize);
 					f.append(proxyChoice);
+
+					if (blackberry) {
+						networkChoice = new ChoiceGroup(L[LNetworkAccess], Choice.POPUP, new String[] {
+								L[LMobileData],
+								L[LWiFi]
+						}, null);
+						networkChoice.setSelectedIndex(blackberryNetwork == -1 ? 0 : blackberryNetwork, true);
+						networkChoice.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+						f.append(networkChoice);
+					}
 					
 					settingsForm = f;
 				}
 				display(settingsForm);
+				if (blackberry && blackberryNetwork == -1) {
+					try {
+						display.setCurrentItem(networkChoice);
+					} catch (Exception ignored) {}
+				}
 				return;
 			}
 			if (c == aboutCmd) {
@@ -739,6 +769,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				apiMode = modeChoice.getSelectedIndex();
 				if ((customApiUrl = customApiField.getString()).trim().length() == 0)
 					customApiUrl = null;
+
+				if (networkChoice != null)
+					blackberryNetwork = networkChoice.getSelectedIndex();
 				
 				try {
 					RecordStore.deleteRecordStore(SETTINGS_RECORDNAME);
