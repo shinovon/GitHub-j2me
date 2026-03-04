@@ -377,7 +377,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		} catch (Exception ignored) {}
 		
 		// load locale
-		(L = new String[250])[0] = "gh2me";
+		(L = new String[LLocaleStrings + 2])[0] = "gh2me";
 		try {
 			loadLocale(lang);
 		} catch (Exception e) {
@@ -1467,7 +1467,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				commandAction(searchCmd, item);
 				((TextField) item).setString(t.trim());
 			}
-			return;
+//			return;
 		}
 	}
 
@@ -1736,7 +1736,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					}
 					//noinspection BusyWait
 					Thread.sleep(200);
-					while (thumbsToLoad.size() > 0) {
+					while (thumbsToLoad.size() != 0) {
 						int i = 0;
 						Object[] o;
 						
@@ -1880,7 +1880,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				(t = new Thread(this)).start();
 				wait();
 			}
-		} catch (Exception e) {}
+		} catch (Exception ignored) {}
 		return t;
 	}
 
@@ -2927,6 +2927,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// region Misc utils
 
 	private static boolean checkClass(String s) {
+		//noinspection RedundantSuppression
 		try {
 			//noinspection ConstantValue // intellij doesn't know
 			return Class.forName(s) != null;

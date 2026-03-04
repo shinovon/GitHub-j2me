@@ -96,7 +96,6 @@ public class ReposOrUsersForm extends PagedForm {
 			s = new StringItem(null, j.getString("name"));
 			s.setFont(GH.medPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
-			s.addCommand(GH.openCmd);
 			s.setDefaultCommand(GH.mdLinkCmd);
 			s.setItemCommandListener(GH.midlet);
 			urls.put(s, j.getString("full_name"));

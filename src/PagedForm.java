@@ -81,7 +81,8 @@ public abstract class PagedForm extends GHForm {
 		int last = page;
 		try {
 			if (s[0] != null) {
-				if (more = s[0].indexOf("rel=\"next\"") != -1) {
+				//noinspection AssignmentUsedAsCondition
+				if (more = (s[0].indexOf("rel=\"next\"") != -1)) {
 					s = GH.split(s[0], ',');
 					for (int i = 0; i < s.length; ++i) {
 						if (s[i].indexOf("rel=\"last\"") != -1) {
