@@ -195,6 +195,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static Command yourProfileCmd;
 	private static Command yourReposCmd;
 	private static Command yourStarsCmd;
+	private static Command yourFeedCmd;
+	private static Command yourNotificationsCmd;
 
 	private static Command goCmd;
 	static Command downloadCmd;
@@ -401,6 +403,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		yourProfileCmd = new Command(L[LYourProfile], Command.ITEM, 1);
 		yourReposCmd = new Command(L[LYourRepositories], Command.ITEM, 1);
 		yourStarsCmd = new Command(L[LYourStars], Command.ITEM, 1);
+		yourFeedCmd = new Command("Feed", Command.ITEM, 1);
+		yourNotificationsCmd = new Command("Notifications", Command.ITEM, 1);
 		
 		goCmd = new Command(L[LGo], Command.ITEM, 1);
 		downloadCmd = new Command(L[LDownload], Command.ITEM, 1);
@@ -521,6 +525,18 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			
 			s = new StringItem(null, L[LYourProfile], StringItem.BUTTON);
 			s.setDefaultCommand(yourProfileCmd);
+			s.setItemCommandListener(this);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			f.append(s);
+
+			s = new StringItem(null, "Feed", StringItem.BUTTON);
+			s.setDefaultCommand(yourFeedCmd);
+			s.setItemCommandListener(this);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			f.append(s);
+
+			s = new StringItem(null, "Notifications", StringItem.BUTTON);
+			s.setDefaultCommand(yourNotificationsCmd);
 			s.setItemCommandListener(this);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			f.append(s);
@@ -749,6 +765,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new ReposOrUsersForm("user/repos?", L[LYourRepositories], "pushed", 1);
 				} else if (c == yourStarsCmd) {
 					f = new ReposOrUsersForm("user/starred?", L[LYourStars], null, 1);
+				} else if (c == yourFeedCmd) {
+					f = new EventsForm("Feed", "users/".concat(login).concat("/received_events?"));
+				} else if (c == yourNotificationsCmd) {
+					f = new NotificationsForm();
 				} else break a;
 				display(f);
 				start(RUN_LOAD_FORM, f);
