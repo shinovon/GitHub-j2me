@@ -3372,9 +3372,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							}
 							continue;
 						} else if (c <= ' ' && l <= ' ') {
-							if ((l == c) && (state[MD_SPACES]++ == 0 || state[MD_SPACES] == 4)) {
+							if ((l == c) && (state[MD_SPACES]++ == 0 || state[MD_SPACES] == 2 + 1)) {
 								state[MD_TAB] ++;
-								state[MD_SPACES] = 0;
+								if (state[MD_SPACES] != 1) state[MD_SPACES] = 0;
 							}
 							l = c;
 							continue;
@@ -3386,7 +3386,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 							state[MD_SPACES] = 0;
 							if (c == '&' && i + 1 != len) { // entity
 								switch (chars[i + 1]) {
-								case 'n': // nsbp;
+								case 'n': // nbsp;
 									if (i + 5 >= len) {
 										break;
 									}
@@ -3414,11 +3414,17 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									break;
 								case '#':
 									int k = i + 2;
+									boolean hex = chars[k] == 'x';
+									if (hex) ++k;
 									try {
 										//noinspection StatementWithEmptyBody
 										while (chars[++k] != ';' && k - i < 10);
 										if (k - i == 10) break;
-										c = (char) Integer.parseInt(new String(chars, i + 2, k - i - 2));
+										if (hex) {
+											c = (char) Integer.parseInt(new String(chars, i + 3, k - i - 3), 16);
+										} else {
+											c = (char) Integer.parseInt(new String(chars, i + 2, k - i - 2));
+										}
 										i = k;
 									} catch (Exception e) {
 										e.printStackTrace();
@@ -3426,6 +3432,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									break;
 								}
 							} else if (state[MD_ESCAPE] == 0) {
+								if ((c == '*' || c == '-') && chars[i + 1] == ' ' && state[MD_TAB] != 0) {
+									int tabs = state[MD_TAB];
+									while (tabs-- != 0) {
+										sb.append("  ");
+									}
+								}
+
 								switch (c) {
 								case '\t':
 									c = ' ';
@@ -4088,44 +4101,43 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (state[MD_GRAVE] != 0) {
 			face = Font.FACE_MONOSPACE;
 			style = Font.STYLE_BOLD;
-			size = Font.SIZE_SMALL;
 		} else {
 			face = state[MD_FONT_FACE];
 			style = state[MD_FONT_STYLE];
-			size = state[MD_FONT_SIZE];
-			if (state[MD_BOLD] != 0 || state[MD_HTML_BOLD] != 0) {
-				style |= Font.STYLE_BOLD;
-			}
-			if (state[MD_ITALIC] != 0 || state[MD_HTML_ITALIC] != 0) {
-				style |= Font.STYLE_ITALIC;
-			}
-			if (state[MD_HTML_BIG] != 0) {
-				size = state[MD_HTML_BIG] == 1 ? Font.SIZE_MEDIUM : Font.SIZE_LARGE;
-			}
-			// there is no strikethrough font in midp
-//			if (state[MD_STRIKE] != 0 || state[MD_HTML_STRIKE]) {
-//				style |= Font.STYLE_UNDERLINED;
-//			}
-			int header = state[MD_HEADER];
-			switch (header != 0 ? header : state[MD_HTML_HEADER]) {
-			case 1:
-				size = Font.SIZE_LARGE;
-				style |= Font.STYLE_BOLD;
-				break;
-			case 2:
-				size = Font.SIZE_MEDIUM;
-				style |= Font.STYLE_BOLD;
-				break;
-			case 3:
-				size = Font.SIZE_SMALL;
-				style |= Font.STYLE_BOLD;
-				break;
-			case 4:
-			case 5:
-			case 6:
-				size = Font.SIZE_SMALL;
-				break;
-			}
+		}
+		size = state[MD_FONT_SIZE];
+		if (state[MD_BOLD] != 0 || state[MD_HTML_BOLD] != 0) {
+			style |= Font.STYLE_BOLD;
+		}
+		if (state[MD_ITALIC] != 0 || state[MD_HTML_ITALIC] != 0) {
+			style |= Font.STYLE_ITALIC;
+		}
+		if (state[MD_HTML_BIG] != 0) {
+			size = state[MD_HTML_BIG] == 1 ? Font.SIZE_MEDIUM : Font.SIZE_LARGE;
+		}
+		// there is no strikethrough font in midp
+//		if (state[MD_STRIKE] != 0 || state[MD_HTML_STRIKE]) {
+//			style |= Font.STYLE_UNDERLINED;
+//		}
+		int header = state[MD_HEADER];
+		switch (header != 0 ? header : state[MD_HTML_HEADER]) {
+		case 1:
+			size = Font.SIZE_LARGE;
+			style |= Font.STYLE_BOLD;
+			break;
+		case 2:
+			size = Font.SIZE_MEDIUM;
+			style |= Font.STYLE_BOLD;
+			break;
+		case 3:
+			size = Font.SIZE_SMALL;
+			style |= Font.STYLE_BOLD;
+			break;
+		case 4:
+		case 5:
+		case 6:
+			size = Font.SIZE_SMALL;
+			break;
 		}
 		return getFont(face, style, size);
 	}
