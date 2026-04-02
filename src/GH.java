@@ -1507,7 +1507,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				try {
 					if (bookmarks == null) {
 						RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
-						bookmarks = JSONObject.parseArray(new String(r.getRecord(1), "UTF-8"));
+						bookmarks = JSONArray.parseArray(new String(r.getRecord(1), "UTF-8"));
 						r.closeRecordStore();
 					}
 					int l = bookmarks.size();
@@ -2172,7 +2172,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (bookmarks == null) {
 			try {
 				RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
-				bookmarks = JSONObject.parseArray(new String(r.getRecord(1), "UTF-8"));
+				bookmarks = JSONArray.parseArray(new String(r.getRecord(1), "UTF-8"));
 				r.closeRecordStore();
 			} catch (Exception e) {
 				bookmarks = new JSONArray(10);
