@@ -104,7 +104,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 					urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url")});
 					safeAppend(thread, s);
 				}
-			} else {
+			} else if (!j.isNull("zipball_url")) {
 				s = new StringItem(null, GH.L[LSourceCodeZip]);
 				s.setFont(GH.medPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
