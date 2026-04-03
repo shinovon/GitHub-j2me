@@ -158,17 +158,18 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				}
 			}
 		}
-		
-		s = new StringItem(null, GH.L[LSourceCodeZip]);
-		s.setFont(GH.medPlainFont);
-		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-		s.addCommand(GH.downloadCmd);
-		s.setDefaultCommand(GH.downloadCmd);
-		s.setItemCommandListener(this);
-		urls.put(s, zipball);
-		
-		if (i == -1) safeAppend(thread, s);
-		else safeInsert(thread, i + l, s);
+
+		if (zipball != null) {
+			s = new StringItem(null, GH.L[LSourceCodeZip]);
+			s.setFont(GH.medPlainFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setDefaultCommand(GH.downloadCmd);
+			s.setItemCommandListener(this);
+			urls.put(s, zipball);
+
+			if (i == -1) safeAppend(thread, s);
+			else safeInsert(thread, i + l, s);
+		}
 	}
 
 	public void commandAction(Command c, Item item) {
