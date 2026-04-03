@@ -95,7 +95,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static final String GITHUB_API_VERSION = "2026-03-10";
 	static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
 	static final String DEFAULT_PROXY_URL = "http://nnp.nnchan.ru/hproxy.php?";
-	static final String DEFAULT_BROWSE_PROXY_URL = "http://nnp.nnchan.ru/glype/browse.php?u=";
+	static final String DEFAULT_BROWSE_PROXY_URL = "http://nnp.nnchan.ru/hproxy.php?";
 
 	private static final String OAUTH_PORT = "8082";
 	// oauth constants, pls don't reuse
@@ -2259,6 +2259,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				url = "http://".concat(url);
 			} else if (useProxy && (url.startsWith(GITHUB_URL) || url.startsWith(GITHUB_API_URL))) {
 				url = browseProxyUrl.concat(url(url));
+			}
+			if (symbianJrt && System.getProperty("asd") != null && url.startsWith("http")) {
+				// workaround specifically for my e7 because "services" app doesn't work there
+				url = "nativeapp://application-uid=0x10008D39;content=4 " + url;
 			}
 			if (platformRequest(url)) notifyDestroyed();
 		} catch (Exception e) {
