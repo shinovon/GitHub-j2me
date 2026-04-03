@@ -320,7 +320,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		useLoadingForm = !symbianJrt;
 		jsonStream = symbianJrt || !symbian;
 		
-		// platforms that probably stupport https
+		// platforms that probably support https
 		boolean b = System.getProperty("kemulator.mod.version") == null
 				&& System.getProperty("symbianhttpspatch") == null
 				&& !checkClass("javax.microedition.shell.MicroActivity");
@@ -535,11 +535,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			f.append(s);
 
-			s = new StringItem(null, "Notifications", StringItem.BUTTON);
-			s.setDefaultCommand(yourNotificationsCmd);
-			s.setItemCommandListener(this);
-			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-			f.append(s);
+//			s = new StringItem(null, "Notifications", StringItem.BUTTON);
+//			s.setDefaultCommand(yourNotificationsCmd);
+//			s.setItemCommandListener(this);
+//			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+//			f.append(s);
 
 			s = new StringItem(null, L[LYourRepositories], StringItem.BUTTON);
 			s.setDefaultCommand(yourReposCmd);
@@ -1812,7 +1812,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					fileImg = Image.createImage("/file.png");
 					folderImg = Image.createImage("/folder.png");
 				}
-				Object r = api("repos/".concat(repo).concat("/contents").concat(path).concat("?ref=").concat(ref));
+				Object r = api("repos/" + repo + "/contents" + path + "?ref=" + ref);
 				
 				if (r instanceof JSONArray) {
 					List list = new List(path.concat(" - ").concat(repo), List.IMPLICIT);
@@ -2329,7 +2329,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		try {
 			// DELETE and PUT methods are not supported in midp, unless tls or http patch is used
 			if (method != null && useProxy) {
-				url = url.concat(";method=").concat(method);
+				url = url.concat(";method=".concat(method));
 				method = null;
 			}
 			hc = openHttpConnection(proxyUrl(url.startsWith("http") ? url : getApi().concat(url)));

@@ -168,13 +168,21 @@ public class EventsForm extends PagedForm {
 			} else if ("ReleaseEvent".equals(type)) {
 				// release
 
-				JSONObject actor = j.getObject("actor");
+//				JSONObject actor = j.getObject("actor");
+				String repo = j.getObject("repo").getString("name");
 
-				s = new StringItem(null, actor.getString("login"));
+//				s = new StringItem(null, actor.getString("login"));
+//				s.setFont(GH.smallPlainFont);
+//				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+//				s.setDefaultCommand(GH.userCmd);
+//				s.setItemCommandListener(GH.midlet);
+//				safeAppend(thread, s);
+				
+				s = new StringItem(null, repo);
 				s.setFont(GH.smallPlainFont);
-				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
-				s.setDefaultCommand(GH.userCmd);
+				s.setDefaultCommand(GH.repoCmd);
 				s.setItemCommandListener(GH.midlet);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 				safeAppend(thread, s);
 
 				s = new StringItem(null, " released");
@@ -186,8 +194,68 @@ public class EventsForm extends PagedForm {
 				s.setFont(GH.smallPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 				safeAppend(thread, s);
-
+				
+				try {
+					String tag = j.getObject("payload").getObject("release").getString("tag_name");
+					s = new StringItem(null, tag);
+					s.setFont(GH.medPlainFont);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+					s.addCommand(GH.mdLinkCmd);
+					s.setItemCommandListener(GH.midlet);
+					urls.put(s, repo + "/releases/tag/" + tag);
+					safeAppend(thread, s);
+				} catch (Exception ignored) {}
 				// TODO
+			} else if ("PushEvent".equals(type)) {
+				// push
+				
+				JSONObject actor = j.getObject("actor");
+				String commit = j.getObject("payload").getString("head");
+				String repo = j.getObject("repo").getString("name");
+				String ref = j.getObject("payload").getString("ref");
+				if (ref.startsWith("refs/heads/")) ref = ref.substring(11);
+
+				s = new StringItem(null, actor.getString("login"));
+				s.setFont(GH.smallPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+				s.setDefaultCommand(GH.userCmd);
+				s.setItemCommandListener(GH.midlet);
+				safeAppend(thread, s);
+
+				s = new StringItem(null, " pushed ");
+				s.setFont(GH.smallPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT);
+				safeAppend(thread, s);
+				
+				s = new StringItem(null, commit.substring(0, 7));
+				s.setFont(GH.smallPlainFont);
+				urls.put(s, repo + "/commit/" + commit);
+				s.setDefaultCommand(GH.mdLinkCmd);
+				s.setItemCommandListener(GH.midlet);
+				s.setLayout(Item.LAYOUT_LEFT);
+				safeAppend(thread, s);
+				
+				s = new StringItem(null, " to ");
+				s.setFont(GH.smallPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT);
+				safeAppend(thread, s);
+				
+				s = new StringItem(null, ref);
+				s.setFont(GH.smallPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+				safeAppend(thread, s);
+
+				s = new StringItem(null, GH.localizeDate(j.getString("created_at"), 1));
+				s.setFont(GH.smallPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+				safeAppend(thread, s);
+
+				s = new StringItem(null, repo);
+				s.setFont(GH.medPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER);
+				s.setDefaultCommand(GH.repoCmd);
+				s.setItemCommandListener(GH.midlet);
+				safeAppend(thread, s);
 			} else {
 				append("\nUndefined event: " + type + "\n");
 //				continue;
