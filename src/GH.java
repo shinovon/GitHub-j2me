@@ -94,8 +94,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static final String GITHUB_API_URL = "https://api.github.com/";
 	private static final String GITHUB_API_VERSION = "2026-03-10";
 	static final String GITEA_DEFAULT_API_URL = "https://gitea.com/api/v1/";
-	static final String DEFAULT_PROXY_URL = "http://nnp.nnchan.ru/hproxy.php?";
-	static final String DEFAULT_BROWSE_PROXY_URL = "http://nnp.nnchan.ru/hproxy.php?";
+	static final String DEFAULT_PROXY_URL = "http://nnproject.cc/hproxy.php?";
+	static final String DEFAULT_BROWSE_PROXY_URL = "http://nnproject.cc/hproxy.php?";
 
 	private static final String OAUTH_PORT = "8082";
 	// oauth constants, pls don't reuse
