@@ -3802,8 +3802,20 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 									l = c;
 									state[MD_LENGTH] ++;
 									continue;
+								case '\\':
+								case '>':
+								case '*':
+								case '_':
+								case '~':
+								case '`':
+								case '[':
+								case ']':
+								case '(':
+								case ')':
 								case '#':
 								case '@':
+									break;
+								default:
 									sb.append('\\');
 									break;
 								}
