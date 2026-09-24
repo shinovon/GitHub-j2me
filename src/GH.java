@@ -1526,7 +1526,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		if (c == exitCmd) {
-			notifyDestroyed();
+			destroyApp(true);
 		}
 	}
 
@@ -2646,7 +2646,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				// workaround specifically for my e7 because "services" app doesn't work there
 				url = "nativeapp://application-uid=0x10008D39;content=4 " + url;
 			}
-			if (platformRequest(url)) notifyDestroyed();
+			if (platformRequest(url)) destroyApp(true);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
