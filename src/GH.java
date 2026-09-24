@@ -2837,6 +2837,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			try {
 				if (!downloading) throw cancelException;
 				HttpConnection hc = (HttpConnection) openHttpConnection(url);
+				
+				if (apiMode == API_GITHUB) {
+					if (githubAccessToken != null)
+						hc.setRequestProperty("Authorization", "Bearer ".concat(githubAccessToken));
+				} else {
+					if (giteaAccessToken != null)
+						hc.setRequestProperty("Authorization", "Bearer ".concat(giteaAccessToken));
+				}
+
 				try {
 					InputStream in = hc.openInputStream();
 					try {
