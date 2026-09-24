@@ -147,6 +147,8 @@
 	"Preview": "Preview",
 	"CreateIssue": "Create issue",
 	"Title": "Title",
+	"SaveHere": "Save here",
+	"Locate": "Locate",
 	
 	// Dialog commands
 	"Next": "Next",
@@ -159,6 +161,10 @@
 	"GoToPage_Cmd": "Go to page...",
 	"GoToPage": "Go to page",
 	"Home": "Home",
+
+	// Loading states
+	"Loading": "Loading",
+	"Downloading": "Downloading",
 	
 	// Main form
 	"URL_Main": "URL (user or user/repo)",
@@ -178,6 +184,11 @@
 	"NetworkAccess": "Network access",
 	"MobileData": "Data",
 	"WiFi": "Wi-Fi",
+	"DownloadPath": "Download path",
+	"DownloadMethod": "Download method",
+	"AlwaysAsk": "Always ask",
+	"InApp": "In app",
+	"WithBrowser": "With browser",
 	
 	// Auth
 	"ChooseAuthMethod": "Choose authorization method",
@@ -193,7 +204,6 @@
 	// About form
 	"About_Text": "Unofficial GitHub browser client for J2ME",
 	"Developer": "Developer",
-	"Loading": "Loading",
 	
 	// User
 	"Blog_User": "Web",
@@ -278,6 +288,11 @@
 	// Alert messages
 	"BookmarkSaved": "Bookmark saved",
 	"ChooseNetwork_Alert": "Choose network access point",
+	"DownloadCanceled_Alert": "Download canceled",
+	"DownloadedTo": "Downloaded to ",
+	"ChooseDownloadMethod_Alert": "Choose download method",
+	"RewriteFile_Alert": "File already exists, overwrite?",
+	"DownloadFailed_Alert": "Failed to download file",
 	
 	// end of file
 	"_": ""

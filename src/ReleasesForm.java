@@ -111,7 +111,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				s.addCommand(GH.downloadCmd);
 				s.setDefaultCommand(GH.downloadCmd);
 				s.setItemCommandListener(this);
-				urls.put(s, j.getString("zipball_url"));
+				urls.put(s, new String[] { j.getString("zipball_url"), null, "0" });
 				safeAppend(thread, s);
 			}
 			
@@ -146,7 +146,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.downloadCmd);
 			s.setItemCommandListener(this);
-			urls.put(s, asset.getString("browser_download_url"));
+			urls.put(s, new String[] { asset.getString("browser_download_url"), asset.getString("name"), Integer.toString(size) });
 			
 			if (i == -1) safeAppend(thread, s);
 			else {
@@ -165,7 +165,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.downloadCmd);
 			s.setItemCommandListener(this);
-			urls.put(s, zipball);
+			urls.put(s, new String[] { zipball, null, "0" });
 
 			if (i == -1) safeAppend(thread, s);
 			else safeInsert(thread, i + l, s);
@@ -175,7 +175,8 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 	public void commandAction(Command c, Item item) {
 		if (urls == null) return;
 		if (c == GH.downloadCmd) {
-			GH.midlet.browse((String) urls.get(item));
+			String[] p = (String[]) urls.get(item);
+			GH.midlet.downloadFile(p[0], p[1], p[2]);
 			return;
 		}
 		if (c == GH.spoilerCmd) {

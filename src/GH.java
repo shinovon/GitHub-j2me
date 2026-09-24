@@ -23,17 +23,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Hashtable;
-import java.util.Random;
-import java.util.Vector;
+import java.util.*;
 
 import javax.microedition.io.Connection;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 import javax.microedition.io.ServerSocketConnection;
 import javax.microedition.io.StreamConnection;
+import javax.microedition.io.file.FileConnection;
+import javax.microedition.io.file.FileSystemRegistry;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Choice;
@@ -77,6 +75,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final int RUN_THUMBNAILS = 8;
 	static final int RUN_OPEN_PATH = 9;
 	static final int RUN_POST_COMMENT = 10;
+	static final int RUN_DOWNLOAD_FILE = 11;
 
 	// api modes
 	static final int API_GITHUB = 0;
@@ -161,18 +160,25 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static boolean useLoadingForm;
 	private static boolean jsonStream = true;
 	static int blackberryNetwork = -1; // -1: undefined, 0: data, 1: wifi
+	static int downloadMethod; // 0 - always ask, 1 - in app, 2 - browser
+	static String downloadPath;
+	private static String lastDownloadPath;
+
+	private static boolean needWriteConfig;
 
 	// platform
 	static boolean symbianJrt;
 	public static String encoding = "UTF-8";
 	static boolean blackberry;
 	static boolean symbian;
+	static boolean series40;
 
 	// endregion Settings
 
 	// source browser
 	private static String repo; // also used as url by posting
 	private static String ref; // also used as title by posting
+	private static boolean inSourceBrowser;
 
 	private static Image fileImg;
 	private static Image folderImg;
@@ -180,6 +186,20 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	// bookmarks
 	private static JSONArray bookmarks;
 	private static int movingBookmark = -1;
+
+	// file picker
+	private static Vector rootsList;
+	private static int fileMode; // 0 - select directory for saving, 1 - select file for upload
+
+	// downloader
+	private static String downloadCurrentPath;
+	private static String downloadedPath;
+	private static String[] downloadFile;
+	private static Displayable downloadReturn;
+	static boolean downloading;
+
+	static int confirmationTask;
+	static Object confirmationParam;
 
 	// region Commands
 
@@ -258,12 +278,20 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	static Command okCmd;
 	static Command cancelCmd;
+	static Command downloadInappCmd;
+	static Command downloadBrowserCmd;
+	static Command cancelDownloadCmd;
+	static Command okDownloadCmd;
+	static Command openDownloadedCmd;
+	static Command confirmCmd;
 
 	static Command commentCmd;
 	static Command sendCmd;
 	static Command previewCmd;
 	static Command createIssueCmd;
 	static Command nextCmd;
+
+	private static Command downloadPathCmd;
 
 	// endregion Commands
 
@@ -285,6 +313,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	private static ChoiceGroup modeChoice;
 	private static TextField customApiField;
 	private static ChoiceGroup networkChoice;
+	private static ChoiceGroup downloadMethodChoice;
+	private static TextField downloadPathField;
 
 	// search items
 	private static TextField searchField;
@@ -296,7 +326,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	// region MIDlet
 
-	protected void destroyApp(boolean unconditional) {}
+	protected void destroyApp(boolean unconditional) {
+		if (needWriteConfig) {
+			try {
+				writeConfig();
+			} catch (Throwable ignored) {}
+		}
+		notifyDestroyed();
+	}
 
 	protected void pauseApp() {}
 
@@ -317,16 +354,23 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				|| System.getProperty("com.symbian.default.to.suite.icon") != null
 				|| checkClass("com.symbian.midp.io.protocol.http.Protocol")
 				|| checkClass("com.symbian.lcdjava.io.File");
+
+		if (checkClass("com.nokia.mid.impl.isa.jam.Jam")) {
+			series40 = true;
+		}
+
 		useLoadingForm = !symbianJrt;
 		jsonStream = symbianJrt || !symbian;
-		
-		// platforms that probably support https
-		boolean b = System.getProperty("kemulator.mod.version") == null
-				&& System.getProperty("symbianhttpspatch") == null
-				&& !checkClass("javax.microedition.shell.MicroActivity");
-		
-		loadImages = b || symbianJrt;
-		useProxy = b;
+
+		{
+			// platforms that probably support https
+			boolean b = System.getProperty("kemulator.mod.version") == null
+					&& System.getProperty("symbianhttpspatch") == null
+					&& !checkClass("javax.microedition.shell.MicroActivity");
+
+			loadImages = b || symbianJrt;
+			useProxy = b;
+		}
 		
 		// load settings
 		try {
@@ -345,6 +389,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			loadImages = j.getBoolean("loadImages", loadImages);
 			previewFiles = j.getBoolean("previewFiles", previewFiles);
 			blackberryNetwork = j.getInt("blackberryNetwork", blackberryNetwork);
+			downloadMethod = j.getInt("downloadMethod", downloadMethod);
+			downloadPath =  j.getString("downloadPath", downloadPath);
+			lastDownloadPath =  j.getString("lastDownloadPath", lastDownloadPath);
 		} catch (Exception ignored) {}
 		
 		// load github auth
@@ -464,12 +511,20 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 		okCmd = new Command(L[LOk], Command.OK, 1);
 		cancelCmd = new Command(L[LCancel], Command.CANCEL, 2);
+		downloadInappCmd = new Command(L[LInApp], Command.OK, 0);
+		downloadBrowserCmd = new Command(L[LWithBrowser], Command.CANCEL, 1);
+		cancelDownloadCmd = new Command(L[LCancel], Command.CANCEL, 1);
+		okDownloadCmd = new Command(L[LOk], Command.CANCEL, 1);
+		openDownloadedCmd = new Command(L[LOpen], Command.SCREEN, 2);
+		confirmCmd = new Command(L[LOk], Command.OK, 1);
 		
 		commentCmd = new Command(L[LComment], Command.SCREEN, 4);
 		sendCmd = new Command(L[LSend], Command.OK, 1);
 		previewCmd = new Command(L[LPreview], Command.SCREEN, 1);
 		createIssueCmd = new Command(L[LCreateIssue], Command.SCREEN, 7);
 		nextCmd = new Command(L[LNext], Command.OK, 1);
+
+		downloadPathCmd = new Command(L[LLocate], Command.ITEM, 1);
 		
 		loadingForm = new Form(L[Lgh2me]);
 		loadingForm.append(L[LLoading]);
@@ -586,6 +641,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					Form f = new Form(L[LSettings]);
 					f.addCommand(backCmd);
 					f.setCommandListener(this);
+
+					// api
 					
 					modeChoice = new ChoiceGroup(L[LMode_API], ChoiceGroup.POPUP, new String[] {
 							"GitHub", "Gitea", /* "GitLab" */
@@ -596,6 +653,28 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					customApiField = new TextField(L[LGiteaAPIURL],
 							customApiUrl == null ? GITEA_DEFAULT_API_URL : customApiUrl, 200, TextField.URL);
 					f.append(customApiField);
+
+					// downloads
+					downloadMethodChoice = new ChoiceGroup(L[LDownloadMethod], Choice.POPUP, new String[] {
+							L[LAlwaysAsk],
+							L[LInApp],
+							L[LWithBrowser]
+					}, null);
+					downloadMethodChoice.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+					downloadMethodChoice.setSelectedIndex(downloadMethod, true);
+					f.append(downloadMethodChoice);
+
+					downloadPathField = new TextField(L[LDownloadPath], downloadPath, 500, TextField.ANY);
+					downloadPathField.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+					f.append(downloadPathField);
+
+					StringItem s = new StringItem(null, "...", Item.BUTTON);
+					s.setDefaultCommand(downloadPathCmd);
+					s.setItemCommandListener(this);
+					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
+					f.append(s);
+
+					// proxy
 					
 					proxyField = new TextField(L[LAPIProxyURL], proxyUrl, 200, TextField.NON_PREDICTIVE);
 					f.append(proxyField);
@@ -610,6 +689,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					proxyChoice.setSelectedIndex(1, useProxy);
 					proxyChoice.setSelectedIndex(2, onlineResize);
 					f.append(proxyChoice);
+
+					// network
 
 					if (blackberry) {
 						networkChoice = new ChoiceGroup(L[LNetworkAccess], Choice.POPUP, new String[] {
@@ -792,33 +873,24 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 				if (networkChoice != null)
 					blackberryNetwork = networkChoice.getSelectedIndex();
-				
+
+				downloadMethod = downloadMethodChoice.getSelectedIndex();
+				downloadPath = downloadPathField.getString();
+
 				try {
-					RecordStore.deleteRecordStore(SETTINGS_RECORDNAME);
-				} catch (Exception ignored) {}
-				try {
-					JSONObject j = new JSONObject();
-					j.put("proxy", proxyUrl);
-					j.put("useProxy", useProxy);
-					j.put("browseProxy", browseProxyUrl);
-					j.put("apiMode", apiMode);
-					j.put("customApiUrl", customApiUrl);
-					j.put("lang", lang);
-					j.put("noFormat", noFormat);
-					j.put("onlineResize", onlineResize);
-					j.put("loadImages", loadImages);
-					j.put("previewFiles", previewFiles);
-					j.put("blackberryNetwork", blackberryNetwork);
-					
-					byte[] b = j.toString().getBytes("UTF-8");
-					RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
-					r.addRecord(b, 0, b.length);
-					r.closeRecordStore();
+					writeConfig();
 				} catch (Exception ignored) {}
 				
 				if (prevApiMode != apiMode) {
 					start(RUN_VALIDATE_AUTH, null);
 				} else display(mainForm, true);
+				return;
+			}
+			if (c == downloadPathCmd) {
+				downloadFile = null;
+				try {
+					openFilePicker(downloadPath, 0);
+				} catch (Throwable ignored) {}
 				return;
 			}
 			return;
@@ -1093,9 +1165,23 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				return;
 			}
 			if (c == downloadCmd) {
-				browse(getApi().concat("repos/").concat(((RepoForm) d).url)
-						.concat(apiMode == API_GITEA ? "/archive/" : "/zipball/")
-						.concat(((RepoForm) d).selectedBranch).concat(apiMode == API_GITEA ? ".zip" : ""));
+				StringBuffer sb = new StringBuffer(getApi());
+				sb.append("repos/")
+				.append(((RepoForm) d).url)
+				.append(apiMode == API_GITEA ? "/archive/" : "/zipball/")
+				.append(((RepoForm) d).selectedBranch);
+				if (apiMode == API_GITEA) {
+					sb.append(".zip");
+				}
+				String url = sb.toString();
+
+				sb.setLength(0);
+				sb.append(((RepoForm) d).url.substring((((RepoForm) d).url).indexOf('/') + 1));
+				sb.append('-');
+				sb.append(((RepoForm) d).selectedBranch);
+				sb.append(".zip");
+
+				downloadFile(url, sb.toString(), "0");
 				return;
 			}
 			if (c == forkCmd) {
@@ -1225,7 +1311,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// FileForm commands
 		if (d instanceof FileForm) {
 			if (c == downloadCmd) {
-				browse(((FileForm) d).downloadUrl);
+				String name = ((FileForm) d).path;
+				int i;
+				if ((i = name.lastIndexOf('/')) != -1) {
+					name = name.substring(i + 1);
+				}
+				downloadFile(((FileForm) d).downloadUrl, name, Long.toString(((FileForm) d).size));
 				return;
 			}
 		}
@@ -1298,15 +1389,48 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			String name = ((List) d).getString(i);
 			String path = d.getTitle();
 
-			path = path.substring(0, path.lastIndexOf(' ') - 2);
-			if ("/".equals(path)) path = "";
-			path = path.concat("/").concat(url(name));
-			if (dir) {
-				start(RUN_OPEN_PATH, path);
+			if (inSourceBrowser) {
+				path = path.substring(0, path.lastIndexOf(' ') - 2);
+				if ("/".equals(path)) path = "";
+				path = path.concat("/").concat(url(name));
+				if (dir) {
+					start(RUN_OPEN_PATH, path);
+				} else {
+					Form f = new FileForm(null, null, path, repo, ref);
+					display(f);
+					start(RUN_LOAD_FORM, f);
+				}
 			} else {
-				Form f = new FileForm(null, null, path, repo, ref);
-				display(f);
-				start(RUN_LOAD_FORM, f);
+				// file picker
+				if ("/".equals(path)) {
+					path = "";
+				} else if (L[LBack].equals(name) && i == 0) {
+					path = path.substring(0, path.lastIndexOf('/', path.lastIndexOf('/') - 1) + 1);
+
+					commandAction(backCmd, d);
+					openFilePicker(path, fileMode);
+					return;
+				}
+
+				if (dir) {
+					openFilePicker(path.concat(name).concat("/"), fileMode);
+					return;
+				}
+
+				if (fileMode == 1) {
+					// file selected
+				} else {
+					// folder selected
+					if (downloadFile == null) {
+						// default download path selected in settings
+						downloadPathField.setString(lastDownloadPath = path);
+						goBackTo(settingsForm);
+					} else if (!downloading) {
+						// download
+						start(RUN_DOWNLOAD_FILE, downloadCurrentPath = lastDownloadPath = path);
+					}
+				}
+				needWriteConfig = true;
 			}
 			return;
 		}
@@ -1328,6 +1452,47 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else return;
 			
 			addBookmark(s, d);
+			return;
+		}
+		{ // download dialog
+			if (c == downloadInappCmd) {
+				downloadContinue(1);
+				return;
+			}
+			if (c == downloadBrowserCmd) {
+				display(current);
+				downloadContinue(2);
+				return;
+			}
+			if (c == cancelDownloadCmd) {
+				downloading = false;
+				if (confirmationTask == RUN_DOWNLOAD_FILE) {
+					c = backCmd;
+				} else {
+					return;
+				}
+			}
+			if (c == okDownloadCmd) {
+				display(current);
+				if (current instanceof List) {
+					commandAction(backCmd, current);
+				}
+				return;
+			}
+			if (c == openDownloadedCmd) {
+				browse(downloadedPath);
+				return;
+			}
+		}
+		if (c == confirmCmd) {
+			commandAction(backCmd, d);
+			if ((confirmationTask & 0x100) != 0) {
+				display(loadingAlert(L[LLoading]), current);
+			}
+			start(confirmationTask & 0xFF, confirmationParam);
+
+			confirmationTask = 0;
+			confirmationParam = null;
 			return;
 		}
 		if (c == backCmd || c == cancelCmd) {
@@ -1826,7 +1991,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						// TODO pass download_url
 						list.append(j.getString("name"), "dir".equals(j.getString("type")) ? folderImg : fileImg);
 					}
-					
+
+					inSourceBrowser = true;
 					display(list);
 				} else {
 					FileForm f = new FileForm(null, null, path, repo, ref);
@@ -1864,6 +2030,49 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} catch (Exception e) {
 				display(errorAlert(e.toString()), current);
 			}
+			break;
+		}
+		case RUN_DOWNLOAD_FILE: {
+			downloading = true;
+			String downloadPath = (String) param;
+			String url = downloadFile[0];
+			String name = downloadFile[1];
+			int size = downloadFile[2] == null ? 0 : Integer.parseInt(downloadFile[2]);
+
+			Alert alert = new Alert(name);
+			alert.setString(L[LLoading]);
+			alert.setIndicator(new Gauge(null, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));
+			alert.addCommand(cancelDownloadCmd);
+			alert.setCommandListener(this);
+			alert.setTimeout(Alert.FOREVER);
+			display(alert, current);
+
+			String error;
+			try {
+				if (!downloadPath.endsWith("/")) downloadPath = downloadPath.concat("/");
+
+				downloadDocument(url,
+						"file:///".concat(downloadPath.concat(name)),
+						alert,
+						null,
+						size,
+						true
+				);
+				return;
+			} catch (Exception e) {
+				if (e == cancelException) {
+					display(alert(null, L[LDownloadCanceled_Alert], AlertType.WARNING), current);
+					break;
+				}
+				// failed to open file
+				e.printStackTrace();
+				error = e.toString();
+			} finally {
+				downloading = false;
+			}
+
+			display(errorAlert(L[LDownloadFailed_Alert] + " \n" + error), current);
+
 			break;
 		}
 		}
@@ -2079,6 +2288,20 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	// region Display logic
 
+	// jump back at history, discarding everything after
+	static void goBackTo(Displayable d) {
+		synchronized (formHistory) {
+			int i = formHistory.size();
+			while (i-- != 0) {
+				if (formHistory.elementAt(i) == d) {
+					break;
+				}
+				formHistory.removeElementAt(i);
+			}
+		}
+		display(d, true);
+	}
+
 	private static int getWidth() {
 		return mainForm.getWidth();
 	}
@@ -2124,6 +2347,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		Displayable p = display.getCurrent();
 		if (p == loadingForm) p = current;
+
 		display.setCurrent(current = d);
 		if (p == null || p == d) return;
 		
@@ -2199,6 +2423,156 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		display(infoAlert(L[LBookmarkSaved]), d);
 	}
 
+	static void openFilePicker(String path, int mode) {
+		inSourceBrowser = false;
+		fileMode = mode;
+		if (path == null || path.length() == 0) path = "/";
+		display(loadingAlert(L[LLoading]), current);
+		try {
+			if (fileImg == null) {
+				fileImg = Image.createImage("/file.png");
+				folderImg = Image.createImage("/folder.png");
+			}
+
+			List list = new List(path, List.IMPLICIT);
+			list.addCommand(cancelCmd);
+			list.addCommand(List.SELECT_COMMAND);
+			list.setSelectCommand(List.SELECT_COMMAND);
+			list.setCommandListener(midlet);
+
+			for (;;) {
+				if ("/".equals(path)) {
+					list.setTitle("/");
+					// roots
+					if (rootsList == null) {
+						rootsList = new Vector();
+						Enumeration roots = FileSystemRegistry.listRoots();
+						while (roots.hasMoreElements()) {
+							String s = (String) roots.nextElement();
+							if (s.startsWith("file:///")) s = s.substring("file:///".length());
+							rootsList.addElement(s);
+						}
+					}
+
+					int l = rootsList.size();
+					for (int i = 0; i < l; i++) {
+						String s = (String) rootsList.elementAt(i);
+						if (s.startsWith("file:///")) s = s.substring("file:///".length());
+						if (s.endsWith("/")) s = s.substring(0, s.length() - 1);
+						list.append(s, folderImg);
+					}
+					break;
+				} else {
+					list.append(L[LBack], null);
+					if (mode == 0) {
+						list.append(L[LSaveHere], null);
+					}
+					try {
+						FileConnection fc = (FileConnection) Connector.open("file:///".concat(path));
+						try {
+							Enumeration en = fc.list();
+							while (en.hasMoreElements()) {
+								String s = (String) en.nextElement();
+								if (s.endsWith("/")) {
+									list.append(s.substring(0, s.length() - 1), folderImg);
+								} else if (mode != 0) {
+									if (mode == 2
+											&& !s.endsWith(".jpg") && !s.endsWith(".jpeg")
+											&& !s.endsWith(".png")) {
+										continue;
+									}
+									list.append(s, fileImg);
+								}
+							}
+						} finally {
+							fc.close();
+						}
+						break;
+					} catch (IOException e) {
+						// directory is inaccessible, open roots instead
+						list.deleteAll();
+						path = "/";
+//						continue;
+					}
+				}
+			}
+			display(list);
+		} catch (Exception e) {
+			display(errorAlert(e.toString()), current);
+			e.printStackTrace();
+		}
+	}
+
+	void downloadFile(String url, String fileName, String size) {
+		if (downloading) return;
+		downloadReturn = current;
+
+		if (fileName == null) {
+			fileName = url;
+			int i;
+			if ((i = fileName.lastIndexOf('/')) != -1) {
+				fileName = fileName.substring(i + 1);
+			}
+			if (fileName.indexOf('.') == -1) {
+				// assume zipball
+				fileName = fileName.concat(".zip");
+			}
+		}
+
+		downloadFile = new String[] { url, fileName, size };
+		file: {
+			if (/*fileName != null && */downloadMethod != 2) {
+				if (fileName.endsWith(".jar") || fileName.endsWith(".jad")) {
+					if (downloadMethod == 1) {
+						// .jar -> .jar0
+						if (System.getProperty("forcedomain") == null)
+							downloadFile[1] = fileName.concat("0");
+					} else break file;
+				} else if (downloadMethod == 0) {
+					Alert a = new Alert(fileName);
+					a.setString(L[LChooseDownloadMethod_Alert]);
+					a.addCommand(downloadInappCmd);
+					a.addCommand(downloadBrowserCmd);
+					a.setCommandListener(this);
+					display(a, current);
+					return;
+				}
+				downloadContinue(1);
+				return;
+			}
+		}
+		downloadContinue(2);
+	}
+
+	void downloadContinue(int state) {
+		if (downloading) return;
+		try {
+			Class.forName("javax.microedition.io.file.FileConnection");
+			if (state == 1) {
+				if (downloadPath == null || isStringEmpty(downloadPath, true)) {
+					openFilePicker(lastDownloadPath, 0);
+				} else {
+					start(RUN_DOWNLOAD_FILE, downloadCurrentPath = downloadPath);
+				}
+				return;
+			}
+		} catch (Throwable ignored) {
+			// no jsr 75
+		}
+		browse(downloadFile[0]);
+	}
+
+	static void confirm(int task, Object param, String title, String text) {
+		confirmationTask = task;
+		confirmationParam = param;
+
+		Alert d = alert(title, text, AlertType.WARNING);
+		d.addCommand(cancelCmd);
+		d.addCommand(confirmCmd);
+		d.setCommandListener(midlet);
+		display(d, current);
+	}
+
 	static Alert errorAlert(String text) {
 		Alert a = new Alert("");
 		a.setType(AlertType.ERROR);
@@ -2215,8 +2589,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return a;
 	}
 
+	static Alert alert(String title, String text, AlertType type) {
+		Alert a = new Alert(title == null ? (symbian ? L[Lgh2me] : "") : title);
+		a.setType(type);
+		a.setString(text);
+		a.setTimeout(type == AlertType.ERROR ? 3000 : 1500);
+		return a;
+	}
+
 	private static Alert loadingAlert(String s) {
-		Alert a = new Alert("", s, null, null);
+		Alert a = new Alert(symbian ? L[Lgh2me] : "", s == null ? L[LLoading] : s, null, null);
 		a.setCommandListener(midlet);
 		a.addCommand(Alert.DISMISS_COMMAND);
 		a.setIndicator(new Gauge(null, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));
@@ -2422,6 +2804,112 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 		}
 		return res;
+	}
+
+	private static void downloadDocument(String url, String dest, Alert alert, Gauge gauge, int size, boolean chat) throws Exception {
+		downloading = true;
+		FileConnection fc = (FileConnection) Connector.open(dest);
+		try {
+			if (!fc.exists()) fc.create();
+			else if (chat && downloadCurrentPath != null) {
+				// file already exists, ask overwrite permission
+				confirmationTask = RUN_DOWNLOAD_FILE;
+				confirmationParam = downloadCurrentPath;
+				downloadCurrentPath = null;
+
+//				if (threadUnsafeUI) {
+				alert = new Alert(alert.getTitle());
+				alert.setCommandListener(midlet);
+				alert.setTimeout(Alert.FOREVER);
+//				} else {
+//					alert.setIndicator(null);
+//				}
+				alert.setString(L[LRewriteFile_Alert]);
+				alert.addCommand(confirmCmd);
+				alert.addCommand(cancelDownloadCmd);
+				display(alert, current);
+				return;
+			} else {
+				fc.delete();
+				fc.create();
+			}
+			OutputStream out = fc.openOutputStream();
+			try {
+				if (!downloading) throw cancelException;
+				HttpConnection hc = (HttpConnection) openHttpConnection(url);
+				try {
+					InputStream in = hc.openInputStream();
+					try {
+						if (size <= 0) {
+							size = (int) hc.getLength();
+						}
+						if (size > 0) {
+							if (gauge == null) {
+								if (blackberry) {
+									gauge = alert.getIndicator();
+									gauge.setMaxValue(100);
+									gauge.setValue(0);
+								} else if (alert != null) {
+									alert.setIndicator(gauge = new Gauge(null, false, 100, 0));
+								}
+							}
+						} else {
+							gauge = null;
+						}
+						if (alert != null) alert.setString(L[LDownloading]);
+
+						byte[] buf = new byte[4096];
+						int readTotal = 0;
+						int read;
+						int c = 0;
+						while ((read = in.read(buf)) != -1) {
+							out.write(buf, 0, read);
+							if (gauge != null && (c++ & 3) == 0) {
+								gauge.setValue(Math.min((int) ((readTotal * 100) / size), 100));
+							}
+							if (!downloading) throw cancelException;
+							readTotal += read;
+						}
+
+						// done
+						if (chat) {
+							downloadedPath = dest;
+							display(downloadReturn);
+							if (alert != null) {
+//								if (threadUnsafeUI) {
+								alert = new Alert(alert.getTitle());
+								alert.setCommandListener(midlet);
+								alert.setTimeout(Alert.FOREVER);
+//								} else {
+//									alert.setIndicator(null);
+//								}
+								alert.addCommand(okDownloadCmd);
+								if (!series40) alert.addCommand(openDownloadedCmd);
+//								alert.removeCommand(cancelDownloadCmd);
+								alert.setString(L[LDownloadedTo] + dest);
+								display(alert, current);
+							}
+						}
+					} finally {
+						try {
+							in.close();
+						} catch (Exception ignored) {}
+					}
+				} finally {
+					try {
+						hc.close();
+					} catch (Exception ignored) {}
+				}
+			} finally {
+				try {
+					out.close();
+				} catch (Exception ignored) {}
+			}
+		} finally {
+			try {
+				fc.close();
+			} catch (Exception ignored) {} // TODO: should I left it ignored?
+		}
 	}
 
 	// for future usage
@@ -2930,6 +3418,35 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	// region Misc utils
 
+	private static void writeConfig() throws Exception {
+		try {
+			RecordStore.deleteRecordStore(SETTINGS_RECORDNAME);
+		} catch (Exception ignored) {}
+
+		JSONObject j = new JSONObject();
+		j.put("proxy", proxyUrl);
+		j.put("useProxy", useProxy);
+		j.put("browseProxy", browseProxyUrl);
+		j.put("apiMode", apiMode);
+		j.put("customApiUrl", customApiUrl);
+		j.put("lang", lang);
+		j.put("noFormat", noFormat);
+		j.put("onlineResize", onlineResize);
+		j.put("loadImages", loadImages);
+		j.put("previewFiles", previewFiles);
+		j.put("blackberryNetwork", blackberryNetwork);
+		j.put("downloadMethod", downloadMethod);
+		j.put("downloadPath", downloadedPath);
+		j.put("lastDownloadPath", lastDownloadPath);
+
+		byte[] b = j.toString().getBytes("UTF-8");
+		RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
+		r.addRecord(b, 0, b.length);
+		r.closeRecordStore();
+
+		needWriteConfig = false;
+	}
+
 	private static boolean checkClass(String s) {
 		//noinspection RedundantSuppression
 		try {
@@ -2956,6 +3473,19 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		String[] r = new String[v.size()];
 		v.copyInto(r);
 		return r;
+	}
+
+	static boolean isStringEmpty(String s, boolean trim) {
+		int l = s.length();
+		if (l == 0) return true;
+		if (!trim) return false;
+
+		int i = 0;
+		while (i < l) {
+			if (s.charAt(i++) > ' ') return false;
+		}
+
+		return true;
 	}
 
 	// endregion
