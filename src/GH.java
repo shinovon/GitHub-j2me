@@ -2513,10 +2513,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if ((i = fileName.lastIndexOf('/')) != -1) {
 				fileName = fileName.substring(i + 1);
 			}
-			if (fileName.indexOf('.') == -1) {
-				// assume zipball
-				fileName = fileName.concat(".zip");
-			}
+			// assume zipball
+			fileName = fileName.concat(".zip");
 		}
 
 		downloadFile = new String[] { url, fileName, size };

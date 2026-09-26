@@ -93,7 +93,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				safeAppend(thread, s);
 				
 				if (i == 0 || l2 == 0) {
-					parseAssets(thread, assets, j.getString("zipball_url"), -1);
+					parseAssets(thread, assets, j.getString("zipball_url"), j.getString("tag_name", null), -1);
 				} else {
 					s = new StringItem(null, GH.L[LShowAssets], Item.HYPERLINK);
 					s.setFont(GH.medPlainFont);
@@ -101,7 +101,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 					s.setDefaultCommand(GH.spoilerCmd);
 					s.setItemCommandListener(this);
 
-					urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url")});
+					urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url"), j.getString("tag_name", null)});
 					safeAppend(thread, s);
 				}
 			} else if (!j.isNull("zipball_url")) {
@@ -111,7 +111,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 				s.addCommand(GH.downloadCmd);
 				s.setDefaultCommand(GH.downloadCmd);
 				s.setItemCommandListener(this);
-				urls.put(s, new String[] { j.getString("zipball_url"), null, "0" });
+				urls.put(s, new String[] { j.getString("zipball_url"), j.has("tag_name") ? j.getString("tag_name").concat(".zip") : null, "0" });
 				safeAppend(thread, s);
 			}
 			
@@ -119,7 +119,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		}
 	}
 
-	private void parseAssets(Thread thread, JSONArray assets, String zipball, int i) {
+	private void parseAssets(Thread thread, JSONArray assets, String zipball, String tag, int i) {
 		StringItem s;
 		int l = assets.size();
 		
@@ -165,7 +165,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			s.setDefaultCommand(GH.downloadCmd);
 			s.setItemCommandListener(this);
-			urls.put(s, new String[] { zipball, null, "0" });
+			urls.put(s, new String[] { zipball, (tag == null ? null : tag.concat(".zip")), "0" });
 
 			if (i == -1) safeAppend(thread, s);
 			else safeInsert(thread, i + l, s);
@@ -199,7 +199,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			}
 			
 			try {
-				parseAssets(null, (JSONArray) data[1], (String) data[2], i);
+				parseAssets(null, (JSONArray) data[1], (String) data[2], (String) data[3], i);
 			} catch (Exception ignored) {}
 			return;
 		}
