@@ -2836,15 +2836,32 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			OutputStream out = fc.openOutputStream();
 			try {
 				if (!downloading) throw cancelException;
-				HttpConnection hc = (HttpConnection) openHttpConnection(url);
-				
-				if (apiMode == API_GITHUB) {
-					if (githubAccessToken != null)
-						hc.setRequestProperty("Authorization", "Bearer ".concat(githubAccessToken));
-				} else {
-					if (giteaAccessToken != null)
-						hc.setRequestProperty("Authorization", "Bearer ".concat(giteaAccessToken));
-				}
+
+				HttpConnection hc;
+				String location = url;
+				int redirects = 0;
+				do {
+					hc = openHttpConnection(location);
+					if (apiMode == API_GITHUB) {
+						if (githubAccessToken != null)
+							hc.setRequestProperty("Authorization", "Bearer ".concat(githubAccessToken));
+					} else {
+						if (giteaAccessToken != null)
+							hc.setRequestProperty("Authorization", "Bearer ".concat(giteaAccessToken));
+					}
+
+					int r;
+					if ((r = hc.getResponseCode()) >= 400) {
+						throw new IOException("HTTP " + r);
+					}
+
+					if ((location = hc.getHeaderField("Location")) != null) {
+						if (++redirects > 3) throw new IOException("Too many redirects");
+						hc.close();
+						continue;
+					}
+					break;
+				} while (true);
 
 				try {
 					InputStream in = hc.openInputStream();
