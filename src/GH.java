@@ -391,6 +391,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			blackberryNetwork = j.getInt("blackberryNetwork", blackberryNetwork);
 			downloadMethod = j.getInt("downloadMethod", downloadMethod);
 			downloadPath =  j.getString("downloadPath", downloadPath);
+			if (downloadPath != null && downloadPath.startsWith("file:///")) {
+				downloadPath = null;
+			}
 			lastDownloadPath =  j.getString("lastDownloadPath", lastDownloadPath);
 		} catch (Exception ignored) {}
 		
@@ -3460,7 +3463,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		j.put("previewFiles", previewFiles);
 		j.put("blackberryNetwork", blackberryNetwork);
 		j.put("downloadMethod", downloadMethod);
-		j.put("downloadPath", downloadedPath);
+		j.put("downloadPath", downloadPath);
 		j.put("lastDownloadPath", lastDownloadPath);
 
 		byte[] b = j.toString().getBytes("UTF-8");
