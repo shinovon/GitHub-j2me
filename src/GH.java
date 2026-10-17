@@ -2809,6 +2809,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	private static void downloadDocument(String url, String dest, Alert alert, Gauge gauge, int size, boolean chat) throws Exception {
 		downloading = true;
+		// TODO parse content-disposition header?
 		FileConnection fc = (FileConnection) Connector.open(dest);
 		try {
 			if (!fc.exists()) fc.create();
@@ -2932,10 +2933,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					out.close();
 				} catch (Exception ignored) {}
 			}
+		} catch (Exception e) {
+			// delete incomplete file
+			try {
+				fc.delete();
+			} catch (Exception ignored) {}
+			throw e;
 		} finally {
 			try {
 				fc.close();
-			} catch (Exception ignored) {} // TODO: should I left it ignored?
+			} catch (Exception ignored) {}
 		}
 	}
 
