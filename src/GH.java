@@ -172,6 +172,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static boolean blackberry;
 	static boolean symbian;
 	static boolean series40;
+	static boolean symbianext;
 
 	// endregion Settings
 
@@ -354,6 +355,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				|| System.getProperty("com.symbian.default.to.suite.icon") != null
 				|| checkClass("com.symbian.midp.io.protocol.http.Protocol")
 				|| checkClass("com.symbian.lcdjava.io.File");
+		symbianext = System.getProperty("cc.nnproject.symbianext.version") != null;
 
 		if (checkClass("com.nokia.mid.impl.isa.jam.Jam")) {
 			series40 = true;
@@ -366,9 +368,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			// platforms that probably support https
 			boolean b = System.getProperty("kemulator.mod.version") == null
 					&& System.getProperty("symbianhttpspatch") == null
-					&& !checkClass("javax.microedition.shell.MicroActivity");
+					&& !checkClass("javax.microedition.shell.MicroActivity")
+					&& (!symbianext || "false".equals(System.getProperty("cc.nnproject.symbianext.checkTLS12")));
 
-			loadImages = b || symbianJrt;
+			loadImages = !b || symbianJrt;
 			useProxy = b;
 		}
 		
