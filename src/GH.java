@@ -143,6 +143,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static GH midlet;
 	static Displayable current;
 
+	static int launchInstance;
+	static boolean launchHandled;
+
 	private static String version;
 
 	// region Settings
@@ -339,7 +342,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	protected void pauseApp() {}
 
 	protected void startApp() {
-		if (midlet != null) return;
+		if (midlet != null) {
+			String p = System.getProperty("com.nokia.mid.cmdline.instance");
+			int i;
+			if (p != null && (i = Integer.parseInt(p)) > launchInstance) {
+				launchInstance = i;
+				handleLaunch(true);
+			}
+			return;
+		}
 		midlet = this;
 		
 		version = getAppProperty("MIDlet-Version");
@@ -537,14 +548,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		loadingForm.addCommand(cancelCmd);
 		loadingForm.setCommandListener(this);
 		
-		// check auth
-		if ((apiMode == API_GITHUB && githubAccessToken != null)
-				|| (apiMode == API_GITEA && (giteaRefreshToken != null || giteaAccessToken != null))) {
-//			start(RUN_VALIDATE_AUTH, null);
-			run = RUN_VALIDATE_AUTH;
-			run();
-		}
-		
 		// init main form
 		Form f = new Form(L[Lgh2me]);
 		f.addCommand(exitCmd);
@@ -621,6 +624,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			commandAction(settingsCmd, current);
 			display(infoAlert(L[LChooseNetwork_Alert]), current);
 			return;
+		}
+
+		// check auth
+		if ((apiMode == API_GITHUB && githubAccessToken != null)
+				|| (apiMode == API_GITEA && (giteaRefreshToken != null || giteaAccessToken != null))) {
+//			start(RUN_VALIDATE_AUTH, null);
+			run = RUN_VALIDATE_AUTH;
+			run();
+		} else {
+			handleLaunch(false);
 		}
 		
 		start(RUN_THUMBNAILS, null);
@@ -888,7 +901,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} catch (Exception ignored) {}
 				
 				if (prevApiMode != apiMode) {
-					start(RUN_VALIDATE_AUTH, null);
+					oauthMode = apiMode;
+					start(RUN_VALIDATE_AUTH, this);
 				} else display(mainForm, true);
 				return;
 			}
@@ -1813,7 +1827,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			display(loadingAlert(L[LAuthorizing]), null);
 			login = null;
 			
-			
 			int mode;
 			int prevMode = mode = apiMode;
 			if (param != null) {
@@ -1881,6 +1894,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} else {
 					display(errorAlert(L[LAuthFailed]), mainForm);
 				}
+			} else {
+				handleLaunch(false);
 			}
 			break;
 		}
@@ -3523,6 +3538,41 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 
 		return true;
+	}
+
+	static synchronized boolean handleLaunch(boolean restart) {
+		if (restart && !launchHandled) return false;
+		launchHandled = true;
+		try {
+			String cmd = System.getProperty("com.nokia.mid.cmdline.instance");
+			if (cmd != null) {
+				launchInstance = Integer.parseInt(cmd);
+			}
+
+			cmd = System.getProperty("com.nokia.mid.cmdline");
+			if (cmd == null) {
+				cmd = System.getProperty("launchcmd");
+			}
+			if ("empty=1".equals(cmd)) cmd = "";
+
+			String url = null;
+			if (cmd != null && cmd.length() != 0) {
+				int i = cmd.indexOf("url=");
+				if (i != -1) {
+					int j = cmd.indexOf(';', i + 4);
+					url = cmd.substring(i + 4, j == -1 ? cmd.length() : j).trim();
+				}
+			}
+
+			if (url == null || url.length() == 0) {
+				url = System.getProperty("url");
+			}
+
+			if (url != null && url.length() != 0) {
+				return openUrl(url);
+			}
+		} catch (Exception ignored) {}
+		return false;
 	}
 
 	// endregion
