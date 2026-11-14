@@ -96,6 +96,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static final String DEFAULT_PROXY_URL = "http://nnproject.cc/hproxy.php?";
 	static final String DEFAULT_BROWSE_PROXY_URL = "http://nnproject.cc/hproxy.php?";
 
+	static final String SYMEXT = "cc.nnproject.symbianext.";
+	static final String IPC_ID = "gh2me";
+
 	private static final String OAUTH_PORT = "8082";
 	// oauth constants, pls don't reuse
 	// github
@@ -344,9 +347,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	protected void startApp() {
 		if (midlet != null) {
 			String p = System.getProperty("com.nokia.mid.cmdline.instance");
-			int i;
-			if (p != null && (i = Integer.parseInt(p)) > launchInstance) {
+			if (p != null) {
+				int i = Integer.parseInt(p);
+				if (i <= launchInstance) return;
 				launchInstance = i;
+				handleLaunch(true);
+			} else {
+				p = System.getProperty(SYMEXT + "getGlobalData:" + IPC_ID + "_launchUrl");
+				if (p == null || p.length() == 0) return;
 				handleLaunch(true);
 			}
 			return;
@@ -366,7 +374,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				|| System.getProperty("com.symbian.default.to.suite.icon") != null
 				|| checkClass("com.symbian.midp.io.protocol.http.Protocol")
 				|| checkClass("com.symbian.lcdjava.io.File");
-		symbianext = System.getProperty("cc.nnproject.symbianext.version") != null;
+		symbianext = System.getProperty(SYMEXT + "version") != null;
 
 		if (checkClass("com.nokia.mid.impl.isa.jam.Jam")) {
 			series40 = true;
@@ -380,7 +388,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			boolean b = System.getProperty("kemulator.mod.version") == null
 					&& System.getProperty("symbianhttpspatch") == null
 					&& !checkClass("javax.microedition.shell.MicroActivity")
-					&& (!symbianext || "false".equals(System.getProperty("cc.nnproject.symbianext.checkTLS12")));
+					&& (!symbianext || "false".equals(System.getProperty(SYMEXT + "checkTLS12")));
 
 			loadImages = !b || symbianJrt;
 			useProxy = b;
@@ -3324,6 +3332,50 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return url;
 	}
 
+	static synchronized boolean handleLaunch(boolean restart) {
+		if (restart && !launchHandled) return false;
+		launchHandled = true;
+		try {
+			String cmd = System.getProperty("com.nokia.mid.cmdline.instance");
+			String url = null;
+			if (cmd != null) {
+				launchInstance = Integer.parseInt(cmd);
+			} else {
+				url = System.getProperty(SYMEXT + "getGlobalData:" + IPC_ID + "_launchUrl");
+				if (url != null && url.length() != 0) {
+					System.getProperty(SYMEXT + "setGlobalData:" + IPC_ID + "_launchUrl;");
+				} else {
+					url = null;
+				}
+			}
+
+			if (url == null) {
+				cmd = System.getProperty("com.nokia.mid.cmdline");
+				if (cmd == null) {
+					cmd = System.getProperty("launchcmd");
+				}
+				if ("empty=1".equals(cmd)) cmd = "";
+
+				if (cmd != null && cmd.length() != 0) {
+					int i = cmd.indexOf("url=");
+					if (i != -1) {
+						int j = cmd.indexOf(';', i + 4);
+						url = cmd.substring(i + 4, j == -1 ? cmd.length() : j).trim();
+					}
+				}
+			}
+
+			if (url == null || url.length() == 0) {
+				url = System.getProperty("url");
+			}
+
+			if (url != null && url.length() != 0) {
+				return openUrl(url);
+			}
+		} catch (Exception ignored) {}
+		return false;
+	}
+
 	// endregion
 
 	// region Localizations
@@ -3538,41 +3590,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 
 		return true;
-	}
-
-	static synchronized boolean handleLaunch(boolean restart) {
-		if (restart && !launchHandled) return false;
-		launchHandled = true;
-		try {
-			String cmd = System.getProperty("com.nokia.mid.cmdline.instance");
-			if (cmd != null) {
-				launchInstance = Integer.parseInt(cmd);
-			}
-
-			cmd = System.getProperty("com.nokia.mid.cmdline");
-			if (cmd == null) {
-				cmd = System.getProperty("launchcmd");
-			}
-			if ("empty=1".equals(cmd)) cmd = "";
-
-			String url = null;
-			if (cmd != null && cmd.length() != 0) {
-				int i = cmd.indexOf("url=");
-				if (i != -1) {
-					int j = cmd.indexOf(';', i + 4);
-					url = cmd.substring(i + 4, j == -1 ? cmd.length() : j).trim();
-				}
-			}
-
-			if (url == null || url.length() == 0) {
-				url = System.getProperty("url");
-			}
-
-			if (url != null && url.length() != 0) {
-				return openUrl(url);
-			}
-		} catch (Exception ignored) {}
-		return false;
 	}
 
 	// endregion
