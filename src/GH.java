@@ -2671,6 +2671,25 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	void browse(String url) {
 		try {
+			if (url.startsWith("https://t.me/") || url.startsWith("http://t.me/") || url.startsWith("t.me/")) {
+				if (symbianext) {
+					String r = System.getProperty(SYMEXT + "getMidletSuiteVersion:MPGram;nnproject");
+					if (r != null) { // TODO check version > 1.6.6
+						r = System.getProperty(SYMEXT + "launchMidlet:MPGram;nnproject;1;-Durl=" + url);
+						if ("0".equals(r)) return;
+						if ("-11".equals(r)) {
+							System.getProperty(SYMEXT + "setGlobalData:mpgram_launchUrl;" + url);
+							if ("0".equals(System.getProperty(SYMEXT + "bringMidletToForeground:MPGram;nnproject"))) {
+								return;
+							}
+						}
+					}
+				} else if (symbianJrt) {
+					try {
+						midlet.browse("localapp://jam/launch?midlet-name=MPGram;midlet-vendor=nnproject;url=" + url(url) + ";launchfrom=gh2me");
+					} catch (Exception ignored) {}
+				}
+			}
 			if (url.indexOf(':') == -1) {
 				url = "http://".concat(url);
 			} else if (useProxy && (url.startsWith(GITHUB_URL) || url.startsWith(GITHUB_API_URL))) {
