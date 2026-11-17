@@ -179,6 +179,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static boolean symbian;
 	static boolean series40;
 	static boolean symbianext;
+	static boolean restMethodsSupported;
 
 	// endregion Settings
 
@@ -395,6 +396,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 			loadImages = !b || symbianJrt;
 			useProxy = b;
+
+			restMethodsSupported = System.getProperty("kemulator.mod.version") != null
+					|| System.getProperty("symbianhttppatch") != null;
 		}
 		
 		// load settings
@@ -1915,7 +1919,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			break;
 		}
 		case RUN_TOGGLE_STAR: { // toggle repo starred state
-			if (!useProxy || login == null) break;
+			if ((!useProxy && !restMethodsSupported) || login == null) break;
 			try {
 				post("user/starred/".concat(((RepoForm) param).url), null, null, ((RepoForm) param).starred ? "DELETE" : "PUT");
 				//noinspection AssignmentUsedAsCondition // I love inlining
