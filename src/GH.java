@@ -352,7 +352,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (i <= launchInstance) return;
 				launchInstance = i;
 				handleLaunch(true);
-			} else {
+			} else if (symbianext) {
 				p = System.getProperty(SYMEXT + "getGlobalData:" + IPC_ID + "_launchUrl");
 				if (p == null || p.length() == 0) return;
 				handleLaunch(true);
@@ -375,6 +375,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				|| checkClass("com.symbian.midp.io.protocol.http.Protocol")
 				|| checkClass("com.symbian.lcdjava.io.File");
 		symbianext = System.getProperty(SYMEXT + "version") != null;
+		if (symbianext) {
+			System.getProperty(SYMEXT + "createGlobalData:" + IPC_ID + "_launchUrl");
+		}
 
 		if (checkClass("com.nokia.mid.impl.isa.jam.Jam")) {
 			series40 = true;
@@ -3334,6 +3337,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	static synchronized boolean handleLaunch(boolean restart) {
 		if (restart && !launchHandled) return false;
+
 		launchHandled = true;
 		try {
 			String cmd = System.getProperty("com.nokia.mid.cmdline.instance");
