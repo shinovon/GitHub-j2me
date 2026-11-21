@@ -19,6 +19,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+import zip.GZIPInputStream;
+import zip.Inflater;
+import zip.InflaterInputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -165,6 +169,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static int downloadMethod; // 0 - always ask, 1 - in app, 2 - browser
 	static String downloadPath;
 	private static String lastDownloadPath;
+	private static boolean compress;
 
 	private static boolean needWriteConfig;
 
@@ -424,6 +429,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				downloadPath = null;
 			}
 			lastDownloadPath = j.getString("lastDownloadPath", lastDownloadPath);
+			compress = j.getBoolean("compress", compress);
 		} catch (Exception ignored) {}
 		
 		// load github auth
@@ -719,11 +725,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f.append(browseProxyField);
 					
 					proxyChoice = new ChoiceGroup("", ChoiceGroup.MULTIPLE, new String[] {
-							L[LLoadImages], L[LUseProxy], L[LOnlineResize]
+							L[LUseProxy], L[LUseCompression], L[LLoadImages], L[LOnlineResize]
 					}, null);
-					proxyChoice.setSelectedIndex(0, loadImages);
-					proxyChoice.setSelectedIndex(1, useProxy);
-					proxyChoice.setSelectedIndex(2, onlineResize);
+					proxyChoice.setSelectedIndex(0, useProxy);
+					proxyChoice.setSelectedIndex(1, compress);
+					proxyChoice.setSelectedIndex(2, loadImages);
+					proxyChoice.setSelectedIndex(3, onlineResize);
 					f.append(proxyChoice);
 
 					// network
@@ -899,11 +906,16 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				
 				// save settings
 				proxyUrl = proxyField.getString();
+
 				browseProxyUrl = browseProxyField.getString();
-				loadImages = proxyChoice.isSelected(0);
-				useProxy = proxyChoice.isSelected(1);
-				onlineResize = proxyChoice.isSelected(2);
+
+				useProxy = proxyChoice.isSelected(0);
+				compress = proxyChoice.isSelected(1);
+				loadImages = proxyChoice.isSelected(2);
+				onlineResize = proxyChoice.isSelected(3);
+
 				apiMode = modeChoice.getSelectedIndex();
+
 				if ((customApiUrl = customApiField.getString()).trim().length() == 0)
 					customApiUrl = null;
 
@@ -2751,22 +2763,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				if (giteaAccessToken != null)
 					hc.setRequestProperty("Authorization", "Bearer ".concat(giteaAccessToken));
 			}
-			
+
 			int c = hc.getResponseCode();
-			try {
-				if (jsonStream) {
-					res = getJSONStream(in = hc.openInputStream()).nextValue();
-				} else {
-					res = parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
-				}
-			} catch (RuntimeException e) {
-				if (c >= 400) {
-					throw new APIException(url, c, null);
-				} else throw e;
-			}
-			if (c >= 400) {
-				throw new APIException(url, c, res);
-			}
+			res = readResponse(in = openInputStream(hc), hc, c, url);
 			if (linkPtr != null) {
 				linkPtr[0] = hc.getHeaderField("link");
 			}
@@ -2818,20 +2817,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 
 			int c = hc.getResponseCode();
-			try {
-				if (jsonStream) {
-					res = getJSONStream(in = hc.openInputStream()).nextValue();
-				} else {
-					res = parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
-				}
-			} catch (RuntimeException e) {
-				if (c >= 400) {
-					throw new APIException(url, c, null);
-				} else throw e;
-			}
-			if (c >= 400 || (res instanceof JSONObject && ((JSONObject) res).has("error"))) {
-				throw new APIException(url, c, res);
-			}
+			res = readResponse(in = openInputStream(hc), hc, c, url);
 		} finally {
 			if (in != null) try {
 				in.close();
@@ -2942,7 +2928,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				} while (true);
 
 				try {
-					InputStream in = hc.openInputStream();
+					InputStream in = openInputStream(hc);
 					try {
 						if (size <= 0) {
 							size = (int) hc.getLength();
@@ -3114,10 +3100,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			out.close();
 
 			int c = hc.getResponseCode();
-			res = getJSONStream(in = hc.openInputStream()).nextValue();
-			if (c >= 400 || (res instanceof JSONObject && ((JSONObject) res).has("error"))) {
-				throw new APIException(url, c, res);
-			}
+			res = readResponse(in = openInputStream(hc), hc, c, url);
 		} finally {
 			if (in != null) try {
 				in.close();
@@ -3132,6 +3115,25 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 //		System.out.println(res instanceof JSONObject ?
 //				((JSONObject) res).format(0) : res instanceof JSONArray ?
 //						((JSONArray) res).format(0) : res);
+		return res;
+	}
+
+	private static Object readResponse(InputStream in, HttpConnection hc, int c, String url) throws IOException {
+		Object res;
+		try {
+			if (jsonStream) {
+				res = getJSONStream(in).nextValue();
+			} else {
+				res = parseJSON(readUtf(in, (int) hc.getLength()));
+			}
+		} catch (RuntimeException e) {
+			if (c >= 400) {
+				throw new APIException(url, c, null);
+			} else throw e;
+		}
+		if (c >= 400 || (res instanceof JSONObject && ((JSONObject) res).has("error"))) {
+			throw new APIException(url, c, res);
+		}
 		return res;
 	}
 
@@ -3186,7 +3188,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if ((r = hc.getResponseCode()) >= 400) {
 				throw new IOException("HTTP " + r);
 			}
-			in = hc.openInputStream();
+			in = openInputStream(hc);
 			return readBytes(in, (int) hc.getLength(), 8*1024, 16*1024);
 		} finally {
 			try {
@@ -3198,18 +3200,28 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
+	// wrapper for compression handling
+	private static InputStream openInputStream(HttpConnection hc) throws IOException {
+		InputStream i = hc.openInputStream();
+		String enc = hc.getHeaderField("Content-Encoding");
+		if ("deflate".equalsIgnoreCase(enc))
+			i = new InflaterInputStream(i, new Inflater(true));
+		else if ("gzip".equalsIgnoreCase(enc))
+			i = new GZIPInputStream(i);
+		return i;
+	}
+
 	private static HttpConnection openHttpConnection(String url) throws IOException {
 		if (blackberry && blackberryNetwork == 1) {
 			url = url.concat(";deviceside=true;interface=wifi");
 		}
 		HttpConnection hc = (HttpConnection) Connector.open(url);
 		hc.setRequestProperty("User-Agent", "github-j2me-client/" + version + " (https://github.com/shinovon)");
+		if (compress) {
+			hc.setRequestProperty("Accept-Encoding", "gzip, deflate");
+		}
 		return hc;
 	}
-
-	// endregion Networking
-
-	// region URLs
 
 	private static String proxyUrl(String url) {
 		System.out.println(url);
@@ -3250,7 +3262,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				byte b = (byte) (0xC0 | c >> 6);
 				sb.append(Integer.toHexString(b >> 4 & 0xf));
 				sb.append(Integer.toHexString(b & 0xf));
-				
+
 				sb.append('%');
 				b = (byte) (0x80 | c & 0x3F);
 				sb.append(Integer.toHexString(b >> 4 & 0xf));
@@ -3260,12 +3272,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				byte b = (byte) (0xE0 | c >> 12);
 				sb.append(Integer.toHexString(b >> 4 & 0xf));
 				sb.append(Integer.toHexString(b & 0xf));
-				
+
 				sb.append('%');
 				b = (byte) (0x80 | c >> 6 & 0x3F);
 				sb.append(Integer.toHexString(b >> 4 & 0xf));
 				sb.append(Integer.toHexString(b & 0xf));
-				
+
 				sb.append('%');
 				b = (byte) (0x80 | c & 0x3F);
 				sb.append(Integer.toHexString(b >> 4 & 0xf));
@@ -3274,6 +3286,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 		return sb;
 	}
+
+	// endregion Networking
+
+	// region URLs
 
 	static boolean openUrl(String url) {
 //		System.out.println("openUrl:".concat(url));
@@ -3593,6 +3609,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		j.put("downloadMethod", downloadMethod);
 		j.put("downloadPath", downloadPath);
 		j.put("lastDownloadPath", lastDownloadPath);
+		j.put("compress", compress);
 
 		byte[] b = j.toString().getBytes("UTF-8");
 		RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, true);
@@ -5242,10 +5259,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return json;
 	}
 
-	public static JSONStream getJSONStream(StreamConnection sc) throws IOException {
+	public static JSONStream getJSONStream(HttpConnection hc) throws IOException {
 		JSONStream json = new JSONStream();
-		json.connection = sc;
-		json.init(sc.openInputStream());
+		json.connection = hc;
+		json.init(openInputStream(hc));
 		char c = json.nextTrim();
 		if (c != '{' && c != '[')
 			throw new RuntimeException("JSON: getStream: Not json");

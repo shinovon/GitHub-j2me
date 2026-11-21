@@ -192,6 +192,7 @@
 	"AlwaysAsk": "Always ask",
 	"InApp": "In app",
 	"WithBrowser": "With browser",
+	"UseCompression": "Use compression",
 	
 	// Auth
 	"ChooseAuthMethod": "Choose authorization method",
