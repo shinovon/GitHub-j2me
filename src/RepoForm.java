@@ -39,6 +39,7 @@ public class RepoForm extends GHForm {
 		addCommand(GH.ownerCmd);
 //		addCommand(GH.forksCmd);
 		addCommand(GH.saveBookmarkCmd);
+		if (GH.apiMode == GH.API_GITHUB) addCommand(GH.copyLinkCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {
@@ -48,6 +49,7 @@ public class RepoForm extends GHForm {
 		if (thread != this.thread) return;
 		
 		selectedBranch = r.getString("default_branch");
+		url = r.getObject("owner").getString("login") + '/' + r.getString("name");
 		
 		StringItem s;
 		String t;
@@ -168,8 +170,8 @@ public class RepoForm extends GHForm {
 		append("\n");
 		
 		if (r.getBoolean("has_issues")) {
-			s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[LIssues] : GH.L[LIssues].concat(" (")
-				.concat(GH.localizePlural(r.getInt("open_issues"), L_open).concat(")")), Item.BUTTON);
+			s = new StringItem(null, GH.apiMode == GH.API_GITEA ? GH.L[LIssues] : (GH.L[LIssues]
+					+ " (" + GH.localizePlural(r.getInt("open_issues"), L_open) + ')'), Item.BUTTON);
 			s.setDefaultCommand(GH.issuesCmd);
 			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);

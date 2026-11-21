@@ -31,6 +31,7 @@ public class UserForm extends GHForm {
 		this.url = user;
 //		addCommand(GH.reposCmd);
 		addCommand(GH.saveBookmarkCmd);
+		if (GH.apiMode == GH.API_GITHUB) addCommand(GH.copyLinkCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {

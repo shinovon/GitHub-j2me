@@ -213,7 +213,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 	private static Command exitCmd;
 	static Command backCmd;
-	static Command homeCmd;
 	private static Command settingsCmd;
 	private static Command aboutCmd;
 	private static Command bookmarksCmd;
@@ -268,6 +267,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command showClosedCmd;
 	static Command showAllCmd;
 
+	static Command homeCmd;
+	static Command copyLinkCmd;
 	static Command saveBookmarkCmd;
 
 	private static Command addBookmarkCmd;
@@ -472,7 +473,6 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		
 		exitCmd = new Command(L[LExit], Command.EXIT, 2);
 		backCmd = new Command(L[LBack], Command.BACK, 2);
-		homeCmd = new Command(L[LHome], Command.SCREEN, 10);
 		settingsCmd = new Command(L[LSettings], Command.SCREEN, 5);
 		aboutCmd = new Command(L[LAbout], Command.SCREEN, 7);
 		bookmarksCmd = new Command(L[LBookmarks], Command.ITEM, 1);
@@ -482,8 +482,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		yourProfileCmd = new Command(L[LYourProfile], Command.ITEM, 1);
 		yourReposCmd = new Command(L[LYourRepositories], Command.ITEM, 1);
 		yourStarsCmd = new Command(L[LYourStars], Command.ITEM, 1);
-		yourFeedCmd = new Command("Feed", Command.ITEM, 1);
-		yourNotificationsCmd = new Command("Notifications", Command.ITEM, 1);
+		yourFeedCmd = new Command(L[LFeed], Command.ITEM, 1);
+		yourNotificationsCmd = new Command(L[LNotifications], Command.ITEM, 1);
 		
 		goCmd = new Command(L[LGo], Command.ITEM, 1);
 		downloadCmd = new Command(L[LDownload], Command.ITEM, 1);
@@ -525,7 +525,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		gotoPageCmd = new Command(L[LGoToPage_Cmd], Command.SCREEN, 10);
 		gotoPageOkCmd = new Command(L[LGo], Command.OK, 1);
 
-		saveBookmarkCmd = new Command(L[LSaveToBookmarks], Command.SCREEN, 11);
+		homeCmd = new Command(L[LHome], Command.SCREEN, 15);
+		copyLinkCmd = new Command(L[LCopyLink], Command.SCREEN, 16);
+		saveBookmarkCmd = new Command(L[LSaveToBookmarks], Command.SCREEN, 17);
 
 		addBookmarkCmd = new Command(L[LNew_Bookmark], Command.SCREEN, 5);
 		removeBookmarkCmd = new Command(L[LDelete], Command.ITEM, 3);
@@ -1470,7 +1472,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		// general commands
-		if (c == saveBookmarkCmd) {
+		if (c == saveBookmarkCmd || c == copyLinkCmd) {
 			String s;
 			if (d instanceof RepoForm) {
 				s = ((RepoForm) d).url;
@@ -1485,8 +1487,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else if (d instanceof IssueForm) {
 				s = ((IssueForm) d).url;
 			} else return;
-			
-			addBookmark(s, d);
+
+			if (c == copyLinkCmd) {
+				copy("", GITHUB_URL.concat(s));
+			} else {
+				addBookmark(s, d);
+			}
 			return;
 		}
 		{ // download dialog
@@ -2539,6 +2545,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		}
 	}
 
+	static void copy(String title, String text) {
+		TextBox t = new TextBox(title, text, Math.max(2000, text.length() + 1), TextField.ANY);
+		t.addCommand(backCmd);
+//		if (checkClass("com.nokia.mid.ui.Clipboard")) t.addCommand(copyCmd);
+		t.setCommandListener(midlet);
+		display(t);
+	}
+
 	void downloadFile(String url, String fileName, String size) {
 		if (downloading) return;
 		downloadReturn = current;
@@ -2624,7 +2638,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 
 	static Alert alert(String title, String text, AlertType type) {
-		Alert a = new Alert(title == null ? (symbian ? L[Lgh2me] : "") : title);
+		Alert a = new Alert(title == null ? (symbian && !symbianJrt ? L[Lgh2me] : "") : title);
 		a.setType(type);
 		a.setString(text);
 		a.setTimeout(type == AlertType.ERROR ? 3000 : 1500);
@@ -2632,7 +2646,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 
 	private static Alert loadingAlert(String s) {
-		Alert a = new Alert(symbian ? L[Lgh2me] : "", s == null ? L[LLoading] : s, null, null);
+		Alert a = new Alert(symbian && !symbianJrt ? L[Lgh2me] : "", s == null ? L[LLoading] : s, null, null);
 		a.setCommandListener(midlet);
 		a.addCommand(Alert.DISMISS_COMMAND);
 		a.setIndicator(new Gauge(null, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));

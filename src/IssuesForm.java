@@ -40,7 +40,10 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 		super(mode == 2 ? GH.L[LSearch] : GH.L[mode == 1 ? LPulls : LIssues].concat(" - ").concat(url));
 		this.url = url;
 		this.mode = mode;
-		if (mode != 2) addCommand(GH.saveBookmarkCmd);
+		if (mode != 2) {
+			addCommand(GH.saveBookmarkCmd);
+			if (GH.apiMode == GH.API_GITHUB) addCommand(GH.copyLinkCmd);
+		}
 		if (mode == 0 && GH.login != null) addCommand(GH.createIssueCmd);
 	}
 

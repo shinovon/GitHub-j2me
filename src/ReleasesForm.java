@@ -40,6 +40,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		this.tags = tags;
 		addCommand(tags ? GH.releasesCmd : GH.tagsCmd);
 		addCommand(GH.saveBookmarkCmd);
+		if (GH.apiMode == GH.API_GITHUB) addCommand(GH.copyLinkCmd);
 	}
 
 	void loadInternal(Thread thread) throws Exception {

@@ -149,6 +149,7 @@
 	"Title": "Title",
 	"SaveHere": "Save here",
 	"Locate": "Locate",
+	"CopyLink": "Copy link",
 	
 	// Dialog commands
 	"Next": "Next",
@@ -171,6 +172,8 @@
 	"YourProfile": "Your profile",
 	"YourRepositories": "Your repositories",
 	"YourStars": " Your stars",
+	"Feed": "Feed",
+	"Notifications": "Notifications",
 	
 	// Settings
 	"Mode_API": "Mode",

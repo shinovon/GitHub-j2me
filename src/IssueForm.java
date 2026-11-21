@@ -42,6 +42,7 @@ public class IssueForm extends PagedForm {
 		super(url);
 		this.url = url;
 		addCommand(GH.saveBookmarkCmd);
+		if (GH.apiMode == GH.API_GITHUB) addCommand(GH.copyLinkCmd);
 		if (GH.login != null) addCommand(GH.commentCmd);
 	}
 
