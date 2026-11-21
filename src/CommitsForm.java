@@ -51,7 +51,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 		JSONArray r = pagedApi(thread, sb);
 		int l = r.size();
 
-		if (external) addCommand(GH.showRepoCmd);
+		if (external) addCommand(GH.viewRepoCmd);
 		
 		if (urls == null) {
 			urls = new Hashtable();

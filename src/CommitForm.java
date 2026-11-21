@@ -34,11 +34,10 @@ public class CommitForm extends GHForm {
 	}
 
 	void loadInternal(Thread thread) throws Exception {
-		// TODO
 		StringBuffer sb = new StringBuffer("repos/");
 		sb.append(url).append("/commits?sha=").append(sha).append("&per_page=1");
 
-		if (external) addCommand(GH.showRepoCmd);
+		if (external) addCommand(GH.viewRepoCmd);
 
 		JSONObject j = ((JSONArray) GH.api(sb.toString())).getObject(0);
 		sha = j.getString("sha");
@@ -77,6 +76,23 @@ public class CommitForm extends GHForm {
 		s.setFont(GH.medPlainFont);
 		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 		safeAppend(thread, s);
+
+		if (GH.apiMode == GH.API_GITHUB) {
+			addCommand(GH.viewDiffCmd);
+			addCommand(GH.viewPatchCmd);
+
+			s = new StringItem(null, "View diff", Item.BUTTON);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setDefaultCommand(GH.viewDiffCmd);
+			s.setItemCommandListener(GH.midlet);
+			safeAppend(thread, s);
+
+			s = new StringItem(null, "View patch", Item.BUTTON);
+			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setDefaultCommand(GH.viewPatchCmd);
+			s.setItemCommandListener(GH.midlet);
+			safeAppend(thread, s);
+		}
 	}
 
 }

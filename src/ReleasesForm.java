@@ -59,7 +59,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 			urls.clear();
 		}
 
-		if (external) addCommand(GH.showRepoCmd);
+		if (external) addCommand(GH.viewRepoCmd);
 
 		StringBuffer sb = new StringBuffer("repos/");
 		sb.append(url);

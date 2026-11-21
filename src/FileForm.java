@@ -62,7 +62,9 @@ public class FileForm extends GHForm {
 			s.setItemCommandListener(GH.midlet);
 			s.setLayout(Item.LAYOUT_EXPAND | Item.LAYOUT_NEWLINE_BEFORE | Item.LAYOUT_NEWLINE_AFTER);
 			append(s);
-		} else if (url != null) {
+			return;
+		}
+		if (url != null) {
 			sb.append(url);
 		} else if (path != null) {
 			sb.append("repos/").append(repo).append("/contents/").append(path).append('?');

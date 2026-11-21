@@ -257,7 +257,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command starCmd;
 	static Command readmeCmd;
 	static Command filesCmd;
-	static Command showRepoCmd;
+	static Command viewRepoCmd;
+	static Command viewDiffCmd;
+	static Command viewPatchCmd;
 
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -521,7 +523,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		starCmd = new Command(L[LStar], Command.ITEM, 1);
 		readmeCmd = new Command(L[LReadme], Command.ITEM, 1);
 		filesCmd = new Command(L[LBrowseSource], Command.ITEM, 1);
-		showRepoCmd = new Command(L[LViewRepository], Command.SCREEN, 11);
+		viewRepoCmd = new Command(L[LViewRepository], Command.SCREEN, 11);
+		viewDiffCmd = new Command("View diff", Command.SCREEN, 9);
+		viewPatchCmd = new Command("View patch", Command.SCREEN, 9);
 		
 		showOpenCmd = new Command(L[LShowOpen], Command.SCREEN, 4);
 		showClosedCmd = new Command(L[LShowClosed], Command.SCREEN, 5);
@@ -1521,7 +1525,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			}
 			return;
 		}
-		if (c == showRepoCmd) {
+		if (c == viewRepoCmd) {
+			//noinspection DataFlowIssue
 			String url = ((GHForm) d).url;
 			int i;
 			if ((i = url.indexOf('/')) == -1) {
@@ -1531,6 +1536,25 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				url = url.substring(0, i);
 			}
 			openRepo(url);
+			return;
+		}
+		if (c == viewDiffCmd || c == viewPatchCmd) {
+			//noinspection DataFlowIssue
+			StringBuffer sb = new StringBuffer(((GHForm) d).url);
+			if (d instanceof CommitForm) {
+				sb.append("/commit/").append(((CommitForm) d).sha);
+			}
+			if (c == viewDiffCmd) {
+				sb.append(".diff");
+			} else {
+				sb.append(".patch");
+			}
+			String path = sb.toString();
+			sb.insert(0, GITHUB_URL);
+
+			FileForm f = new FileForm(null, sb.toString(), path, null, null);
+			display(f);
+			midlet.start(RUN_LOAD_FORM, f);
 			return;
 		}
 		{ // download dialog
@@ -1575,6 +1599,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			return;
 		}
 		if (c == shareViaMpgramCmd) {
+			//noinspection DataFlowIssue
 			launchMpgram("text:" + ((TextBox) d).getString());
 			return;
 		}
@@ -3402,7 +3427,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			case 'b': // braches or blob
 				if ("branches".equals(split[2])) {
 					f = new BranchesForm(repo);
-				} else if ("blob".equals(split[2])) {
+					break;
+				}
+				if ("blob".equals(split[2])) {
 					url = url.substring(
 							url.indexOf('/', url.indexOf('/', url.indexOf('/', url.indexOf('/') + 1) + 1) + 1)
 					);
@@ -3411,10 +3438,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					midlet.start(RUN_OPEN_PATH, url);
 					return true;
 //					f = new FileForm(null, null, url, repo, split[3]);
-				} else {
-					return false;
 				}
-				break;
+				return false;
 			default:
 				return false;
 			}

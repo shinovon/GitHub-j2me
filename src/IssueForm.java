@@ -64,7 +64,11 @@ public class IssueForm extends PagedForm {
 			setTitle(sb.toString());
 		}
 
-		if (external) addCommand(GH.showRepoCmd);
+		if (external) addCommand(GH.viewRepoCmd);
+		if (pull && GH.apiMode == GH.API_GITHUB) {
+			addCommand(GH.viewDiffCmd);
+			addCommand(GH.viewPatchCmd);
+		}
 		
 		if (urls == null) {
 			urls = new Hashtable();
