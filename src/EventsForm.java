@@ -254,6 +254,7 @@ public class EventsForm extends PagedForm {
 				s.setItemCommandListener(GH.midlet);
 				safeAppend(thread, s);
 			} else {
+				// TODO
 				append("\nUndefined event: " + type + "\n");
 //				continue;
 			}
