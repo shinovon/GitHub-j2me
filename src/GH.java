@@ -1527,7 +1527,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if ((i = url.indexOf('/')) == -1) {
 				return;
 			}
-			if ((i = url.indexOf('/')) != -1) {
+			if ((i = url.indexOf('/', i + 1)) != -1) {
 				url = url.substring(0, i);
 			}
 			openRepo(url);
