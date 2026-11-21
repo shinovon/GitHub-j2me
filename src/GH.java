@@ -56,10 +56,6 @@ import javax.microedition.lcdui.TextField;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.rms.RecordStore;
 
-import cc.nnproject.json.JSONArray;
-import cc.nnproject.json.JSONObject;
-import cc.nnproject.json.JSONStream;
-
 public class GH extends MIDlet implements CommandListener, ItemCommandListener, ItemStateListener, Runnable, LangConstants {
 
 	// region Constants
@@ -408,7 +404,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// load settings
 		try {
 			RecordStore r = RecordStore.openRecordStore(SETTINGS_RECORDNAME, false);
-			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
+			JSONObject j = parseObject(new String(r.getRecord(1), "UTF-8"));
 			r.closeRecordStore();
 			
 			proxyUrl = j.getString("proxy", proxyUrl);
@@ -427,13 +423,13 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (downloadPath != null && downloadPath.startsWith("file:///")) {
 				downloadPath = null;
 			}
-			lastDownloadPath =  j.getString("lastDownloadPath", lastDownloadPath);
+			lastDownloadPath = j.getString("lastDownloadPath", lastDownloadPath);
 		} catch (Exception ignored) {}
 		
 		// load github auth
 		try {
 			RecordStore r = RecordStore.openRecordStore(GITHUB_AUTH_RECORDNAME, false);
-			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
+			JSONObject j = parseObject(new String(r.getRecord(1), "UTF-8"));
 			r.closeRecordStore();
 
 			githubAccessToken = j.getString("accessToken", null);
@@ -443,7 +439,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// load gitea auth
 		try {
 			RecordStore r = RecordStore.openRecordStore(GITEA_AUTH_RECORDNAME, false);
-			JSONObject j = JSONObject.parseObject(new String(r.getRecord(1), "UTF-8"));
+			JSONObject j = parseObject(new String(r.getRecord(1), "UTF-8"));
 			r.closeRecordStore();
 
 			String apiUrl = j.getString("apiUrl", null);
@@ -1721,7 +1717,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				try {
 					if (bookmarks == null) {
 						RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
-						bookmarks = JSONArray.parseArray(new String(r.getRecord(1), "UTF-8"));
+						bookmarks = parseArray(new String(r.getRecord(1), "UTF-8"));
 						r.closeRecordStore();
 					}
 					int l = bookmarks.size();
@@ -2446,7 +2442,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		if (bookmarks == null) {
 			try {
 				RecordStore r = RecordStore.openRecordStore(BOOKMARKS_RECORDNAME, false);
-				bookmarks = JSONArray.parseArray(new String(r.getRecord(1), "UTF-8"));
+				bookmarks = parseArray(new String(r.getRecord(1), "UTF-8"));
 				r.closeRecordStore();
 			} catch (Exception e) {
 				bookmarks = new JSONArray(10);
@@ -2759,9 +2755,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			int c = hc.getResponseCode();
 			try {
 				if (jsonStream) {
-					res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+					res = getJSONStream(in = hc.openInputStream()).nextValue();
 				} else {
-					res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
+					res = parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
 				}
 			} catch (RuntimeException e) {
 				if (c >= 400) {
@@ -2824,9 +2820,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			int c = hc.getResponseCode();
 			try {
 				if (jsonStream) {
-					res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+					res = getJSONStream(in = hc.openInputStream()).nextValue();
 				} else {
-					res = JSONObject.parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
+					res = parseJSON(readUtf(in = hc.openInputStream(), (int) hc.getLength()));
 				}
 			} catch (RuntimeException e) {
 				if (c >= 400) {
@@ -2873,7 +2869,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			if (c >= 400) {
 				throw new APIException(url, c, null);
 			}
-			res = JSONStream.getStream(hc);
+			res = getJSONStream(hc);
 		} finally {
 			if (res == null) {
 				if (in != null) try {
@@ -3053,7 +3049,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			
 			if (stream == null) {
 				out.write("\"content\":\"".getBytes());
-				JSONObject.writeString(out, s);
+				writeString(out, s);
 			} else {
 				boolean base64 = false;
 				if (s != null) {
@@ -3118,7 +3114,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			out.close();
 
 			int c = hc.getResponseCode();
-			res = JSONStream.getStream(in = hc.openInputStream()).nextValue();
+			res = getJSONStream(in = hc.openInputStream()).nextValue();
 			if (c >= 400 || (res instanceof JSONObject && ((JSONObject) res).has("error"))) {
 				throw new APIException(url, c, res);
 			}
@@ -4889,5 +4885,375 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 
 	// endregion Markdown Parser
+
+	// region JSON
+
+	// cc.nnproject.json.JSON
+
+	// parse all nested elements once
+	static final boolean parse_members = false;
+
+	// used for storing nulls, get methods must return real null
+	public static final Object json_null = new Object();
+
+	public static final Boolean TRUE = new Boolean(true);
+	public static final Boolean FALSE = new Boolean(false);
+
+	public static JSONObject parseObject(String text) {
+		if (text == null || text.length() <= 1)
+			throw new RuntimeException("JSON: Empty text");
+		if (text.charAt(0) != '{')
+			throw new RuntimeException("JSON: Not JSON object: " + text);
+		return (JSONObject) parseJSON(text);
+	}
+
+	public static JSONArray parseArray(String text) {
+		if (text == null || text.length() <= 1)
+			throw new RuntimeException("JSON: Empty text");
+		if (text.charAt(0) != '[')
+			throw new RuntimeException("JSON: Not JSON array");
+		return (JSONArray) parseJSON(text);
+	}
+
+	static Object getJSON(Object obj) {
+		if (obj instanceof Hashtable) {
+			return new JSONObject((Hashtable) obj);
+		}
+		if (obj instanceof Vector) {
+			return new JSONArray((Vector) obj);
+		}
+		return obj == null ? json_null : obj;
+	}
+
+	static Object parseJSON(String str, int start, int end) {
+		char first = str.charAt(start);
+		while (first <= ' ') {
+			first = str.charAt(++start);
+		}
+
+		char last = str.charAt(end - 1);
+		while (last <= ' ') {
+			last = str.charAt((--end) - 1);
+		}
+		switch (first) {
+		case '"': { // string
+			if (last != '"')
+				throw new RuntimeException("JSON: Unexpected end of text");
+			if (str.indexOf('\\', start) < end) {
+				StringBuffer sb = new StringBuffer();
+				int i = start + 1;
+				end--;
+				// parse escaped chars in string
+				while (i < end) {
+					char c = str.charAt(i);
+					if (c == '\\') {
+						next: {
+							if (end < i + 1) {
+								sb.append(c);
+								break;
+							}
+							char n = str.charAt(i + 1);
+							switch (n) {
+							case 'u':
+								i += 2;
+								sb.append((char) Integer.parseInt(
+										new String(new char[] { str.charAt(i++), str.charAt(i++), str.charAt(i++), str.charAt(i++) }),
+										16));
+								break;
+							case 'x':
+								i += 2;
+								sb.append((char) Integer.parseInt(
+										new String(new char[] { str.charAt(i++), str.charAt(i++) }),
+										16));
+								break;
+							case 'n':
+								sb.append('\n');
+								i += 2;
+								break;
+							case 'r':
+								sb.append('\r');
+								i += 2;
+								break;
+							case 't':
+								sb.append('\t');
+								i += 2;
+								break;
+							case 'f':
+								sb.append('\f');
+								i += 2;
+								break;
+							case 'b':
+								sb.append('\b');
+								i += 2;
+								break;
+							case '"':
+							case '\'':
+							case '\\':
+							case '/':
+								i += 2;
+								sb.append((char) n);
+								break;
+							default:
+								break next;
+							}
+							continue;
+						}
+						sb.append(c);
+						i++;
+						continue;
+					}
+					sb.append(c);
+					i++;
+				}
+				str = sb.toString();
+//				sb = null;
+				return str;
+			}
+			return str.substring(1 + start, end - 1);
+		}
+		case '{': // JSON object or array
+		case '[': {
+			boolean object = first == '{';
+			if (object ? last != '}' : last != ']')
+				throw new RuntimeException("JSON: Unexpected end of text");
+			int brackets = 0;
+			int i = start + 1;
+			char nextDelimiter = object ? ':' : ',';
+			boolean escape = false;
+			String key = null;
+			Object res = object ? (Object) new JSONObject() : (Object) new JSONArray();
+
+			for (int splIndex; i < end - 1; i = splIndex + 1) {
+				// skip all spaces
+				//noinspection StatementWithEmptyBody
+				for (; i < end - 1 && str.charAt(i) <= ' '; i++);
+
+				splIndex = i;
+				boolean quote = false;
+				for (; splIndex < end - 1 && (quote || brackets > 0 || str.charAt(splIndex) != nextDelimiter); splIndex++) {
+					char c = str.charAt(splIndex);
+					if (!escape) {
+						if (c == '\\') {
+							escape = true;
+						} else if (c == '"') {
+							quote = !quote;
+						}
+					} else escape = false;
+
+					if (!quote) {
+						if (c == '{' || c == '[') {
+							brackets++;
+						} else if (c == '}' || c == ']') {
+							brackets--;
+						}
+					}
+				}
+
+				// fail if unclosed quotes or brackets left
+				if (quote || brackets > 0) {
+					throw new RuntimeException("JSON: Corrupted JSON");
+				}
+
+				if (object && key == null) {
+					key = str.substring(i + 1, str.lastIndexOf('"', splIndex));
+					nextDelimiter = ',';
+				} else if (i == splIndex) {
+					throw new RuntimeException("JSON: Empty value");
+				} else {
+					char c = str.charAt(i);
+					Object value;
+					if (parse_members || (c != '{' && c != '[')) {
+						value = parseJSON(str, i, splIndex);
+					} else {
+						// leave value as JSONString to parse it later
+						value = new String[] {(String) str.substring(i, splIndex)};
+					}
+					if (object) {
+						((JSONObject) res).table.put(key, value);
+						key = null;
+						nextDelimiter = ':';
+					} else if (splIndex > i) {
+						((JSONArray) res).addElement(value);
+					}
+				}
+			}
+			return res;
+		}
+		case 'n': // null
+			return json_null;
+		case 't': // true
+			return TRUE;
+		case 'f': // false
+			return FALSE;
+		default: // number
+			int l = end - start;
+			if ((first >= '0' && first <= '9') || first == '-') {
+				try {
+					// hex
+					if (l > 1 && first == '0' && str.charAt(start + 1) == 'x') {
+						if (l > 9) // str.length() > 10
+							return new Long(Long.parseLong(str.substring(start + 2, end), 16));
+						return new Integer(Integer.parseInt(str.substring(start + 2, end), 16));
+					}
+					str = str.substring(start, end);
+					// decimal
+					if (str.indexOf('.') != -1 || str.indexOf('E') != -1 || str.indexOf('e') != -1 || "-0".equals(str))
+						return str;
+					if (first == '-') l--;
+					if (l > 8) // (str.length() - (str.charAt(0) == '-' ? 1 : 0)) >= 10
+						return new Long(Long.parseLong(str));
+					return new Integer(Integer.parseInt(str));
+				} catch (Exception ignored) {}
+			}
+			throw new RuntimeException("JSON: Couldn't be parsed: ".concat(str));
+//			return new String[]{str};
+		}
+	}
+
+	// compatibility
+	public static Object parseJSON(String str) {
+		return parseJSON(str, 0, str.length());
+	}
+
+	// transforms string for exporting
+	static String escape_utf8(String s) {
+		int len = s.length();
+		StringBuffer sb = new StringBuffer();
+		int i = 0;
+		while (i < len) {
+			char c = s.charAt(i);
+			switch (c) {
+			case '"':
+			case '\\':
+				sb.append("\\").append(c);
+				break;
+			case '\b':
+				sb.append("\\b");
+				break;
+			case '\f':
+				sb.append("\\f");
+				break;
+			case '\n':
+				sb.append("\\n");
+				break;
+			case '\r':
+				sb.append("\\r");
+				break;
+			case '\t':
+				sb.append("\\t");
+				break;
+			default:
+				if (c < 32 || c > 1103 || (c >= '\u0080' && c < '\u00a0')) {
+					String u = Integer.toHexString(c);
+					sb.append("\\u");
+					for (int z = u.length(); z < 4; z++) {
+						sb.append('0');
+					}
+					sb.append(u);
+				} else {
+					sb.append(c);
+				}
+			}
+			i++;
+		}
+		return sb.toString();
+	}
+
+	static int getInt(Object o) {
+		try {
+			if (o instanceof String[])
+				return Integer.parseInt(((String[]) o)[0]);
+			if (o instanceof Integer)
+				return ((Integer) o).intValue();
+			if (o instanceof Long)
+				return (int) ((Long) o).longValue();
+		} catch (Throwable ignored) {}
+		throw new RuntimeException("JSON: Cast to int failed: " + o);
+	}
+
+	public static long getLong(Object o) {
+		try {
+			if (o instanceof String[])
+				return Long.parseLong(((String[]) o)[0]);
+			if (o instanceof Integer)
+				return ((Integer) o).longValue();
+			if (o instanceof Long)
+				return ((Long) o).longValue();
+		} catch (Throwable ignored) {}
+		throw new RuntimeException("JSON: Cast to long failed: " + o);
+	}
+
+	public static void writeString(OutputStream out, String s) throws IOException {
+		int len = s.length();
+		for (int i = 0; i < len; ++i) {
+			char c = s.charAt(i);
+			switch (c) {
+			case '"':
+			case '\\':
+				out.write((byte) '\\');
+				out.write((byte) c);
+				break;
+			case '\b':
+				out.write((byte) '\\');
+				out.write((byte) 'b');
+				break;
+			case '\f':
+				out.write((byte) '\\');
+				out.write((byte) 'f');
+				break;
+			case '\n':
+				out.write((byte) '\\');
+				out.write((byte) 'n');
+				break;
+			case '\r':
+				out.write((byte) '\\');
+				out.write((byte) 'r');
+				break;
+			case '\t':
+				out.write((byte) '\\');
+				out.write((byte) 't');
+				break;
+			default:
+				if (c < 32 || c > 255) {
+					String u = Integer.toHexString(c);
+					out.write((byte) '\\');
+					out.write((byte) 'u');
+					for (int z = u.length(); z < 4; z++) {
+						out.write((byte) '0');
+					}
+					out.write(u.getBytes());
+				} else {
+					out.write((byte) c);
+				}
+			}
+		}
+	}
+
+	// JSONStream static
+
+	public static JSONStream getJSONStream(InputStream in) throws IOException {
+		JSONStream json = new JSONStream();
+		json.init(in);
+		char c = json.nextTrim();
+		if (c != '{' && c != '[')
+			throw new RuntimeException("JSON: getStream: Not json");
+		json.isObject = c == '{';
+		json.usePrev = true;
+		return json;
+	}
+
+	public static JSONStream getJSONStream(StreamConnection sc) throws IOException {
+		JSONStream json = new JSONStream();
+		json.connection = sc;
+		json.init(sc.openInputStream());
+		char c = json.nextTrim();
+		if (c != '{' && c != '[')
+			throw new RuntimeException("JSON: getStream: Not json");
+		json.isObject = c == '{';
+		json.usePrev = true;
+		return json;
+	}
+
+	// endregion
 
 }

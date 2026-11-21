@@ -25,9 +25,6 @@ import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.Spacer;
 import javax.microedition.lcdui.StringItem;
 
-import cc.nnproject.json.JSONArray;
-import cc.nnproject.json.JSONObject;
-
 public class IssueForm extends PagedForm {
 
 	String url;

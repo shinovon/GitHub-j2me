@@ -24,9 +24,6 @@ import java.util.Hashtable;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.StringItem;
 
-import cc.nnproject.json.JSONObject;
-import cc.nnproject.json.JSONStream;
-
 public class FileForm extends GHForm {
 
 	String repo, ref, path, downloadUrl;
@@ -83,7 +80,7 @@ public class FileForm extends GHForm {
 			path = r.nextString();
 			
 			if (!r.jumpToKey("size")) throw new Exception();
-			size = JSONObject.getLong(r.nextNumber());
+			size = GH.getLong(r.nextNumber());
 
 			if (!r.jumpToKey("download_url")) throw new Exception();
 			downloadUrl = r.nextString();

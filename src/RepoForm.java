@@ -22,8 +22,6 @@ SOFTWARE.
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.StringItem;
 
-import cc.nnproject.json.JSONObject;
-
 public class RepoForm extends GHForm {
 
 	String parent;

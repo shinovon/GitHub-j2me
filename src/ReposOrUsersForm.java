@@ -24,9 +24,6 @@ import java.util.Hashtable;
 import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.StringItem;
 
-import cc.nnproject.json.JSONArray;
-import cc.nnproject.json.JSONObject;
-
 // list of repositories (forks, etc) or users (stargazers, followers, etc.)
 public class ReposOrUsersForm extends PagedForm {
 

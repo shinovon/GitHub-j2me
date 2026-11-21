@@ -21,9 +21,6 @@ SOFTWARE.
 */
 import java.io.IOException;
 
-import cc.nnproject.json.JSONArray;
-import cc.nnproject.json.JSONObject;
-
 // base class for pagination
 public abstract class PagedForm extends GHForm {
 

@@ -26,9 +26,6 @@ import javax.microedition.lcdui.Item;
 import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.StringItem;
 
-import cc.nnproject.json.JSONArray;
-import cc.nnproject.json.JSONObject;
-
 public class ReleasesForm extends PagedForm implements ItemCommandListener {
 
 	private boolean tags;

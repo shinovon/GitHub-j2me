@@ -27,9 +27,6 @@ import javax.microedition.lcdui.ItemCommandListener;
 import javax.microedition.lcdui.Spacer;
 import javax.microedition.lcdui.StringItem;
 
-import cc.nnproject.json.JSONArray;
-import cc.nnproject.json.JSONObject;
-
 public class IssuesForm extends PagedForm implements ItemCommandListener {
 
 	String state;
