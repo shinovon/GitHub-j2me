@@ -3392,6 +3392,11 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					f = new CommitsForm(repo, split[3], false);
 					break;
 				}
+				if ("compare".equals(split[2])) {
+					// TODO commit comparison not supported
+					openRepo(split[0] + '/' + split[1]);
+					return true;
+				}
 				f = new CommitsForm(repo, null, false);
 				break;
 			case 'b': // braches or blob
