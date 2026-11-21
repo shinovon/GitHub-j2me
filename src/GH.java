@@ -658,9 +658,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		// check auth
 		if ((apiMode == API_GITHUB && githubAccessToken != null)
 				|| (apiMode == API_GITEA && (giteaRefreshToken != null || giteaAccessToken != null))) {
-//			start(RUN_VALIDATE_AUTH, null);
-			run = RUN_VALIDATE_AUTH;
-			run();
+			start(RUN_VALIDATE_AUTH, null);
 		} else {
 			handleLaunch(false);
 		}
@@ -2615,7 +2613,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static void copy(String title, String text) {
 		TextBox t = new TextBox(title, text, Math.max(2000, text.length() + 1), TextField.ANY);
 		t.addCommand(backCmd);
-		if (symbianext && mpgramInstalled) {
+		if (symbianext ? mpgramInstalled : symbianJrt) {
 			t.addCommand(shareViaMpgramCmd);
 		}
 //		if (checkClass("com.nokia.mid.ui.Clipboard")) t.addCommand(copyCmd);
@@ -3464,7 +3462,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	}
 
 	static synchronized boolean handleLaunch(boolean restart) {
-		if (restart && !launchHandled) return false;
+		if (restart != launchHandled) return false;
 
 		launchHandled = true;
 		try {
