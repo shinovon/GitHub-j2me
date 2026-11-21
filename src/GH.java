@@ -1491,11 +1491,23 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else if (d instanceof UserForm) {
 				s = ((UserForm) d).url;
 			} else if (d instanceof ReleasesForm) {
-				s = ((ReleasesForm) d).url.concat("/releases");
+				ReleasesForm f = (ReleasesForm) d;
+				StringBuffer sb = new StringBuffer(f.url);
+				sb.append("/releases");
+				if (f.tag != null) {
+					if (f.tag.startsWith("/tags/")) {
+						sb.append("/tag").append(f.tag.substring(5));
+					} else {
+						sb.append(f.tag);
+					}
+				}
+				s = sb.toString();
 			} else if (d instanceof IssuesForm) {
 				s = ((IssuesForm) d).url.concat(((IssuesForm) d).mode == 1 ? "/pulls" : "/issues");
 			} else if (d instanceof CommitsForm) {
 				s = ((CommitsForm) d).url.concat("/commits");
+			} else if (d instanceof CommitForm) {
+				s = ((CommitForm) d).url + "/commits/" + ((CommitForm) d).sha;
 			} else if (d instanceof IssueForm) {
 				s = ((IssueForm) d).url;
 			} else return;
@@ -3327,6 +3339,15 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 						L[LForks].concat(" - ").concat(repo), null, 1);
 				break;
 			case 'r': // releases
+				if (split.length == 5) {
+					if ("tag".equals(split[3])) {
+						f = new ReleasesForm(repo, split[4]);
+						break;
+					}
+				} else if (split.length == 4 && "latest".equals(split[3])) {
+					f = new ReleasesForm(repo, null);
+					break;
+				}
 				f = new ReleasesForm(repo, false);
 				break;
 			case 't': // tags
@@ -3351,9 +3372,8 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			case 'c': // commit or commits
 				if (split.length == 4) {
 					if ("commit".equals(split[2])) {
-						// TODO commit form
-						midlet.browse(GITHUB_URL.concat(url));
-						return true;
+						f = new CommitForm(repo, split[3]);
+						break;
 					}
 					f = new CommitsForm(repo, split[3], false);
 					break;

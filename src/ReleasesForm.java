@@ -29,6 +29,7 @@ import javax.microedition.lcdui.StringItem;
 public class ReleasesForm extends PagedForm implements ItemCommandListener {
 
 	private boolean tags;
+	String tag;
 
 	public ReleasesForm(String repo, boolean tags) {
 		super(GH.L[tags ? LTags : LReleases].concat(" - ").concat(repo));
@@ -40,80 +41,110 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		if (GH.apiMode == GH.API_GITHUB) addCommand(GH.copyLinkCmd);
 	}
 
+	public ReleasesForm(String repo, String tag) {
+		super(GH.L[LReleases].concat(" - ").concat(repo));
+		this.perPage = tags ? 30 : 10;
+		this.url = repo;
+		this.tag = tag == null ? "/latest" : "/tags/".concat(tag);
+		this.tags = false;
+		addCommand(GH.tagsCmd);
+		addCommand(GH.saveBookmarkCmd);
+		if (GH.apiMode == GH.API_GITHUB) addCommand(GH.copyLinkCmd);
+	}
+
 	void loadInternal(Thread thread) throws Exception {
-		JSONArray r = pagedApi(thread, new StringBuffer("repos/").append(url).append(tags ? "/tags?" : "/releases?"));
-		int l = r.size();
-		
 		if (urls == null) {
 			urls = new Hashtable();
 		} else {
 			urls.clear();
 		}
+
+		StringBuffer sb = new StringBuffer("repos/");
+		sb.append(url);
+
+		pagedApi: {
+			if (tags) {
+				sb.append("/tags?");
+			} else {
+				if (tag != null) {
+					sb.append("/releases").append(tag).append('?');
+
+					parseRelease((JSONObject) GH.api(sb.toString()), 0);
+					break pagedApi;
+				}
+
+				sb.append("/releases?");
+			}
+
+			JSONArray r = pagedApi(thread, sb);
+			int l = r.size();
+			for (int i = 0; i < l && thread == this.thread; ++i) {
+				parseRelease(r.getObject(i), i);
+				safeAppend(thread, "\n");
+			}
+		}
+	}
+
+	private void parseRelease(JSONObject j, int i) {
 		StringItem s;
 		String t;
-		for (int i = 0; i < l && thread == this.thread; ++i) {
-			JSONObject j = r.getObject(i);
-			
-			s = new StringItem(null, (t = j.getString("name", null)) == null || t.length() == 0 ? j.getString("tag_name", "") : t);
-			s.setFont(GH.largePlainFont);
+		s = new StringItem(null, (t = j.getString("name", null)) == null || t.length() == 0 ? j.getString("tag_name", "") : t);
+		s.setFont(GH.largePlainFont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		safeAppend(thread, s);
+
+		if (j.has("commit")) {
+			s = new StringItem(null, j.getObject("commit").getString("sha").substring(0, 7));
+			s.setFont(GH.smallPlainFont);
 			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			safeAppend(thread, s);
-			
-			if (j.has("commit")) {
-				s = new StringItem(null, j.getObject("commit").getString("sha").substring(0, 7));
-				s.setFont(GH.smallPlainFont);
-				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-				safeAppend(thread, s);
-			}
-			
-			if (j.has("body") && (t = j.getString("body")) != null && t.length() != 0) {
-				if (t.length() < 100 || i == 0) {
-					GH.parseMarkdown(thread, this, t, -1, urls);
-				} else {
-					s = new StringItem(null, GH.L[LShowText], Item.HYPERLINK);
-					s.setFont(GH.medPlainFont);
-					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-					s.setDefaultCommand(GH.spoilerCmd);
-					s.setItemCommandListener(this);
-	
-					urls.put(s, new Object[] { new Integer(size()), t});
-					safeAppend(thread, s);
-				}
-			}
-			
-			if (j.has("assets")) {
-				JSONArray assets = j.getArray("assets");
-				int l2 = assets.size();
-						
-				s = new StringItem(null, GH.L[LAssets] + " (" + (l2 + 1) + "):");
-				s.setFont(GH.smallBoldFont);
-				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-				safeAppend(thread, s);
-				
-				if (i == 0 || l2 == 0) {
-					parseAssets(thread, assets, j.getString("zipball_url"), j.getString("tag_name", null), -1);
-				} else {
-					s = new StringItem(null, GH.L[LShowAssets], Item.HYPERLINK);
-					s.setFont(GH.medPlainFont);
-					s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-					s.setDefaultCommand(GH.spoilerCmd);
-					s.setItemCommandListener(this);
+		}
 
-					urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url"), j.getString("tag_name", null)});
-					safeAppend(thread, s);
-				}
-			} else if (!j.isNull("zipball_url")) {
-				s = new StringItem(null, GH.L[LSourceCodeZip]);
+		if (j.has("body") && (t = j.getString("body")) != null && t.length() != 0) {
+			if (t.length() < 100 || i == 0) {
+				GH.parseMarkdown(thread, this, t, -1, urls);
+			} else {
+				s = new StringItem(null, GH.L[LShowText], Item.HYPERLINK);
 				s.setFont(GH.medPlainFont);
 				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
-				s.addCommand(GH.downloadCmd);
-				s.setDefaultCommand(GH.downloadCmd);
+				s.setDefaultCommand(GH.spoilerCmd);
 				s.setItemCommandListener(this);
-				urls.put(s, new String[] { j.getString("zipball_url"), j.has("tag_name") ? j.getString("tag_name").concat(".zip") : null, "0" });
+
+				urls.put(s, new Object[] { new Integer(size()), t});
 				safeAppend(thread, s);
 			}
-			
-			safeAppend(thread, "\n");
+		}
+
+		if (j.has("assets")) {
+			JSONArray assets = j.getArray("assets");
+			int l2 = assets.size();
+
+			s = new StringItem(null, GH.L[LAssets] + " (" + (l2 + 1) + "):");
+			s.setFont(GH.smallBoldFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			safeAppend(thread, s);
+
+			if (i == 0 || l2 == 0) {
+				parseAssets(thread, assets, j.getString("zipball_url"), j.getString("tag_name", null), -1);
+			} else {
+				s = new StringItem(null, GH.L[LShowAssets], Item.HYPERLINK);
+				s.setFont(GH.medPlainFont);
+				s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+				s.setDefaultCommand(GH.spoilerCmd);
+				s.setItemCommandListener(this);
+
+				urls.put(s, new Object[] { new Integer(size()), assets, j.getString("zipball_url"), j.getString("tag_name", null)});
+				safeAppend(thread, s);
+			}
+		} else if (!j.isNull("zipball_url")) {
+			s = new StringItem(null, GH.L[LSourceCodeZip]);
+			s.setFont(GH.medPlainFont);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.addCommand(GH.downloadCmd);
+			s.setDefaultCommand(GH.downloadCmd);
+			s.setItemCommandListener(this);
+			urls.put(s, new String[] { j.getString("zipball_url"), j.has("tag_name") ? j.getString("tag_name").concat(".zip") : null, "0" });
+			safeAppend(thread, s);
 		}
 	}
 
@@ -207,6 +238,7 @@ public class ReleasesForm extends PagedForm implements ItemCommandListener {
 		cancel();
 		
 		tags = !tags;
+		tag = null;
 		perPage = tags ? 30 : 10;
 		setTitle(GH.L[tags ? LTags : LReleases].concat(" - ").concat(url));
 		removeCommand(tags ? GH.tagsCmd : GH.releasesCmd);
