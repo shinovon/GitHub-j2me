@@ -34,6 +34,8 @@ public class GHForm extends Form implements LangConstants {
 	boolean loaded, finished, canceled;
 	Thread thread;
 
+	boolean external;
+
 	public GHForm(String title) {
 		super(title);
 		addCommand(GH.backCmd);

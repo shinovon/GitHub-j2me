@@ -257,6 +257,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command starCmd;
 	static Command readmeCmd;
 	static Command filesCmd;
+	static Command showRepoCmd;
 
 	static Command nextPageCmd;
 	static Command prevPageCmd;
@@ -520,6 +521,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		starCmd = new Command(L[LStar], Command.ITEM, 1);
 		readmeCmd = new Command(L[LReadme], Command.ITEM, 1);
 		filesCmd = new Command(L[LBrowseSource], Command.ITEM, 1);
+		showRepoCmd = new Command(L[LViewRepository], Command.SCREEN, 11);
 		
 		showOpenCmd = new Command(L[LShowOpen], Command.SCREEN, 4);
 		showClosedCmd = new Command(L[LShowClosed], Command.SCREEN, 5);
@@ -1517,6 +1519,18 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			} else {
 				addBookmark(s, d);
 			}
+			return;
+		}
+		if (c == showRepoCmd) {
+			String url = ((GHForm) d).url;
+			int i;
+			if ((i = url.indexOf('/')) == -1) {
+				return;
+			}
+			if ((i = url.indexOf('/')) != -1) {
+				url = url.substring(0, i);
+			}
+			openRepo(url);
 			return;
 		}
 		{ // download dialog
@@ -3399,6 +3413,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 			default:
 				return false;
 			}
+			f.external = true;
 			display(f);
 			midlet.start(RUN_LOAD_FORM, f);
 			return true;

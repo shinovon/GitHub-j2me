@@ -1,3 +1,7 @@
+import javax.microedition.lcdui.Item;
+import javax.microedition.lcdui.Spacer;
+import javax.microedition.lcdui.StringItem;
+
 /*
 Copyright (c) 2026 Arman Jussupgaliyev
 
@@ -31,6 +35,48 @@ public class CommitForm extends GHForm {
 
 	void loadInternal(Thread thread) throws Exception {
 		// TODO
+		StringBuffer sb = new StringBuffer("repos/");
+		sb.append(url).append("/commits?sha=").append(sha).append("&per_page=1");
+
+		if (external) addCommand(GH.showRepoCmd);
+
+		JSONObject j = ((JSONArray) GH.api(sb.toString())).getObject(0);
+		sha = j.getString("sha");
+		JSONObject commit = j.getObject("commit");
+
+		StringItem s;
+		String t;
+
+		sb.setLength(0);
+
+		s = new StringItem(null, sb.append("Commit ").append(sha.substring(0, 7)).toString());
+		s.setFont(GH.largePlainFont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		safeAppend(thread, s);
+
+		sb.setLength(0);
+
+		JSONObject m;
+		if ((m = j.getObject("author")) != null && !"invalid-email-address".equals(t = m.getString("login"))) {
+			sb.append(t);
+			sb.append(GH.L[!t.equals(j.getObject("committer").getString("login")) ? L_authored : L_commited]);
+		} else if ((m = commit.getObject("author")) != null) {
+			sb.append(t = m.getString("name"));
+			sb.append(GH.L[!t.equals(commit.getObject("committer").getString("name")) ? L_authored : L_commited]);
+		}
+
+		sb.append(GH.localizeDate(commit.getObject("committer").getString("date"), 1));
+
+		s = new StringItem(null, sb.toString());
+		s.setFont(GH.smallPlainFont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
+		safeAppend(thread, s);
+		safeAppend(thread, new Spacer(10, 8));
+
+		s = new StringItem(null, commit.getString("message"));
+		s.setFont(GH.medPlainFont);
+		s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+		safeAppend(thread, s);
 	}
 
 }

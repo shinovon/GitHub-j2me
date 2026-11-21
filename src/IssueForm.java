@@ -63,6 +63,8 @@ public class IssueForm extends PagedForm {
 			.append(pull ? GH.L[LPullRequest] : GH.L[LIssue]).append(" #").append(issue.getString("number"));
 			setTitle(sb.toString());
 		}
+
+		if (external) addCommand(GH.showRepoCmd);
 		
 		if (urls == null) {
 			urls = new Hashtable();
@@ -168,8 +170,7 @@ public class IssueForm extends PagedForm {
 			s.setFont(GH.smallPlainFont);
 			s.setDefaultCommand(GH.mdLinkCmd);
 			s.setItemCommandListener(GH.midlet);
-			s.setLayout(Item.LAYOUT_LEFT | Item.
-					LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
+			s.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_AFTER | Item.LAYOUT_NEWLINE_BEFORE);
 			
 			urls.put(s, j.getString("html_url"));
 			safeInsert(thread, insert++, s);

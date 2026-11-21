@@ -50,6 +50,8 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 		
 		JSONArray r = pagedApi(thread, sb);
 		int l = r.size();
+
+		if (external) addCommand(GH.showRepoCmd);
 		
 		if (urls == null) {
 			urls = new Hashtable();
@@ -88,7 +90,7 @@ public class CommitsForm extends PagedForm implements ItemCommandListener {
 				sb.append(GH.L[!t.equals(j.getObject("committer").getString("login")) ? L_authored : L_commited]);
 			} else if ((m = commit.getObject("author")) != null) {
 				sb.append(t = m.getString("name"));
-				sb.append(GH.L[!t.equals(commit.getObject("committer").getString("name"))  ? L_authored : L_commited]);
+				sb.append(GH.L[!t.equals(commit.getObject("committer").getString("name")) ? L_authored : L_commited]);
 			}
 			
 			sb.append(GH.localizeDate(commit.getObject("committer").getString("date"), 1));

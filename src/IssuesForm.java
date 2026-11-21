@@ -63,6 +63,8 @@ public class IssuesForm extends PagedForm implements ItemCommandListener {
 		
 		JSONArray r = pagedApi(thread, sb);
 		int l = r.size();
+		
+		if (external) addCommand(GH.showRepoCmd);
 
 		if (mode != 2 || GH.apiMode == GH.API_GITEA) {
 			if ("closed".equals(state)) {

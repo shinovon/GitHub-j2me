@@ -39,6 +39,8 @@ public class BranchesForm extends PagedForm {
 	void loadInternal(Thread thread) throws Exception {
 		JSONArray r = pagedApi(thread, new StringBuffer("repos/").append(url).append("/branches?"));
 		int l = r.size();
+
+		if (external) addCommand(GH.showRepoCmd);
 		
 		StringItem s;
 		String t;
