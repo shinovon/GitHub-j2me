@@ -180,6 +180,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static boolean series40;
 	static boolean symbianext;
 	static boolean restMethodsSupported;
+	static boolean mpgramInstalled;
 
 	// endregion Settings
 
@@ -293,6 +294,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static Command okDownloadCmd;
 	static Command openDownloadedCmd;
 	static Command confirmCmd;
+	static Command shareViaMpgramCmd;
 
 	static Command commentCmd;
 	static Command sendCmd;
@@ -379,6 +381,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		symbianext = System.getProperty(SYMEXT + "version") != null;
 		if (symbianext) {
 			System.getProperty(SYMEXT + "createGlobalData:" + IPC_ID + "_launchUrl");
+			mpgramInstalled = System.getProperty(SYMEXT + "getMidletSuiteVersion:MPGram;nnproject") != null;
 		}
 
 		if (checkClass("com.nokia.mid.impl.isa.jam.Jam")) {
@@ -551,6 +554,7 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		okDownloadCmd = new Command(L[LOk], Command.CANCEL, 1);
 		openDownloadedCmd = new Command(L[LOpen], Command.SCREEN, 2);
 		confirmCmd = new Command(L[LOk], Command.OK, 1);
+		shareViaMpgramCmd = new Command("Share via MPGram", Command.SCREEN, 4);
 		
 		commentCmd = new Command(L[LComment], Command.SCREEN, 4);
 		sendCmd = new Command(L[LSend], Command.OK, 1);
@@ -1534,6 +1538,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 
 			confirmationTask = 0;
 			confirmationParam = null;
+			return;
+		}
+		if (c == shareViaMpgramCmd) {
+			launchMpgram("text:" + ((TextBox) d).getString());
 			return;
 		}
 		if (c == backCmd || c == cancelCmd) {
@@ -2548,6 +2556,9 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 	static void copy(String title, String text) {
 		TextBox t = new TextBox(title, text, Math.max(2000, text.length() + 1), TextField.ANY);
 		t.addCommand(backCmd);
+		if (symbianext && mpgramInstalled) {
+			t.addCommand(shareViaMpgramCmd);
+		}
 //		if (checkClass("com.nokia.mid.ui.Clipboard")) t.addCommand(copyCmd);
 		t.setCommandListener(midlet);
 		display(t);
@@ -2682,27 +2693,30 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 		return inst;
 	}
 
+	static boolean launchMpgram(String url) {
+		if (symbianext) {
+			if (!mpgramInstalled) return false;
+			String r = System.getProperty(SYMEXT + "launchMidlet:MPGram;nnproject;1;-Durl=" + url);
+			if ("0".equals(r)) return true;
+			if ("-11".equals(r)) {
+				System.getProperty(SYMEXT + "setGlobalData:mpgram_launchUrl;" + url);
+				if ("0".equals(System.getProperty(SYMEXT + "bringMidletToForeground:MPGram;nnproject"))) {
+					return true;
+				}
+			}
+		} else if (symbianJrt) {
+			try {
+				midlet.browse("localapp://jam/launch?midlet-name=MPGram;midlet-vendor=nnproject;url=" + url(url) + ";launchfrom=gh2me");
+				return true;
+			} catch (Exception ignored) {}
+		}
+		return false;
+	}
 
 	void browse(String url) {
 		try {
 			if (url.startsWith("https://t.me/") || url.startsWith("http://t.me/") || url.startsWith("t.me/")) {
-				if (symbianext) {
-					String r = System.getProperty(SYMEXT + "getMidletSuiteVersion:MPGram;nnproject");
-					if (r != null) { // TODO check version > 1.6.6
-						r = System.getProperty(SYMEXT + "launchMidlet:MPGram;nnproject;1;-Durl=" + url);
-						if ("0".equals(r)) return;
-						if ("-11".equals(r)) {
-							System.getProperty(SYMEXT + "setGlobalData:mpgram_launchUrl;" + url);
-							if ("0".equals(System.getProperty(SYMEXT + "bringMidletToForeground:MPGram;nnproject"))) {
-								return;
-							}
-						}
-					}
-				} else if (symbianJrt) {
-					try {
-						midlet.browse("localapp://jam/launch?midlet-name=MPGram;midlet-vendor=nnproject;url=" + url(url) + ";launchfrom=gh2me");
-					} catch (Exception ignored) {}
-				}
+				if (launchMpgram(url)) return;
 			}
 			if (url.indexOf(':') == -1) {
 				url = "http://".concat(url);
