@@ -3393,6 +3393,10 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f = new ReleasesForm(repo, false);
 				break;
 			case 't': // tags
+				if ("tree".equals(split[2])) {
+					// TODO
+					return false;
+				}
 				f = new ReleasesForm(repo, true);
 				break;
 			case 's': // stargazers
