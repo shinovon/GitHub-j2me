@@ -3375,7 +3375,12 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 				f = new ReposOrUsersForm("repos/".concat(repo).concat("/forks?"),
 						L[LForks].concat(" - ").concat(repo), null, 1);
 				break;
-			case 'r': // releases
+			case 'r':
+				if ("raw".equals(split[2])) {
+					// TODO
+					return false;
+				}
+				// releases
 				if (split.length == 5) {
 					if ("tag".equals(split[3])) {
 						f = new ReleasesForm(repo, split[4]);
@@ -3428,9 +3433,14 @@ public class GH extends MIDlet implements CommandListener, ItemCommandListener, 
 					break;
 				}
 				if ("blob".equals(split[2])) {
-					url = url.substring(
-							url.indexOf('/', url.indexOf('/', url.indexOf('/', url.indexOf('/') + 1) + 1) + 1)
-					);
+					// TODO somehow handle branch with slashes
+					try {
+						url = url.substring(
+								url.indexOf('/', url.indexOf('/', url.indexOf('/', url.indexOf('/') + 1) + 1) + 1)
+						);
+					} catch (Exception e) {
+						return false;
+					}
 					GH.repo = repo;
 					GH.ref = split[3];
 					midlet.start(RUN_OPEN_PATH, url);
