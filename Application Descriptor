@@ -10,3 +10,4 @@ MIDlet-Jar-URL: GH2ME.jar
 Nokia-Scalable-Icon: /g.svg
 Nokia-Scalable-Icon-MIDlet-1: /g.svg
 Nokia-MIDlet-Background-Event: pause
+Nokia-UI-Enhancement: FullScreenTextBox
